@@ -1,0 +1,64 @@
+﻿63 rows
+chandy1985       peer 1985 10.1145/214451.214456            Distributed snapshots: determining global states of distribu
+millwheel2013    peer 2013 10.14778/2536222.2536229         MillWheel: fault-tolerant stream processing at internet scal
+flink2017        peer 2017 10.14778/3137765.3137777         State management in Apache Flink®: consistent stateful distr
+dstreams2013     peer 2013 10.1145/2517349.2522737          Discretized streams: fault-tolerant streaming computation at
+naiad2013        peer 2013 10.1145/2517349.2522738          Naiad: a timely dataflow system
+dataflow2015     peer 2015 10.14778/2824032.2824076         The dataflow model: a practical approach to balancing correc
+kafka2015        peer 2015 10.14778/2824032.2824063         Building a replicated logging system with Apache Kafka
+sax2018          peer 2018 10.1145/3242153.3242155          Streams and Tables: Two Sides of the Same Coin
+eosmsg2001       peer      10.1109/icde.2001.914808         Exactly-once semantics in a replicated messaging system
+eosmid2012       peer 2012 10.1109/prdc.2012.23             A Middleware for Exactly-Once Semantics in Request-Response 
+eoscorba1999     peer      10.1109/reldis.1999.805108       Exactly-once end-to-end semantics in CORBA invocations acros
+sagas1987        peer 1987 10.1145/38713.38742              Sagas
+txncommit2006    peer 2006 10.1145/1132863.1132867          Consensus on transaction commit
+berenson1995     peer 1995 10.1145/223784.223785            A critique of ANSI SQL isolation levels
+bailis2014       peer 2014 10.14778/2735508.2735509         Coordination avoidance in database systems
+kung1981         peer 1981 10.1145/319566.319567            On optimistic methods for concurrency control
+vogels2009       peer 2009 10.1145/1435417.1435432          Eventually consistent
+laigner2021      peer 2021 10.14778/3484224.3484232         Data management in microservices: state of the practice, cha
+micro2026        peer 2026 10.1007/s00607-026-01701-5       Consistency challenges in event-driven microservices: a lite
+saga2022         peer 2022 10.3390/app12126242              Enhancing Saga Pattern for Distributed Transactions within a
+saga2019         peer 2019 10.5220/0007918704830490         The Saga Pattern in a Reactive Microservices Environment
+triple2021       peer 2021 10.1016/j.bcra.2021.100037       A future triple entry accounting framework using blockchain 
+triple2019       peer 2019 10.1111/acfi.12556               Triple-entry accounting with blockchain: How far have we com
+lamport1994      peer 1994 10.1145/177492.177726            The temporal logic of actions
+jackson2002      peer 2002 10.1145/505145.505149            Alloy: a lightweight object modelling notation
+verdi2015        peer 2015 10.1145/2737924.2737958          Verdi: a framework for implementing and formally verifying d
+georges2007      peer 2007 10.1145/1297027.1297033          Statistically rigorous java performance evaluation
+arcuri2011       peer 2011 10.1145/1985793.1985795          A practical guide for using statistical tests to assess rand
+arcuri2012       peer 2012 10.1002/stvr.1486                A Hitchhiker's guide to statistical tests for assessing rand
+hoefler2015      peer 2015 10.1145/2807591.2807644          Scientific benchmarking of parallel computing systems: twelv
+raasveldt2018    peer 2018 10.1145/3209950.3209955          Fair Benchmarking Considered Difficult: Common Pitfalls In D
+mytkowicz2009    peer 2009 10.1145/1508244.1508275          Producing wrong data without doing anything obviously wrong!
+theodolite2021   peer 2021 10.1016/j.bdr.2021.100209        Theodolite: Scalability Benchmarking of Distributed Stream P
+dean2013         peer 2013 10.1145/2408776.2408794          The tail at scale
+cliff1993        peer 1993 10.1037/0033-2909.114.3.494      Dominance statistics: Ordinal analyses to answer ordinal que
+efron1979        peer 1979 10.1214/aos/1176344552           Bootstrap Methods: Another Look at the Jackknife
+mcnemar1947      peer 1947 10.1007/bf02295996               Note on the Sampling Error of the Difference Between Correla
+holland1987      peer 1987 10.2307/2531823                  An Improved Sequentially Rejective Bonferroni Test Procedure
+brown2001        peer 2001 10.1214/ss/1009213286            Interval Estimation for a Binomial Proportion
+jsta2014         peer 2014 10.2991/jsta.2014.13.4.3         Modified Clopper-Pearson Confidence Interval for Binomial Pr
+rule3            peer 2023 10.1515/ijb-2022-0061            A modified rule of three for the one-sided binomial confiden
+basiri2016       peer 2016 10.1109/ms.2016.60               Chaos Engineering
+elle2020         peer 2020 10.14778/3430915.3430918         Elle: inferring isolation anomalies from experimental observ
+fdb2021          peer 2021 10.1145/3448016.3457559          FoundationDB: A Distributed Unbundled Transactional Key Valu
+collberg2016     peer 2016 10.1145/2812803                  Repeatability in computer systems research
+crashmonkey2019  peer 2019 10.1145/3320275                  CrashMonkey and ACE: Systematically Testing File-System Cras
+lsfs1992         peer 1992 10.1145/146941.146943            The design and implementation of a log-structured file syste
+lamport1978      peer 1978 10.1145/359545.359563            Time, clocks, and the ordering of events in a distributed sy
+eventsourcing2022 peer 2022 10.1145/3575879.3576006          Mapping CRUD to Events - Towards an object to event-sourcing
+kip98            gray 2017                                  KIP-98: Exactly Once Delivery and Transactional Messaging
+kip447           gray 2019                                  KIP-447: Producer scalability for exactly once semantics
+kip429           gray 2019                                  KIP-429: Kafka Consumer Incremental Rebalance Protocol
+kafka-design     gray 2026                                  Apache Kafka Documentation: Design (Message Delivery Semanti
+kafka-streams    gray 2026                                  Apache Kafka Documentation: Kafka Streams Configs (processin
+pg-isolation     gray 2026                                  PostgreSQL Documentation: Transaction Isolation
+pg-onconflict    gray 2026                                  PostgreSQL Documentation: INSERT (ON CONFLICT clause)
+pg-prepare       gray 2026                                  PostgreSQL Documentation: PREPARE TRANSACTION
+toxiproxy        gray 2026                                  Toxiproxy: a TCP proxy to simulate network and system condit
+hdrhistogram     gray 2026                                  HdrHistogram: A High Dynamic Range (HDR) Histogram
+stripe-idempotency gray 2026                                  Stripe API Reference: Idempotent requests
+debezium-outbox  gray 2026                                  Debezium Documentation: Outbox event router
+aws-idempotency  gray 2026                                  Amazon Builders' Library: Making retries safe with idempoten
+demsar2006       gray 2006                                  Statistical Comparisons of Classifiers over Multiple Data Se

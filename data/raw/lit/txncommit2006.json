@@ -1,0 +1,20 @@
+{
+  "crossref_doi": "10.1145/1132863.1132867",
+  "crossref_fetched_utc": "2026-11-24T12:03:42Z",
+  "crossref_title": "Consensus on transaction commit",
+  "crossref_container": "ACM Transactions on Database Systems",
+  "crossref_year": 2006,
+  "crossref_authors": "Gray, Jim; Lamport, Leslie",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:48Z",
+  "is_oa": true,
+  "oa_status": "green",
+  "oa_pdf_url": "https://arxiv.org/pdf/cs/0408036",
+  "oa_landing": "https://arxiv.org/pdf/cs/0408036",
+  "openalex_fetched_utc": "2026-11-24T12:15:25Z",
+  "openalex_title": "Consensus on transaction commit",
+  "openalex_oa_pdf": "https://arxiv.org/pdf/cs/0408036",
+  "oa_fetch_utc": "2026-11-24T12:21:06Z",
+  "oa_http_status": 200,
+  "oa_content_type": "",
+  "oa_cache": "data/raw/lit/txncommit2006.pdf"
+}

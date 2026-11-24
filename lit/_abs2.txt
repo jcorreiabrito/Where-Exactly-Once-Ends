@@ -1,0 +1,61 @@
+﻿
+######## hanley1983 [text]
+{"version":"6.9","hitCount":1,"request":{"queryString":"DOI:\"10.1001/jama.1983.03330370053031\"","resultType":"core","cursorMark":"*","pageSize":25,"sort":"","synonym":false},"resultList":{"result":[{"id":"6827763","source":"MED","pmid":"6827763","doi":"10.1001/jama.1983.03330370053031","title":"If nothing goes wrong, is everything all right? Interpreting zero numerators.","authorString":"Hanley JA, Lippman-Hand A.","authorList":{"author":[{"fullName":"Hanley JA","lastName":"Hanley","firstName":"J A","initials":"JA"},{"fullName":"Lippman-Hand A","lastName":"Lippman-Hand","firstName":"A","initials":"A"}]},"dataLinksTagsList":{"dataLinkstag":["altmetrics"]},"journalInfo":{"issue":"13","volume":"249","journalIssueId":531161,"dateOfPublication":"1983 Apr","monthOfPublication":4,"yearOfPublication":1983,"journal":{"medlineAbbreviation":"JAMA","title":"JAMA","essn":"1538-3598","issn":"0098-7484","isoabbreviation":"JAMA","nlmid":"7501160"},"printPublicationDate":"1983-04-01"},"pubYear":"1983","pageInfo":"1743-1745","publicationStatus":"ppublish","language":"eng","pubModel":"Print","pubTypeList":{"pubType":["Journal Article"]},"meshHeadingList":{"meshHeading":[{"majorTopic_YN":"N","descriptorName":"Humans"},{"majorTopic_YN":"Y","descriptorName":"Disease"},{"majorTopic_YN":"Y","descriptorName":"Probability"},{"majorTopic_YN":"N","descriptorName":"Mathematics"}]},"subsetList":{"subset":
+
+######## georges2007 [pdf]
+Statistically Rigorous Java Performance Evaluation
+Andy Georges Dries Buytaert Lieven Eeckhout
+Department of Electronics and Information Systems, Ghent University, Belgium
+{ageorges,dbuytaer,leeckhou}@elis.ugent.be
+Abstract
+Java performance is far from being trivial to benchmark because
+it is affected by various factors such as the Java application, its
+input, the virtual machine, the garbage collector, the heap size, etc.
+In addition, non-determinism at run-time causes the execution time
+of a Java program to differ from run to run. There are a number of
+sources of non-determinism such as Just-In-Time (JIT) compilation
+and optimization in the virtual machine (VM) driven by timer-
+based method sampling, thread scheduling, garbage collection, and
+various system effects.
+There exist a wide variety of Java performance evaluation
+methodologies used by researchers and benchmarkers. These
+methodologies differ from each other in a number of ways. Some
+report average performance over a number of runs of the same
+experiment; others report the best or second best performance ob-
+served; yet others report the worst. Some iterate the benchmark
+multiple times within a single VM invocation; others consider mul-
+tiple VM invocations and iterate a single benchmark execution; yet
+others consider multiple VM invocations and iterate the benchmark
+multiple times.
+This paper shows that prevalent met
+
+######## reliablemsg2015 [openalex-abstract]
+Event-driven enterprise IT architectures are typically based on message broker systems. Most broker systems focus on functional decoupling, and on the fast and reliable delivery of events towards event consumers. Such consumer-centricity eases the development and deployment of consumers applications. However, especially within a web-based big data enterprise we typically have relatively small number of stable producers that is based on the core enterprise business model, and a higher, dynamic number of highly heterogeneous consumers. With the consumer-centric view of event messaging, problems with some consumers can easily lead to the congestion or service degradation of the whole messaging system, and can affect the operations of the producers or other critical consumers. To avoid such non-functional tight coupling, we propose in this paper a producer-centric architecture for messaging backbone in a big data enterprise. Within this architecture the broker infrastructure concentrates on the event production activities and pushes the delivery functionalities towards the consumer clients and applications. In this way we can achieve a higher level of SOA loose coupling, higher reliability and higher maintainability of the enterprise infrastructure.
+
+######## kung1981 [openalex-abstract]
+Most current approaches to concurrency control in database systems rely on locking of data objects as a control mechanism. In this paper, two families of nonlocking concurrency controls are presented. The methods used are “optimistic” in the sense that they rely mainly on transaction backup as a control mechanism, “hoping” that conflicts between transactions will not occur. Applications for which these methods should be more efficient than locking are discussed.
+
+######## basiri2016 [pdf]
+Published as: Ali Basiri, Niosha Behnam, Ruud de Rooij, Lorin Hochstein, Luke Kosewski, Justin Reynolds, Casey 
+Rosenthal, "Chaos Engineering", IEEE Software, vol.33, no. 3, pp. 35­41, May­June 2016, DOI: 10.1109/MS.2016.60 
+ 
+Chaos Engineering 
+Ali Basiri 1 , Niosha Behnam 1 , Ruud de Rooij 1 , Lorin Hochstein 1 , Luke Kosewski 1 , Justin 
+Reynolds 1 , Casey Rosenthal 1 
+ 
+1 Traffic and Chaos Team, Netflix 
+ 
+Abstract 
+Modern software­based services are implemented as distributed systems with complex behavior 
+and failure modes. Many large tech organizations are using experimentation to verify the 
+reliability of such systems. We use the term "Chaos Engineering" to refer to this approach, and 
+discuss the underlying principles and how to use it to run experiments. 
+ 
+Introduction 
+Thirty years ago, Jim Gray noted that "A way to improve availability is to install proven hardware 
+and software, and then leave it alone" [1]. For companies that provide services over the Internet, 
+"leaving it alone" isn't an option. Such service providers must continually make changes in order 
+to increase the value of the service, such as adding new features and improving performance. 
+At Netflix, engineers push new code into production and modify runtime configuration 
+parameters hundreds of times a day. Availability is still important: a customer who can't watch a 
+video because of a service ou

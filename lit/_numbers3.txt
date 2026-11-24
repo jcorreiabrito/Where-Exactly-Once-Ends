@@ -1,0 +1,4 @@
+﻿peer manifest 57 in claims 46 excluded ['aries1992', 'clopper1934', 'cpa2024', 'expose2021', 'fisher1922', 'friedman1937', 'hanley1983', 'helland2012', 'pipeflow2015', 'reliablemsg2015', 'repro2024']
+peer claims not in manifest ['brown2001', 'jsta2014', 'rule3']
+gray manifest 16 gray claims 14 excluded ['kafka-producer', 'tene-latency'] added []
+matrix data rows 63

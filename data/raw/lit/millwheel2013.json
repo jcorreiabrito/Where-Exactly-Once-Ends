@@ -1,0 +1,13 @@
+{
+  "crossref_doi": "10.14778/2536222.2536229",
+  "crossref_fetched_utc": "2026-11-24T12:03:37Z",
+  "crossref_title": "MillWheel",
+  "crossref_container": "Proceedings of the VLDB Endowment",
+  "crossref_year": 2013,
+  "crossref_authors": "Akidau, Tyler; Balikov, Alex; Bekiroğlu, Kaya; Chernyak, Slava; Haberman, Josh; Lax, Reuven; McVeety, Sam; Mills, Daniel; Nordstrom, Paul; Whittle, Sam",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:35Z",
+  "is_oa": false,
+  "oa_status": "closed",
+  "openalex_fetched_utc": "2026-11-24T12:15:12Z",
+  "openalex_title": "MillWheel: fault-tolerant stream processing at internet scale"
+}

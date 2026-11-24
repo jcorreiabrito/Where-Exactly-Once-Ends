@@ -1,0 +1,1 @@
+{"version":"6.9","hitCount":0,"request":{"queryString":"TITLE:\"On the interpretation of chi square from contingency tables\"","resultType":"core","cursorMark":"*","pageSize":25,"sort":"","synonym":false},"resultList":{"result":[]}}

@@ -1,0 +1,11 @@
+{
+  "url": "https://www.postgresql.org/docs/current/sql-prepare-transaction.html",
+  "final_url": "https://www.postgresql.org/docs/current/sql-prepare-transaction.html",
+  "fetched_utc": "2026-11-24T12:19:19Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/pg-prepare.html",
+  "source_kind": "doc",
+  "sha256": "d61660712b04409a462cd908e8588ed6a199ffedaf984d1b31a3c92f4ca51bb5",
+  "bytes": 19959
+}

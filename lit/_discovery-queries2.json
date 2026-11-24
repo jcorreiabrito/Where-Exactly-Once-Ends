@@ -1,0 +1,22 @@
+[
+  {"slug": "elle", "q": "Elle inferring isolation anomalies experimental observations"},
+  {"slug": "coord-omission", "q": "coordinated omission latency measurement open loop load"},
+  {"slug": "fisher", "q": "on the interpretation of chi square from contingency tables test of goodness of fit"},
+  {"slug": "holm", "q": "simple sequentially rejective multiple test procedure"},
+  {"slug": "eventsourcing2", "q": "event sourcing pattern empirical evaluation event store"},
+  {"slug": "offset-db", "q": "consumer offset commit database transaction at-least-once idempotent processing"},
+  {"slug": "txn-messaging", "q": "transactional messaging exactly once delivery broker database"},
+  {"slug": "nemenyi", "q": "Nemenyi post hoc test multiple comparisons"},
+  {"slug": "tail-latency", "q": "tail at scale latency variability"},
+  {"slug": "spanner", "q": "Spanner Google globally distributed database"},
+  {"slug": "rep-repro", "q": "repeatability computer systems research"},
+  {"slug": "jepsen", "q": "inferring isolation anomalies observations distributed databases testing"},
+  {"slug": "audit-continuous", "q": "continuous auditing database event log financial reporting"},
+  {"slug": "idem-kafka", "q": "idempotent producer message deduplication broker sequence number"},
+  {"slug": "eos-eval", "q": "empirical evaluation exactly once semantics overhead stream processing"},
+  {"slug": "dedup-overhead", "q": "deduplication overhead event processing benchmark"},
+  {"slug": "outbox-eval", "q": "outbox pattern evaluation performance overhead database"},
+  {"slug": "ledger-formal2", "q": "formal specification accounting transaction double entry invariant"},
+  {"slug": "crash-consistency", "q": "crash consistency file system database storage"},
+  {"slug": "tla-distributed", "q": "specifying and verifying distributed systems temporal logic of actions"}
+]

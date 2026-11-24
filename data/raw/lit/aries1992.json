@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/128765.128770",
+  "crossref_fetched_utc": "2026-11-24T12:04:03Z",
+  "crossref_title": "ARIES",
+  "crossref_container": "ACM Transactions on Database Systems",
+  "crossref_year": 1992,
+  "crossref_authors": "Mohan, C.; Haderle, Don; Lindsay, Bruce; Pirahesh, Hamid; Schwarz, Peter",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:53Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "https://dl.acm.org/doi/pdf/10.1145/128765.128770",
+  "oa_landing": "https://dl.acm.org/doi/pdf/10.1145/128765.128770",
+  "openalex_fetched_utc": "2026-11-24T12:15:29Z",
+  "openalex_title": "ARIES: a transaction recovery method supporting fine-granularity locking and partial rollbacks using write-ahead logging",
+  "openalex_oa_pdf": "https://dl.acm.org/doi/pdf/10.1145/128765.128770",
+  "oa_fetch_utc": "2026-11-24T12:21:07Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

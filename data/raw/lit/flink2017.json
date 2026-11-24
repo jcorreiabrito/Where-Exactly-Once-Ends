@@ -1,0 +1,13 @@
+{
+  "crossref_doi": "10.14778/3137765.3137777",
+  "crossref_fetched_utc": "2026-11-24T12:03:38Z",
+  "crossref_title": "State management in Apache Flink®",
+  "crossref_container": "Proceedings of the VLDB Endowment",
+  "crossref_year": 2017,
+  "crossref_authors": "Carbone, Paris; Ewen, Stephan; Fóra, Gyula; Haridi, Seif; Richter, Stefan; Tzoumas, Kostas",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:36Z",
+  "is_oa": false,
+  "oa_status": "closed",
+  "openalex_fetched_utc": "2026-11-24T12:15:13Z",
+  "openalex_title": "State management in Apache Flink®: consistent stateful distributed stream processing"
+}

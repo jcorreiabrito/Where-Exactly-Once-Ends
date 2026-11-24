@@ -1,0 +1,11 @@
+{
+  "url": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Kafka+Consumer+Incremental+Rebalance+Protocol",
+  "final_url": "https://cwiki.apache.org/confluence/spaces/KAFKA/pages/103090108/KIP-429+Kafka+Consumer+Incremental+Rebalance+Protocol",
+  "fetched_utc": "2026-11-24T12:18:56Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/kip429.html",
+  "source_kind": "kip",
+  "sha256": "7ed7fb4afd27c7918051d95d46c02ae6e5f20838240f5a5d890520021322e691",
+  "bytes": 127720
+}

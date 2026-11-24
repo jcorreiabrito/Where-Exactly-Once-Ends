@@ -1,0 +1,1108 @@
+    
+
+<!DOCTYPE html>
+<html lang="en-US"   data-theme="dark:dark light:light" data-color-mode-auto  >
+<head>
+            
+        
+
+                            <title>KIP-98 - Exactly Once Delivery and Transactional Messaging - Apache Kafka - Apache Software Foundation</title>
+    
+        
+
+                        
+    
+                        
+    
+
+                
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=EDGE,chrome=IE7">
+<meta charset="UTF-8">
+<meta id="confluence-context-path" name="confluence-context-path" content="/confluence">
+<meta id="confluence-base-url" name="confluence-base-url" content="https://cwiki.apache.org/confluence">
+
+    <meta id="atlassian-token" name="atlassian-token" content="d5e2b425ecf19cbc51fcf1445f13d4bde897310b">
+
+
+<meta id="confluence-space-key" name="confluence-space-key" content="KAFKA">
+<script type="text/javascript">
+        var contextPath = '/confluence';
+</script>
+
+    
+
+    <meta name="confluence-request-time" content="1795522731196">
+        
+    
+        
+            <meta name="ajs-use-keyboard-shortcuts" content="true">
+            <meta name="ajs-is-confluence-admin" content="false">
+            <meta name="ajs-connection-timeout" content="10000">
+            <script type="text/x-template" title="gliffy-webpanel-footer">
+        <div class="gliffy-webpanel-footer"><span>This Confluence installation runs a Free Gliffy License - Evaluate the <a href="http://www.gliffy.com/products/confluence-plugin/">Gliffy Confluence Plugin</a> for your Wiki!</span></div>
+</script>
+
+
+            <style>.ia-fixed-sidebar, .ia-splitter-left {width: 285px;}.theme-default .ia-splitter #main {margin-left: 285px;}.ia-fixed-sidebar {visibility: hidden;}</style>
+            <meta name="ajs-discovered-plugin-features" content="$discoveredList">
+            <meta name="ajs-keyboardshortcut-hash" content="f53cdc7a7358f5b579a749480e9b6c59d0325357503f299e8e9cdfa4e2f1faeb">
+            <meta name="ajs-emojis-allow-current-user-upload-emojis" content="true">
+<meta name="ajs-emojis-max-upload-file-size" content="1">
+
+            
+    
+    
+            <meta name="ajs-page-title" content="KIP-98 - Exactly Once Delivery and Transactional Messaging">
+            <meta name="ajs-latest-published-page-title" content="KIP-98 - Exactly Once Delivery and Transactional Messaging">
+            <meta name="ajs-space-name" content="Apache Kafka">
+            <meta name="ajs-page-id" content="66854913">
+            <meta name="ajs-latest-page-id" content="66854913">
+            <meta name="ajs-content-type" content="page">
+            <meta name="ajs-parent-page-title" content="Kafka Improvement Proposals">
+            <meta name="ajs-parent-page-id" content="50859233">
+            <meta name="ajs-space-key" content="KAFKA">
+            <meta name="ajs-quicksearch-request-timeout" content="5000">
+            <meta name="ajs-max-number-editors" content="12">
+            <meta name="ajs-macro-placeholder-timeout" content="5000">
+            <meta name="ajs-http-connection-timeout" content="30000">
+            <meta name="ajs-http-socket-timeout" content="10000">
+            <meta name="ajs-jira-metadata-count" content="0">
+            <meta name="ajs-from-page-title" content="">
+            <meta name="ajs-can-remove-page" content="false">
+            <meta name="ajs-can-remove-page-hierarchy" content="false">
+            <meta name="ajs-browse-page-tree-mode" content="view">
+            <meta name="ajs-shared-drafts" content="true">
+            <meta name="ajs-context-path" content="/confluence">
+            <meta name="ajs-base-url" content="https://cwiki.apache.org/confluence">
+            <meta name="ajs-version-number" content="9.2.28">
+            <meta name="ajs-build-number" content="9117">
+            <meta name="ajs-remote-user" content="">
+            <meta name="ajs-remote-user-key" content="">
+            <meta name="ajs-remote-user-has-licensed-access" content="false">
+            <meta name="ajs-remote-user-has-browse-users-permission" content="false">
+            <meta name="ajs-current-user-fullname" content="">
+            <meta name="ajs-current-user-avatar-uri-reference" content="/confluence/images/icons/profilepics/anonymous.svg">
+            <meta name="ajs-static-resource-url-prefix" content="/confluence">
+            <meta name="ajs-global-settings-attachment-max-size" content="52428800">
+            <meta name="ajs-global-settings-quick-search-enabled" content="true">
+            <meta name="ajs-user-locale" content="en_US">
+            <meta name="ajs-user-timezone-offset" content="0">
+            <meta name="ajs-enabled-dark-features" content="site-wide.shared-drafts,site-wide.synchrony,migration-assistant.enable.assess-l1-cloud-tooling.feature,confluence.view.edit.transition,confluence.attachments.bulk.delete,confluence-inline-comments-resolved,http.session.registrar,theme.switcher,scope.manage.subscriptions,atlassian.cdn.static.assets,confluence.efi.onboarding.rich.space.content,file-annotations,applinks.uniconn,crowd.sync.nested.groups.group.membership.changes.batching.enabled,atlassian.webresource.performance.tracking.disable,confluence.page.readtime,atlassian.authentication.sso.fallback.to.cached.user.when.operation.failed,lucene.caching.filter,confluence.table.resizable,notification.batch,confluence-inline-comments-rich-editor,confluence.copy-heading-link,site-wide.synchrony.opt-in,atlassian.webresource.twophase.js.i18n.disabled,confluence.edit.wordcount,gatekeeper-ui-v2,confluence.search.improvements.ranking,crowd.event.transformer.directory.manager.cache,mobile.supported.version,crowd.sync.delete.user.memberships.batching.enabled,confluence.dark.theme.text.colors,quick-reload-inline-comments-flags,cql.search.screen,clc.quick.create,nps.survey.inline.dialog,confluence.efi.onboarding.new.templates,pdf-preview,com.atlassian.analytics.essential.supported,confluence.retention.rules.trash.fast.removal,previews.sharing,previews.versions,collaborative-audit-log,confluence.reindex.improvements,previews.conversion-service,atlassian.servlet.filter.default.to.licensed.access.enabled,read.only.mode,graphql,benefits.modal,previews.trigger-all-file-types,AsyncReplicationCache,attachment.extracted.text.extractor,confluence.readable.url,previews.sharing.pushstate,tc.tacca.dacca,confluence.reindex.audit,atlassian.rest.default.to.licensed.access.enabled,confluence.retention.rules.version.fast.removal,confluence.denormalisedpermissions,file-annotations.likes,v2.content.name.searcher,confluence.reindex.spaces,confluence.fast-xml-backup-restore,embedded.crowd.directory.azuread.enabled,pulp,confluence-inline-comments,confluence-inline-comments-dangling-comment,confluence.retention.rules">
+            <meta name="ajs-atl-token" content="d5e2b425ecf19cbc51fcf1445f13d4bde897310b">
+            <meta name="ajs-user-date-pattern" content="dd MMM yyyy">
+            <meta name="ajs-access-mode" content="READ_WRITE">
+            <meta name="ajs-render-mode" content="READ_WRITE">
+            <meta name="ajs-same-site-cookie-default-policy" content="Lax">
+            <meta name="ajs-date.format" content="MMM dd, yyyy">
+    
+    <link rel="shortcut icon" href="/confluence/s/-klt66k/9117/u8nj3q/1/_/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/confluence/s/-klt66k/9117/u8nj3q/1/_/favicon.ico">
+
+<link rel="search" type="application/opensearchdescription+xml" href="/confluence/opensearch/osd.action" title="Apache Software Foundation"/>
+    
+                    
+            <meta name="ajs-create-issue-metadata-show-discovery" content="false">
+            
+
+    <script>
+window.WRM=window.WRM||{};window.WRM._unparsedData=window.WRM._unparsedData||{};window.WRM._unparsedErrors=window.WRM._unparsedErrors||{};
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.entity-types"]="{\u0022singular\u0022:{\u0022refapp.charlie\u0022:\u0022Charlie\u0022,\u0022fecru.project\u0022:\u0022Crucible Project\u0022,\u0022fecru.repository\u0022:\u0022FishEye Repository\u0022,\u0022stash.project\u0022:\u0022Stash Project\u0022,\u0022generic.entity\u0022:\u0022Generic Project\u0022,\u0022confluence.space\u0022:\u0022Confluence Space\u0022,\u0022bamboo.project\u0022:\u0022Bamboo Project\u0022,\u0022jira.project\u0022:\u0022Jira Project\u0022},\u0022plural\u0022:{\u0022refapp.charlie\u0022:\u0022Charlies\u0022,\u0022fecru.project\u0022:\u0022Crucible Projects\u0022,\u0022fecru.repository\u0022:\u0022FishEye Repositories\u0022,\u0022stash.project\u0022:\u0022Stash Projects\u0022,\u0022generic.entity\u0022:\u0022Generic Projects\u0022,\u0022confluence.space\u0022:\u0022Confluence Spaces\u0022,\u0022bamboo.project\u0022:\u0022Bamboo Projects\u0022,\u0022jira.project\u0022:\u0022Jira Projects\u0022}}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-license-banner:confluence-license-banner-resources.license-details"]="{\u0022daysBeforeLicenseExpiry\u0022:0,\u0022daysBeforeMaintenanceExpiry\u0022:0,\u0022showLicenseExpiryBanner\u0022:false,\u0022showMaintenanceExpiryBanner\u0022:false,\u0022renewUrl\u0022:null,\u0022salesUrl\u0022:null}";
+WRM._unparsedData["com.atlassian.plugins.atlassian-plugins-webresource-plugin:context-path.context-path"]="\u0022/confluence\u0022";
+WRM._unparsedData["confluence.macro.metadata.provider:macro-browser-metadata-resources.macro-meta-client-cache-key"]="\u00221795097726090\u0022";
+WRM._unparsedData["com.atlassian.analytics.analytics-client:policy-update-init.policy-update-data-provider"]="false";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.authentication-types"]="{\u0022com.atlassian.applinks.api.auth.types.BasicAuthenticationProvider\u0022:\u0022Basic Access\u0022,\u0022com.atlassian.applinks.api.auth.types.TrustedAppsAuthenticationProvider\u0022:\u0022Trusted Applications\u0022,\u0022com.atlassian.applinks.api.auth.types.CorsAuthenticationProvider\u0022:\u0022CORS\u0022,\u0022com.atlassian.applinks.api.auth.types.OAuthAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuthAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuthWithImpersonationAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.ThreeLeggedOAuth2AuthenticationProvider\u0022:\u0022OAuth 2.0\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuth2AuthenticationProvider\u0022:\u0022OAuth 2.0\u0022}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-search-ui-plugin:confluence-search-ui-plugin-resources.i18n-data"]="{\u0022search.ui.recent.link.text\u0022:\u0022View more recently visited\u0022,\u0022search.ui.search.results.empty\u0022:\u0022We couldn\u0027\u0027t find anything matching \u005C\u0022{0}\u005C\u0022.\u0022,\u0022search.ui.filter.clear.selected\u0022:\u0022Clear selected items\u0022,\u0022search.ui.content.name.search.items.panel.load.all.top.items.button.text\u0022:\u0022Show more app results...\u0022,\u0022search.ui.filter.contributor.button.text\u0022:\u0022Contributor\u0022,\u0022search.ui.filter.space.current.label\u0022:\u0022CURRENT\u0022,\u0022search.ui.clear.input.button.text\u0022:\u0022Clear text\u0022,\u0022search.ui.search.results.clear.button\u0022:\u0022clear your filters.\u0022,\u0022help.search.ui.link.title\u0022:\u0022Search tips\u0022,\u0022search.ui.container.close.text\u0022:\u0022Close\u0022,\u0022search.ui.filter.date.month.text\u0022:\u0022The past month\u0022,\u0022search.ui.infinite.scroll.button.text\u0022:\u0022More results\u0022,\u0022search.ui.filter.date.button.text\u0022:\u0022Date\u0022,\u0022search.ui.filter.date.week.text\u0022:\u0022The past week\u0022,\u0022search.ui.result.subtitle.calendar\u0022:\u0022Team calendar\u0022,\u0022search.ui.filter.date.heading\u0022:\u0022Last modified within\u0022,\u0022search.ui.filter.space.input.label\u0022:\u0022Find spaces...\u0022,\u0022search.ui.generic.error\u0022:\u0022Something went wrong. Refresh the page, or contact your admin if this keeps happening.\u0022,\u0022search.ui.recent.spaces\u0022:\u0022Recent Spaces\u0022,\u0022search.ui.result.subtitle.space\u0022:\u0022Space\u0022,\u0022search.ui.filter.space.category.input.label\u0022:\u0022Find space categories...\u0022,\u0022search.ui.filter.space.archive.label\u0022:\u0022Search archived spaces\u0022,\u0022search.ui.filter.label\u0022:\u0022filter\u0022,\u0022search.ui.filter.date.all.text\u0022:\u0022Any time\u0022,\u0022search.ui.filter.date.hour.text\u0022:\u0022The past day\u0022,\u0022search.ui.filters.heading\u0022:\u0022Filter by\u0022,\u0022search.ui.filter.label.input.label\u0022:\u0022Find labels...\u0022,\u0022search.ui.recent.items.anonymous\u0022:\u0022Start exploring. Your search results will appear here.\u0022,\u0022search.ui.input.label\u0022:\u0022Search\u0022,\u0022search.ui.input.aria.label\u0022:\u0022Search query\u0022,\u0022search.ui.search.result\u0022:\u0022{0,choice,1#{0} search result|1\u003c{0} search results}\u0022,\u0022search.ui.filter.label.button.text\u0022:\u0022Label\u0022,\u0022search.ui.container.clear.ariaLabel\u0022:\u0022Clear\u0022,\u0022search.ui.input.alert\u0022:\u0022Hit enter to search\u0022,\u0022search.ui.filter.no.result.text\u0022:\u0022We can\u0027\u0027t find anything matching your search\u0022,\u0022search.ui.result.subtitle.user\u0022:\u0022User profile\u0022,\u0022search.ui.filter.contributor.input.label\u0022:\u0022Find people...\u0022,\u0022search.ui.filter.content.type.button.text\u0022:\u0022Type\u0022,\u0022search.ui.filter.date.year.text\u0022:\u0022The past year\u0022,\u0022search.ui.advanced.search.link.text\u0022:\u0022Advanced search\u0022,\u0022search.ui.filter.space.button.text\u0022:\u0022Space\u0022,\u0022search.ui.search.results.clear.line2\u0022:\u0022Try a different search term or\u0022,\u0022search.ui.filter.space.category.button.text\u0022:\u0022Space category\u0022,\u0022search.ui.search.results.clear.line1\u0022:\u0022We couldn\u0027\u0027t find anything matching your search.\u0022,\u0022search.ui.content.name.search.items.panel.load.all.top.items.admin.button.text\u0022:\u0022Show more settings and app results...\u0022,\u0022search.ui.recent.pages\u0022:\u0022Recently visited\u0022,\u0022search.ui.search.result.anonymous\u0022:\u0022{0,choice,1#{0} search result|1\u003c{0} search results}. Have an account? {1}Log in{2} to expand your search.\u0022,\u0022search.ui.recent.items.empty\u0022:\u0022Start exploring. Pages and spaces you\u0027\u0027ve visited recently will appear here.\u0022,\u0022search.ui.filter.space.init.heading\u0022:\u0022recent spaces\u0022}";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.applinks-types"]="{\u0022crowd\u0022:\u0022Crowd\u0022,\u0022confluence\u0022:\u0022Confluence\u0022,\u0022fecru\u0022:\u0022FishEye / Crucible\u0022,\u0022stash\u0022:\u0022Stash\u0022,\u0022uniconn.backbone\u0022:\u0022Atlassian Cloud\u0022,\u0022jiraMobile\u0022:\u0022Jira DC Mobile Application\u0022,\u0022jira\u0022:\u0022Jira\u0022,\u0022uniconn.cloud-product\u0022:\u0022Cloud Product\u0022,\u0022refapp\u0022:\u0022Reference Application\u0022,\u0022bamboo\u0022:\u0022Bamboo\u0022,\u0022confluenceMobile\u0022:\u0022Confluence DC Mobile Application\u0022,\u0022generic\u0022:\u0022Generic Application\u0022}";
+WRM._unparsedData["com.atlassian.confluence.plugins.synchrony-interop:synchrony-status-banner-loader.synchrony-status"]="false";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.applinks-help-paths"]="{\u0022entries\u0022:{\u0022applinks.docs.root\u0022:\u0022https://confluence.atlassian.com/display/APPLINKS-101/\u0022,\u0022applinks.docs.diagnostics.troubleshoot.sslunmatched\u0022:\u0022SSL+and+application+link+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthsignatureinvalid\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthtimestamprefused\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.delete.entity.link\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.docs.adding.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.administration.guide\u0022:\u0022Application+Links+Documentation\u0022,\u0022applinks.docs.oauth.security\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.troubleshoot.application.links\u0022:\u0022Troubleshoot+application+links\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unknownerror\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.trusted.apps\u0022:\u0022Configuring+Trusted+Applications+authentication+for+an+application+link\u0022,\u0022applinks.docs.diagnostics.troubleshoot.authlevelunsupported\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.ssluntrusted\u0022:\u0022SSL+and+application+link+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unknownhost\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.delete.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.adding.project.link\u0022:\u0022Configuring+Project+links+across+Applications\u0022,\u0022applinks.docs.link.applications\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthproblem\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.migration\u0022:\u0022Update+application+links+to+use+OAuth\u0022,\u0022applinks.docs.relocate.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.administering.entity.links\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.uniconn.configuring.link\u0022:\u0022https://confluence.atlassian.com/enterprise/connect-data-center-to-cloud-in-admin-hub-1671463000.html\u0022,\u0022applinks.docs.upgrade.application.link\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.diagnostics.troubleshoot.connectionrefused\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.oauth\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.insufficient.remote.permission\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.configuring.application.link.auth\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.diagnostics\u0022:\u0022Application+links+diagnostics\u0022,\u0022applinks.docs.configured.authentication.types\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.adding.entity.link\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unexpectedresponse\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.basic\u0022:\u0022Configuring+Basic+HTTP+Authentication+for+an+Application+Link\u0022,\u0022applinks.docs.diagnostics.troubleshoot.authlevelmismatch\u0022:\u0022OAuth+troubleshooting+guide\u0022}}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-feature-discovery-plugin:confluence-feature-discovery-plugin-resources.test-mode"]="false";
+if(window.WRM._dataArrived)window.WRM._dataArrived();</script>
+<link rel="stylesheet" href="/confluence/s/0d623e943c22f8571e717b82aae94154-CDN/-klt66k/9117/u8nj3q/168e675a2b337b02bc9a495b220b47bf/_/download/contextbatch/css/_super/batch.css" data-wrm-key="_super" data-wrm-batch-type="context" media="all">
+<link rel="stylesheet" href="/confluence/s/7d368be2c85a38de6a95af606b7ddedf-CDN/-klt66k/9117/u8nj3q/6dcd84a0ebc3cf22d99120e87d62c596/_/download/contextbatch/css/atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super/batch.css?cefp_collab_enabled=true&amp;cefp_ed_perm=false&amp;cefp_is_admin=false&amp;gatekeeper-ui-v2=true&amp;highlightactions=true&amp;hostenabled=true&amp;table-resizable.breaking-text=false&amp;theme.switcher=true" data-wrm-key="atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super" data-wrm-batch-type="context" media="all">
+<link rel="stylesheet" href="/confluence/s/d41d8cd98f00b204e9800998ecf8427e-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes.css" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes" data-wrm-batch-type="resource" media="all">
+<script src="/confluence/s/a208977d57fbf688cdf1f3fb51cedf73-CDN/-klt66k/9117/u8nj3q/168e675a2b337b02bc9a495b220b47bf/_/download/contextbatch/js/_super/batch.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="_super" data-wrm-batch-type="context" data-initially-rendered></script>
+<script src="/confluence/s/aaa2f030370ea666b56fab6f62375011-CDN/-klt66k/9117/u8nj3q/6dcd84a0ebc3cf22d99120e87d62c596/_/download/contextbatch/js/atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super/batch.js?cefp_collab_enabled=true&amp;cefp_ed_perm=false&amp;cefp_is_admin=false&amp;gatekeeper-ui-v2=true&amp;highlightactions=true&amp;hostenabled=true&amp;i18n-function-namespace-disabled=false&amp;locale=en-US&amp;table-resizable.breaking-text=false&amp;theme.switcher=true" data-wrm-key="atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super" data-wrm-batch-type="context" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd/com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd/com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a/com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a/com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-api/com.atlassian.auiplugin:split_aui.page.design-tokens-api.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-api" data-wrm-batch-type="resource" data-initially-rendered></script>
+
+    
+
+        
+    
+
+        
+        <meta name="ajs-site-title" content="Apache Software Foundation" />
+            
+    
+
+    
+                <link rel="canonical" href="https://cwiki.apache.org/confluence/spaces/KAFKA/pages/66854913/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging">
+        <link rel="shortlink" href="https://cwiki.apache.org/confluence/x/ASD8Aw">
+    <meta name="wikilink" content="[KAFKA:KIP-98 - Exactly Once Delivery and Transactional Messaging]">
+    <meta name="page-version" content="75">
+    <meta name="ajs-page-version" content="75">
+
+</head>
+
+    
+<body      id="com-atlassian-confluence" class="theme-default  aui-layout aui-theme-default">
+
+        
+            <div id='stp-licenseStatus-banner'></div>
+    <div id="page">
+<div id="full-height-container">
+    <div id="header-precursor">
+        <div class="cell">
+            <p style="text-align:center;font-size:1.2em;font-weight:bolder;background-color:#FFFFC5">DUE TO SPAM, SIGN-UP IS DISABLED. Goto <a href="https://selfserve.apache.org/confluence-account.html">Selfserve wiki signup</a> and request an account.</p>
+                            </div>
+    </div>
+    
+    
+
+
+
+
+
+
+<header id="header" role="banner">
+            <a class="aui-skip-link" href="https://cwiki.apache.org/confluence/login.action?os_destination=%2Fspaces%2FKAFKA%2Fpages%2F66854913%2FKIP-98%2B-%2BExactly%2BOnce%2BDelivery%2Band%2BTransactional%2BMessaging" tabindex="1">Log in</a>
+        <nav class="aui-header aui-dropdown2-trigger-group" aria-label="Site"><div class="aui-header-inner"><div class="aui-header-before"><button class=" aui-dropdown2-trigger app-switcher-trigger aui-dropdown2-trigger-arrowless" aria-controls="app-switcher" aria-haspopup="true" role="button" data-aui-trigger href="#app-switcher"><span class="aui-icon aui-icon-small aui-iconfont-appswitcher">Linked Applications</span></button><div id="app-switcher" class="aui-dropdown2 aui-style-default" role="menu" hidden data-is-user-admin="false" data-is-switcher="true"><div class="app-switcher-loading">Loading...</div></div></div><div class="aui-header-primary"><span id="logo" class="aui-header-logo aui-header-logo-confluence"><a href="/confluence/" aria-label="Go to home page"><span class="aui-header-logo-device">Apache Software Foundation</span></a></span><ul class="aui-nav">
+                            <li>
+            
+    
+        
+<a  id="space-directory-link" href="/confluence/spacedirectory/view.action"  class=" aui-nav-imagelink"   title="Spaces">
+            <span>Spaces</span>
+    </a>
+        </li>
+                                <li class="aui-buttons">
+            </li>
+</ul>
+</div><div class="aui-header-secondary"><ul class="aui-nav">
+                        <li>
+        <div id="search-ui" class="aui-quicksearch dont-default-focus header-quicksearch"><button id="quick-search-query-button" aria-label="Search" aria-haspopup= "dialog" ></button><input id="quick-search-query" title="Search query" aria-label="Search query" placeholder="Search" type="text" aria-haspopup= "dialog" /><div id="quick-search-alert" role="alert">Hit enter to search</div><aui-spinner size="small"></aui-spinner></div>
+    </li>
+        <li>
+            
+        <a id="help-menu-link" role="button" class="aui-nav-link aui-dropdown2-trigger aui-dropdown2-trigger-arrowless" href="#" aria-haspopup="true" aria-owns="help-menu-link-content" title="Help">
+        <span class="aui-icon aui-icon-small aui-iconfont-question-filled">Help</span>
+    </a>
+    <nav id="help-menu-link-content" class="aui-dropdown2 aui-style-default" >
+                    <div class="aui-dropdown2-section">
+                                    <strong role="heading" aria-level="2"></strong>
+                                <ul role="menu"
+                     role="menu"                    aria-label="Help"                    id="help-menu-link-pages"                    class="aui-list-truncate section-pages first">
+                                            <li role="presentation">
+        
+            
+<a role="menuitem"  id="confluence-help-link" href="https://docs.atlassian.com/confluence/docs-92/" class="    "      title="Visit the Confluence documentation home"  target="_blank"
+>
+        Online Help
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="keyboard-shortcuts-link" href="/confluence" class="    "      title="View available keyboard shortcuts" >
+        Keyboard Shortcuts
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="feed-builder-link" href="/confluence/configurerssfeed.action" class="    "      title="Create your custom RSS feed." >
+        Feed Builder
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="whats-new-menu-link" href="https://docs.atlassian.com/confluence/docs-92/help.whats.new.iframe.link" class="    "   >
+        What’s new
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="whats-new-menu-link" href="https://confluence.atlassian.com/display/DOC/Confluence+9.2+Release+Notes" class="    "   >
+        What’s new
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="confluence-about-link" href="/confluence/aboutconfluencepage.action" class="    "      title="Get more information about Confluence" >
+        About Confluence
+</a>
+</li>
+                                    </ul>
+            </div>
+            </nav>
+    
+    </li>
+        <li>
+                
+    
+    </li>
+        <li>
+            
+    </li>
+        <li>
+                                            <li>
+        
+            
+<a role="menuitem"  id="login-link" href="/confluence/login.action?os_destination=%2Fspaces%2FKAFKA%2Fpages%2F66854913%2FKIP-98%2B-%2BExactly%2BOnce%2BDelivery%2Band%2BTransactional%2BMessaging" class="   user-item login-link "   >
+        Log in
+</a>
+</li>
+                        
+    </li>
+    </ul>
+</div></div><!-- .aui-header-inner--><aui-header-end></aui-header-end></nav><!-- .aui-header -->
+    <br class="clear">
+</header>
+    
+
+    
+    	<div class="ia-splitter">
+    		<div class="ia-splitter-left">
+    			<div class="ia-fixed-sidebar" role="complementary" aria-label=sidebar>
+                                            
+                            <div class="acs-side-bar ia-scrollable-section"><div class="acs-side-bar-space-info tipsy-enabled" data-configure-tooltip="Edit space details"><a class="space-information-link" href="/confluence/spaces/KAFKA/pages/27821303/Index" title="Apache Kafka"><div class="avatar"><div class="space-logo" data-key="KAFKA" data-name="Apache Kafka" data-entity-type="confluence.space"><div class="avatar-img-container"><div class="avatar-img-wrapper"><img class="avatar-img" src="/confluence/download/attachments/27821302/KAFKA?version=2&amp;modificationDate=1391968911000&amp;api=v2" alt=""></div></div></div></div><div class="space-information-container"><div class="name" title="Apache Kafka">Apache Kafka</div></div></a><button type="button" class="flyout-handle icon aui-icon aui-icon-small aui-iconfont-edit" title="Edit space details" >Edit space details</button></div><div class="acs-side-bar-content"><div class="acs-nav-wrapper"><div class="acs-nav" data-has-create-permission="false" data-quick-links-state="null" data-page-tree-state="null" data-nav-type="pages"><div class="acs-nav-sections"><div class="main-links-section "><ul class="acs-nav-list"><li class="acs-nav-item wiki aui-iconfont-page current-item" aria-current="true" data-collector-key="spacebar-pages"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/collector/pages.action?key=KAFKA" data-collapsed-tooltip="Pages"><span class="aui-icon wiki aui-iconfont-page"></span><span class="acs-nav-item-label">Pages</span></a></li><li class="acs-nav-item blog aui-iconfont-quote" data-collector-key="spacebar-blogs"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/pages/viewrecentblogposts.action?key=KAFKA" data-collapsed-tooltip="Blog"><span class="aui-icon blog aui-iconfont-quote"></span><span class="acs-nav-item-label">Blog</span></a></li></ul></div><div class="quick-links-wrapper"><h2 class="ia-quick-links-header-title">Space shortcuts</h2><button class="aui-button icon aui-icon aui-iconfont-shortcut confluence-sidebar-closed-icon-spaceshortcut sidebar-flyout-button quick-links-section-button tipsy-enabled" aria-label="Space shortcuts" aria-haspopup="dialog"></button><div class="quick-links-section "><ul class="acs-nav-list"><li class="acs-nav-item pinned_page aui-iconfont-page blueprint retrospective"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/spaces/KAFKA/pages/68717313/Retrospectives" data-collapsed-tooltip="null"><span class="aui-icon pinned_page aui-iconfont-page blueprint retrospective"></span><span class="acs-nav-item-label">Retrospectives</span></a></li></ul></div></div></div></div></div><div class="ia-secondary-container tipsy-enabled" data-tree-type="pages"><div class="ia-secondary-header"><h5 class="ia-secondary-header-title pages"><span class="label">Child pages</span></h5></div><div class="ia-secondary-parent-content"><ul class="parent ia-secondary-header-title wiki"><li class="parent-item"><button id="child-pages-button" class="aui-button icon aui-icon aui-iconfont-location sidebar-flyout-button" aria-label="Child pages" aria-haspopup="dialog"></button><a class="parent-item-link" href="/confluence/spaces/KAFKA/pages/50859233/Kafka+Improvement+Proposals" title="Kafka Improvement Proposals"><span class="aui-icon aui-icon-small aui-iconfont-location"></span><span class="label">Kafka Improvement Proposals</span></a></li></ul></div><div class="ia-secondary-current-content"><ul class="ia-secondary-currentPage-title wiki current-item"><li><span class="icon"></span><span class="label">KIP-98 - Exactly Once Delivery and Transactional Messaging</span></li></ul></div><div class="ia-secondary-content"><div class="contextual-nav-child-pages"></div></div></div></div><div class="hidden"><a href="/confluence/collector/pages.action?key=KAFKA" id="space-pages-link"></a><script type="text/x-template" title="logo-config-content"><h2>Space Details</h2><div class="personal-space-logo-hint">Your profile picture is used as the logo for your personal space. <a href="/confluence/users/profile/editmyprofilepicture.action" target="_blank">Change your profile picture</a>.</div></script></div></div><div class="space-tools-section"><div id="space-tools-menu-additional-items" class="hidden"><div data-label="Browse pages" data-class="" data-href="/confluence/pages/reorderpages.action?key=KAFKA">Browse pages</div></div><button id="space-tools-menu-trigger"  class=" aui-dropdown2-trigger aui-button aui-button-subtle tipsy-enabled aui-dropdown2-trigger-arrowless " aria-controls="space-tools-menu" aria-haspopup="true" role="button" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-configure">Configure</span><span class="aui-button-label">Space tools</span><span class="aui-icon "></span></button><div id="space-tools-menu" class="aui-dropdown2 aui-style-default space-tools-dropdown" role="menu" hidden data-aui-alignment="top left"></div><a href="#" role="button" class="expand-collapse-trigger aui-icon aui-icon-small aui-iconfont-chevron-double-left" aria-expanded="true"></a></div>
+                    
+                        			</div>
+    		</div>
+        <!-- \#header -->
+
+            
+    
+        <main role="main" id="main" class=" aui-page-panel clearfix">
+                        <div id="main-header">
+                        
+    <div id="navigation" class="content-navigation view" role="region" aria-label="Page tools">
+                    <ul class="ajs-menu-bar">
+                                            
+        <li class="normal ajs-menu-item">
+        <a id="action-menu-link" class="action aui-dropdown2-trigger-arrowless aui-button aui-button-subtle ajs-menu-title aui-dropdown2-trigger" href="#" aria-haspopup="true" aria-label="More options" aria-owns="action-menu" data-container="#navigation">
+            <span>
+                                    <span class="aui-icon aui-icon-small aui-iconfont-more" aria-label="More options" role="button"></span>
+                                
+            </span>
+        </a>         <div id="action-menu" class="aui-dropdown2 aui-style-default confluence-dropdown2-scrollable"  role="menu" aria-labelledby="action-menu-link" >
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-primary"                          class="section-primary first"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-attachments-link"                href="/confluence/pages/viewpageattachments.action?pageId=66854913"
+                rel="nofollow"
+                class="action-view-attachments"
+                 accessKey="t"                 title="View Attachments"                                                 role="menuitem"                >
+
+                        <span>
+                                A<u>t</u>tachments (3)
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-view-history-link"                href="/confluence/pages/viewpreviousversions.action?pageId=66854913"
+                rel="nofollow"
+                class="action-view-history"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Page History
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-secondary"                          class="section-secondary"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-resolved-comments"                href="/confluence"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Resolved comments
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-page-info-link"                href="/confluence/pages/viewinfo.action?pageId=66854913"
+                rel="nofollow"
+                class="action-view-info"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Page Information
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-in-hierarchy-link"                href="/confluence/pages/reorderpages.action?key=KAFKA&amp;openId=66854913#selectedPageInHierarchy"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                View in Hierarchy
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-view-source-link"                href="/confluence/plugins/viewsource/viewpagesrc.action?pageId=66854913"
+                rel="nofollow"
+                class="action-view-source popup-link"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                View Source
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-export-pdf-link"                href="/confluence/spaces/flyingpdf/pdfpageexport.action?pageId=66854913&amp;atl_token=d5e2b425ecf19cbc51fcf1445f13d4bde897310b"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Export to PDF
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-export-word-link"                href="/confluence/exportword?pageId=66854913"
+                rel="nofollow"
+                class="action-export-word"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Export to Word
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-modify"                          class="section-modify"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="treecopy-action"                href="/confluence/plugins/tree-copy/preparing-copying.action?pageId=66854913"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Copy Page Tree
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                    </div>
+    </li>
+            </ul>
+    </div>
+
+            
+            <div id="title-heading" class="pagetitle with-breadcrumbs">
+                
+                                    <div id="breadcrumb-section">
+                        
+    
+    
+    <nav aria-label="Breadcrumbs">
+        <ol id="breadcrumbs">
+                                                            
+                                
+            <li class="first" >
+                                
+                                    <span class=""><a href="/confluence/collector/pages.action?key=KAFKA">Pages</a></span>
+                                                                                                                    
+                                
+            <li>
+                                
+                                    <span class=""><a href="/confluence/spaces/KAFKA/pages/27821303/Index">Index</a></span>
+                                                                                                                    
+                                
+            <li>
+                                
+                                    <span class=""><a href="/confluence/spaces/KAFKA/pages/50859233/Kafka+Improvement+Proposals">Kafka Improvement Proposals</a></span>
+                                                                                                    </ol>
+    </nav>
+
+
+                    </div>
+                
+                
+                
+            <div id="page-metadata-banner"><ul class="banner"><li id="system-content-items" class="noprint"><a href="" aria-label="Unrestricted" data-tooltip="Unrestricted" id="content-metadata-page-restrictions-hidden"  class="hidden"></a><a href="/confluence/pages/viewpageattachments.action?pageId=66854913&amp;metadataLink=true" aria-label="3 attachments" data-tooltip="3 attachments" id="content-metadata-attachments"  class="aui-icon aui-icon-small aui-iconfont-attachment"></a></li><li class="page-metadata-item noprinthas-button"  id="content-metadata-jira-wrapper"><a href=""  id="content-metadata-jira"  class="aui-button aui-button-subtle content-metadata-jira tipsy-disabled hidden"><span>Jira links</span></a></li></ul></div>
+        
+
+                                    <div id="title-text" class="with-breadcrumbs">
+                                    <a href="/confluence/spaces/KAFKA/pages/66854913/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging"><h1>KIP-98 - Exactly Once Delivery and Transactional Messaging</h1></a>
+                        </div>
+                            </div>
+        </div><!-- \#main-header -->
+        
+        
+
+        
+    
+
+        
+
+
+
+
+            
+    
+
+                                
+    
+
+    
+    
+        
+    
+    
+                    
+    
+
+    
+
+    
+            
+        
+
+    
+    
+
+    
+            
+        
+
+
+
+    
+<div id="content" class="page view">
+    
+
+
+<div id="action-messages">
+                        </div>
+
+
+
+            <script type="text/x-template" title="searchResultsGrid">
+    <table class="aui">
+        <thead>
+            <tr class="header">
+                <th class="search-result-title">Page Title</th>
+                <th class="search-result-space">Space</th>
+                <th class="search-result-date">Updated</th>
+            </tr>
+        </thead>
+    </table>
+</script>
+<script type="text/x-template" title="searchResultsGridCount">
+    <p class="search-result-count">{0}</p>
+</script>
+<script type="text/x-template" title="searchResultsGridRow">
+    <tr class="search-result">
+        <td class="search-result-title"><a href="{1}" class="content-type-{2}"><span>{0}</span></a></td>
+        <td class="search-result-space"><a class="space" href="/confluence/display/{4}/" title="{3}">{3}</a></td>
+        <td class="search-result-date"><span class="date" title="{6}">{5}</span></td>
+    </tr>
+</script>
+
+        
+    
+            
+
+        
+                            
+    
+
+                    
+
+        
+        <div class="page-metadata">
+    <ul>
+        <li class="page-metadata-modification-info">
+            
+        
+    
+    
+        
+    
+        
+            
+            Created by <span class='author'>     <a href="    /confluence/display/~apurva.1618
+"
+            aria-label="created by Apurva Mehta"                       class="url fn"
+                            >Apurva Mehta</a></span>, last updated by <span class='editor'>     <a href="    /confluence/display/~mjsax
+"
+            aria-label="last.updated.by Matthias J. Sax"                       class="url fn"
+                            >Matthias J. Sax</a></span> on <a class='last-modified' aria-label='modified on Mar 04, 2026, select to show changes' title='Show changes' href='/confluence/pages/diffpagesbyversion.action?pageId=66854913&amp;selectedPageVersions=74&amp;selectedPageVersions=75'>Mar 04, 2026</a>
+    
+            <span class="read-time">
+            31 minute read
+        </span>
+            </li>
+    </ul>
+</div>
+        
+                                            
+        <div id="main-content" class="wiki-content">
+                           
+        <p>[This KIP proposal is a joint work between <a class="confluence-userlink user-mention" data-username="hachikuji" href="/confluence/display/~hachikuji" data-linked-resource-id="57902603" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://cwiki.apache.org/confluence">Jason Gustafson</a>, <a class="confluence-userlink user-mention" data-username="fpj" href="/confluence/display/~fpj" data-linked-resource-id="24189922" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://cwiki.apache.org/confluence">Flavio Paiva Junqueira</a>,  <a class="confluence-userlink user-mention" data-username="apurva.1618" href="/confluence/display/~apurva.1618" data-linked-resource-id="65869575" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://cwiki.apache.org/confluence">Apurva Mehta</a>, <a class="confluence-userlink user-mention" data-username="sriramsub" href="/confluence/display/~sriramsub" data-linked-resource-id="30747964" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://cwiki.apache.org/confluence">Sriram</a>, and <a class="confluence-userlink user-mention" data-username="guozhang" href="/confluence/display/~guozhang" data-linked-resource-id="27848752" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://cwiki.apache.org/confluence">Guozhang Wang</a>]</p><p><br/></p><p><div class="toc-macro client-side-toc-macro conf-macro output-block" data-headerelements="H1,H2,H3,H4,H5,H6,H7" data-hasbody="false" data-macro-name="toc"></div></p><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Status">Status</h1><p><strong>Current state</strong>: <em>Adopted</em></p><p><strong>Discussion thread</strong>: <a class="external-link" href="http://search-hadoop.com/m/Kafka/uyzND1jwZrr7HRHf?subj=+DISCUSS+KIP+98+Exactly+Once+Delivery+and+Transactional+Messaging" rel="nofollow">http://search-hadoop.com/m/Kafka/uyzND1jwZrr7HRHf?subj=+DISCUSS+KIP+98+Exactly+Once+Delivery+and+Transactional+Messaging</a></p><p><strong>JIRA</strong>: <span class="jira-issue conf-macro output-block" data-jira-key="KAFKA-4815" data-client-id="SINGLE_5aa69414-a9e9-3523-82ec-879b028fb15b_66854913_anonymous" data-hasbody="false" data-macro-name="jira">
+                    <a href="https://issues.apache.org/jira/browse/KAFKA-4815" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>KAFKA-4815</a>
+                            -
+            <span class="summary">Getting issue details...</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+                </span></p><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Motivation">Motivation</h1><p><span style="color:var(--ds-text,#172b4d);">This document outlines a proposal for strengthening the message delivery semantics of Kafka. This builds on significant work which has been done previously, specifically, </span><a href="https://cwiki.apache.org/confluence/display/KAFKA/Idempotent+Producer" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);"> and </span><a href="https://cwiki.apache.org/confluence/display/KAFKA/Transactional+Messaging+in+Kafka" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">Kafka currently provides </span><span style="color:var(--ds-text,#172b4d);">at least once</span><span style="color:var(--ds-text,#172b4d);"> semantics, viz. When tuned for reliability, users are guaranteed that every message write will be persisted at least once, without data loss. Duplicates may occur in the stream due to producer retries. For instance, the broker may crash between committing a message and sending an acknowledgment to the producer, causing the producer to retry and thus resulting in a duplicate message in the stream.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">Users of messaging systems greatly benefit from the more stringent </span><span style="color:var(--ds-text,#172b4d);">idempotent producer</span><span style="color:var(--ds-text,#172b4d);"> semantics, viz. Every message write will be persisted exactly once, without duplicates and without data loss -- even in the event of client retries or broker failures. These stronger semantics not only make writing applications easier, they expand the space of applications which can use a given messaging system.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">However, idempotent producers don’t provide guarantees for writes across multiple TopicPartitions. For this, one needs stronger </span><span style="color:var(--ds-text,#172b4d);">transactional guarantees</span><span style="color:var(--ds-text,#172b4d);">, ie. the ability to write to several TopicPartitions </span><span style="color:var(--ds-text,#172b4d);">atomically</span><span style="color:var(--ds-text,#172b4d);">. By </span><span style="color:var(--ds-text,#172b4d);">atomically</span><span style="color:var(--ds-text,#172b4d);">, we mean the ability to commit a set of messages across TopicPartitions as a unit: either all messages are committed, or none of them are.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">Stream processing applications, which are a pipelines of ‘consume-transform-produce’ tasks, absolutely require transactional guarantees when duplicate processing of the stream is unacceptable. As such, adding transactional guarantees to Kafka --a streaming platform-- makes it much more useful not just for stream processing, but a variety of other applications.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">In this document we present a proposal for bringing transactions to Kafka. We will only focus on the user facing changes: the client API changes, and the new configurations we will introduce, and the summary of guarantees. We also outline the basic data flow, which summarizes all the new RPCs we will introduce with transactions. The design details are presented in a </span><a class="external-link" href="https://docs.google.com/document/d/1Sc8qlnc3K1OlOmDhs8YHZrndyvnFzZs2IAmklJ4wWJE/edit?tab=t.0#heading=h.i4ub5zye01nh" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">separate document</span></a><span style="color:var(--ds-text,#172b4d);">.</span></div><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Alittlebitabouttransactionsandstreams"><span style="color:var(--ds-text,#172b4d);">A little bit about transactions and streams</span></h2><p><span style="color:var(--ds-text,#172b4d);"> </span></p><p><span style="color:var(--ds-text,#172b4d);">In the previous section, we mentioned the main motivation for transactions is to enable exactly once processing in Kafka Streams. It is worth digging into this use case a little more, as it motivates many of the tradeoffs in our design. </span></p><p><span style="color:var(--ds-text,#172b4d);"> </span><span style="color:var(--ds-text,#172b4d);">Recall that data transformation using Kafka Streams typically happens through multiple stream processors, each of which is connected by Kafka topics. This setup is known as a stream topology and is basically a DAG where the stream processors are nodes and the connecting Kafka topics are vertices. This pattern is typical of all streaming architectures. You can read more about the Kafka streams architecture </span><a class="external-link" href="https://kafka.apache.org/documentation/streams" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><p><span style="color:var(--ds-text,#172b4d);"> </span><span style="color:var(--ds-text,#172b4d);">As such, a transaction for Kafka streams would essentially encompass the input messages, the updates to the local state store, and the output messages. Including input offsets in a transaction motivates adding the ‘sendOffsets’ API to the Producer interface, described below. Further details will be presented in a separate KIP.</span></p><p><span style="color:var(--ds-text,#172b4d);"> </span><span style="color:var(--ds-text,#172b4d);">Further, stream topologies can get pretty deep --10 stages is not uncommon. If output messages are only materialized on transaction commits, then a topology which is N stages deep will take N x T to process its input, where T is the average time of a single transaction. So Kafka Streams requires speculative execution, where output messages can be read by downstream processors even before they are committed. Otherwise transactions would not be an option for serious streaming applications. This motivates the ‘read uncommitted’ consumer mode described later.</span></p><p><span style="color:var(--ds-text,#172b4d);"> </span><span style="color:var(--ds-text,#172b4d);">These are two specific instances where we chose to optimize for the streams use case. As the reader works through this document we encourage her to keep this use case in mind as it motivated large elements of the proposal. </span></p><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-PublicInterfaces"><span style="color:var(--ds-text,#172b4d);">Public Interfaces</span></h1><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-ProducerAPIchanges"><span style="color:var(--ds-text,#172b4d);">Producer API changes</span></h2><p><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">The producer will get five new methods (</span><span style="color:var(--ds-text,#172b4d);">initTransactions, beginTransaction</span><span style="color:var(--ds-text,#172b4d);">, </span><span style="color:var(--ds-text,#172b4d);">sendOffsets, commitTransaction, abortTransaction</span><span style="color:var(--ds-text,#172b4d);">), with the send method updated to throw a new exception. This is detailed below:</span></span></span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>KafkaProducer.java</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">public interface Producer&lt;K,V&gt; extends Closeable {
+  
+  /**
+   * Needs to be called before any of the other transaction methods. Assumes that 
+   * the transactional.id is specified in the producer configuration.
+   *
+   * This method does the following:
+   *   1. Ensures any transactions initiated by previous instances of the producer
+   *      are completed. If the previous instance had failed with a transaction in 
+   *      progress, it will be aborted. If the last transaction had begun completion,
+   *      but not yet finished, this method awaits its completion.
+   *   2. Gets the internal producer id and epoch, used in all future transactional
+   *      messages issued by the producer.
+   *
+   * @throws IllegalStateException if the TransactionalId for the producer is not set 
+   *         in the configuration.
+   */
+  void initTransactions() throws IllegalStateException;
+  
+  /**
+   * Should be called before the start of each new transaction. 
+   *
+   * @throws ProducerFencedException if another producer is with the same
+   *         transactional.id is active. 
+   */
+  void beginTransaction() throws ProducerFencedException;
+  
+  /** 
+   * Sends a list of consumed offsets to the consumer group coordinator, and also marks 
+   * those offsets as part of the current transaction. These offsets will be considered 
+   * consumed only if the transaction is committed successfully.
+   *
+   * This method should be used when you need to batch consumed and produced messages 
+   * together, typically in a consume-transform-produce pattern.
+   * 
+   * @throws ProducerFencedException if another producer is with the same
+   *         transactional.id is active. 
+   */
+  void sendOffsetsToTransaction(Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets, 
+                                String consumerGroupId) throws ProducerFencedException;
+  
+  /**
+   * Commits the ongoing transaction. 
+   *
+   * @throws ProducerFencedException if another producer is with the same
+   *         transactional.id is active. 
+   */
+  void commitTransaction() throws ProducerFencedException;
+  
+  /**
+   * Aborts the ongoing transaction.
+   *
+   * @throws ProducerFencedException if another producer is with the same
+   *         transactional.id is active. 
+
+
+   */
+  void abortTransaction() throws ProducerFencedException;
+
+
+  /**
+   * Send the given record asynchronously and return a future which will eventually contain the response information.
+   *
+   * @param record The record to send
+   * @return A future which will eventually contain the response information
+   *
+   */
+  public Future&lt;RecordMetadata&gt; send(ProducerRecord&lt;K, V&gt; record);
+
+  /**
+   * Send a record and invoke the given callback when the record has been acknowledged by the server
+   */
+  public Future&lt;RecordMetadata&gt; send(ProducerRecord&lt;K, V&gt; record, Callback callback);
+}</pre>
+</div></div><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-TheOutOfOrderSequenceException">The OutOfOrderSequence Exception</h3><p>The Producer will raise an <code>OutOfOrderSequenceException</code> if the broker detects data loss. In other words, if it receives a sequence number which is greater than the sequence it expected. This exception will be returned in the <code>Future</code> and passed to the <code>Callback</code>, if any. This is a fatal exception, and future invocations of Producer methods like <code>send</code>, <code>beginTransaction</code>, <code>commitTransaction</code>, etc. will raise an <code>IlegalStateException</code>.</p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-AnExampleApplication">An Example Application</h2><p><span style="color:var(--ds-text,#172b4d);">Here is a simple application which demonstrates the use of the APIs introduced above.</span></p><div><p><br/></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>KafkaTransactionsExample.java</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">public class KafkaTransactionsExample {
+ 
+  public static void main(String args[]) {
+    KafkaConsumer&lt;String, String&gt; consumer = new KafkaConsumer&lt;&gt;(consumerConfig);
+
+
+    // Note that the &lsquo;transactional.id&rsquo; configuration _must_ be specified in the 
+    // producer config in order to use transactions.
+    KafkaProducer&lt;String, String&gt; producer = new KafkaProducer&lt;&gt;(producerConfig);
+
+    // We need to initialize transactions once per producer instance. To use transactions, 
+    // it is assumed that the application id is specified in the config with the key 
+    // transactional.id.
+    // 
+    // This method will recover or abort transactions initiated by previous instances of a 
+    // producer with the same app id. Any other transactional messages will report an error 
+    // if initialization was not performed.
+    //
+    // The response indicates success or failure. Some failures are irrecoverable and will 
+    // require a new producer  instance. See the documentation for TransactionMetadata for a 
+    // list of error codes.
+    producer.initTransactions();
+    
+    while(true) {
+      ConsumerRecords&lt;String, String&gt; records = consumer.poll(CONSUMER_POLL_TIMEOUT);
+      if (!records.isEmpty()) {
+        // Start a new transaction. This will begin the process of batching the consumed 
+        // records as well
+        // as an records produced as a result of processing the input records. 
+        //
+        // We need to check the response to make sure that this producer is able to initiate 
+        // a new transaction.
+        producer.beginTransaction();
+        
+        // Process the input records and send them to the output topic(s).
+        List&lt;ProducerRecord&lt;String, String&gt;&gt; outputRecords = processRecords(records);
+        for (ProducerRecord&lt;String, String&gt; outputRecord : outputRecords) {
+          producer.send(outputRecord); 
+        }
+        
+        // To ensure that the consumed and produced messages are batched, we need to commit 
+        // the offsets through
+        // the producer and not the consumer.
+        //
+        // If this returns an error, we should abort the transaction.
+        
+        sendOffsetsResult = producer.sendOffsetsToTransaction(getUncommittedOffsets());
+        
+     
+        // Now that we have consumed, processed, and produced a batch of messages, let's 
+        // commit the results.
+        // If this does not report success, then the transaction will be rolled back.
+        producer.commitTransaction();
+      }
+    } 
+  }
+}</pre>
+</div></div><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-NewConfigurations">New Configurations</h2><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Brokerconfigs"><span style="color:var(--ds-text,#172b4d);">Broker configs</span></h3><div style="margin-left: 0.0pt;"><p><br/></p><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/></colgroup><tbody><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">transactional.id.timeout.ms</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The maximum amount of time in ms that the transaction coordinator will wait before proactively expire a producer TransactionalId without receiving any transaction status updates from it.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">Default is </span><span style="color:var(--ds-text,#172b4d);">604800000 </span><span style="color:var(--ds-text,#172b4d);">(7 days). This allows periodic weekly producer jobs to maintain their ids.</span></span></span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">max.transaction.timeout.ms</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The maximum allowed timeout for transactions. If a client’s requested transaction time exceed this, then the broker will return a InvalidTransactionTimeout error in InitPidRequest</span><span style="color:var(--ds-text,#172b4d);">. This prevents a client from too large of a timeout, which can stall consumers reading from topics included in the transaction.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">Default is </span><span style="color:var(--ds-text,#172b4d);">900000 </span><span style="color:var(--ds-text,#172b4d);">(15 min). This is a conservative upper bound on the period of time a transaction of messages will need to be sent.</span></span></span></p></td></tr><tr><td colspan="1" class="confluenceTd">transaction.state.log.replication.factor</td><td colspan="1" class="confluenceTd"><p>The number of replicas for the transaction state topic.</p><p>Default: 3</p></td></tr><tr><td colspan="1" class="confluenceTd">transaction.state.log.num.partitions</td><td colspan="1" class="confluenceTd"><p>The number of partitions for the transaction state topic.</p><p>Default: 50</p></td></tr><tr><td colspan="1" class="confluenceTd">transaction.state.log.min.isr</td><td colspan="1" class="confluenceTd"><p>The minimum number of insync replicas the each partition of the transaction state topic needs to have to be considered online.</p><p>Default: 2</p></td></tr><tr><td colspan="1" class="confluenceTd">transaction.state.log.segment.bytes</td><td colspan="1" class="confluenceTd"><p>The segment size for the transaction state topic.</p><p>Default: <span style="color:var(--ds-text-accent-lime-bolder,#37471f);">104857600 bytes.</span></p></td></tr></tbody></table></div><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Producerconfigs"><span style="color:var(--ds-text,#172b4d);">Producer configs</span></h3></div><div style="margin-left: 0.0pt;"><p><br/></p><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/></colgroup><tbody><tr><td colspan="1" class="confluenceTd"><div style="margin-left: 0.0pt;"><span style="color:var(--ds-text,#172b4d);">enable.idempotence</span></div></td><td colspan="1" class="confluenceTd"><p><span style="color:var(--ds-text,#172b4d);">Whether or not idempotence is enabled (</span><span style="color:var(--ds-text,#172b4d);">false</span><span style="color:var(--ds-text,#172b4d);"> by default). If disabled, the producer will not set the PID field in produce requests and the current producer delivery semantics will be in effect. Note that idempotence must be enabled in order to use transactions.</span></p><p><span style="color:var(--ds-text,#172b4d);">When idempotence is enabled, we enforce that acks=all, retries &gt; 1, and max.inflight.requests.per.connection=1. Without these values for these configurations, we cannot guarantee idempotence. If these settings are not explicitly overidden by the application, the producer will set acks=all, retries=Integer.MAX_VALUE, and max.inflight.requests.per.connection=1 when idempotence is enabled.</span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">transaction.timeout.ms</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">This config value will be sent to the transaction coordinator along with the InitPidRequest</span><span style="color:var(--ds-text,#172b4d);">. If this value is larger than the max.transaction.timeout.ms setting in the broker, the request will fail with a `InvalidTransactionTimeout` error.</span></p><p style="text-align: justify;"><span><span style="color:var(--ds-text,#172b4d);">Default is </span><span style="color:var(--ds-text,#172b4d);">60000. </span><span style="color:var(--ds-text,#172b4d);">This makes a transaction to not block downstream consumption more than a minute, which is generally allowable in real-time apps.</span></span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">transactional.id</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);"><span style="color:var(--ds-text,#172b4d);">The TransactionalId to use for transactional delivery. This enables reliability semantics which span multiple producer sessions since it allows the client to guarantee that transactions using the same TransactionalId have been completed prior to starting any new transactions. If no TransactionalId is provided, then the producer is limited to idempotent delivery. </span></span></p><p style="text-align: justify;">Note that <code>enable.idempotence</code> must be enabled if a TransactionalId is configured.</p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);"><span style="color:var(--ds-text,#172b4d);">The default is empty, which means transactions cannot be used.</span></span></p></td></tr></tbody></table></div><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Consumerconfigs"><span style="color:var(--ds-text,#172b4d);">Consumer configs</span></h3></div><div style="margin-left: 0.0pt;"><p><br/></p><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/></colgroup><tbody><tr><td class="confluenceTd"><p><span style="color:var(--ds-text,#172b4d);">isolation.level</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Here are the possible values (default is </span><span style="color:var(--ds-text,#172b4d);">read_uncommitted</span><span style="color:var(--ds-text,#172b4d);">):</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">read_uncommitted:</span><span style="color:var(--ds-text,#172b4d);"> consume both committed and uncommitted messages in offset ordering.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">read_committed:</span><span style="color:var(--ds-text,#172b4d);"> only consume non-transactional messages or committed transactional messages in offset order. In order to maintain offset ordering, this setting means that we will have to buffer messages in the consumer until we see all messages in a given transaction.</span></p></td></tr></tbody></table></div><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-ProposedChanges">Proposed Changes</h1><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-SummaryofGuarantees"><span style="color:var(--ds-text,#172b4d);">Summary of Guarantees</span></h2><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-IdempotentProducerGuarantees"><span style="color:var(--ds-text,#172b4d);">Idempotent Producer Guarantees</span></h3><p>To implement idempotent producer semantics, we introduce the concepts of a <span style="color:var(--ds-text,#172b4d);">producer id, </span><span style="color:var(--ds-text,#172b4d);">henceforth called the </span><span style="color:var(--ds-text,#172b4d);">PID</span><span style="color:var(--ds-text,#172b4d);">, and </span><span style="color:var(--ds-text,#172b4d);">sequence numbers</span><span style="color:var(--ds-text,#172b4d);"> for Kafka messages. Every new producer will be assigned a unique </span><span style="color:var(--ds-text,#172b4d);">PID</span><span style="color:var(--ds-text,#172b4d);"> during initialization. The PID assignment is completely transparent to users and is never exposed by clients.</span></p><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">For a given PID, sequence numbers will start from zero and be monotonically increasing, with one sequence number per topic partition produced to. The sequence number will be incremented by the producer on every message sent to the broker. The broker maintains in memory the sequence numbers it receives for each topic partition from every PID. The broker will reject a produce request if its sequence number is not exactly one greater than the last committed message from that PID/TopicPartition pair. Messages with a lower sequence number result in a duplicate error, which can be ignored by the producer. Messages with a higher number result in an out-of-sequence error, which indicates that some messages have been lost, and is fatal.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">This ensures that, even though a producer must retry requests upon failures, every message will be persisted in the log exactly once. Further, since each new instance of a producer is assigned a new, unique, PID, we can only guarantee idempotent production within a single producer session.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">These idempotent producer semantics are potentially useful for stateless applications like metrics tracking and auditing.</span></div><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-TransactionalGuarantees"><span style="color:var(--ds-text,#172b4d);">Transactional Guarantees</span></h3><p>At the core, transactional guarantees enable applications to produce to multiple TopicPartitions atomically, ie. all writes to these TopicPartitions will succeed or fail as a unit. </p><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">Further, since consumer progress is recorded as a write to the offsets topic, the above capability is leveraged to enable applications to batch consumed and produced messages into a single atomic unit, ie. a set of messages may be considered consumed only if the entire ‘consume-transform-produce’ executed in its entirety.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">Additionally, stateful applications will also be able to ensure continuity across multiple sessions of the application. In other words, Kafka can guarantee idempotent production and transaction recovery across application bounces.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">To achieve this, we require that the application provides a unique id which is stable across all sessions of the application. For the rest of this document, we refer to such an id as the </span><span style="color:var(--ds-text,#172b4d);">TransactionalId</span><span style="color:var(--ds-text,#172b4d);">. While there may be a 1-1 mapping between an TransactionalId and the internal PID, the main difference is the the TransactionalId is provided by users, and is what enables idempotent guarantees across producers sessions described below.</span></div><div><span style="color:var(--ds-text,#172b4d);"> </span></div><div><span style="color:var(--ds-text,#172b4d);">When provided with such an </span><span style="color:var(--ds-text,#172b4d);">TransactionalId</span><span style="color:var(--ds-text,#172b4d);">, Kafka will guarantee:</span></div><ol><li><p><span>Exactly one active producer with a given TransactionalId. This is achieved by fencing off old generations when a new instance with the same TransactionalId comes online.</span></p></li><li><span>Transaction recovery across application sessions. If an application instance dies, the next instance can be guaranteed that any unfinished transactions have been completed (whether aborted or committed), leaving the new instance in a clean state prior to resuming work.</span></li></ol><p><span>Note that the transactional guarantees mentioned here are from the point of view of the producer. On the consumer side, the guarantees are a bit weaker. In particular, we cannot guarantee that all the messages of a committed transaction will be consumed all together. This is for several reasons:</span></p><ol><li><span>For compacted topics, some messages of a transaction maybe overwritten by newer versions.</span></li><li><span>Transactions may straddle log segments. Hence when old segments are deleted, we may lose some messages in the first part of a transaction.</span></li><li><span>Consumers may seek to arbitrary points within a transaction, hence missing some of the initial messages.</span></li><li><span>Consumer may not consume from all the partitions which participated in a transaction. Hence they will never be able to read all the messages that comprised the transaction.</span></li></ol><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-KeyConcepts">Key Concepts</h2><p>To implement transactions, ie. ensuring that a group of messages are produced and consumed atomically, we introduce several new concepts:</p><ol><li><span>We introduce a new entity called a </span><span>Transaction Coordinator</span><span>. Similar to the consumer group coordinator, each producer is assigned a transaction coordinator, and all the logic of assigning PIDs and managing transactions is done by the transaction coordinator.</span></li><li><span>We introduce a new internal kafka topic called the </span><span>Transaction Log</span><span>. Similar to the </span><span>Consumer Offsets</span><span> topic, the transaction log is a persistent and replicated record of every transaction. The transaction log is the state store for the transaction coordinator, with the snapshot of the latest version of the log encapsulating the current state of each active transaction.</span></li><li><span>We introduce the notion of </span><span>Control Messages</span><span>. These are special messages written to user topics, processed by clients, but never exposed to users. They are used, for instance, to </span><span>let brokers indicate to consumers if the previously fetched messages have been committed atomically or not</span><span>. Control messages have been previously proposed </span><a class="external-link" href="https://issues.apache.org/jira/browse/KAFKA-1639" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text,#172b4d);">here</span></a><span>.</span></li><li>We introduce a notion of <span>TransactionalId</span><span>, to enable users to uniquely identify producers in a persistent way. Different instances of a producer with the same TransactionalId will be able to resume (or abort) any transactions instantiated by the previous instance.</span></li><li>We introduce the notion of a <span>producer epoch</span><span>, which enables us to ensure that there is only one legitimate active instance of a producer with a given TransactionalId, and hence enables us to maintain transaction guarantees in the event of failures.</span></li></ol></div></div><p><span style="color:var(--ds-text,#172b4d);"><span style="color:var(--ds-text,#172b4d);">In additional to the new concepts above, we also introduce new request types, new versions of existing requests, and new versions of the core message format in order to support transactions. The details of all of these will be deferred to other documents.</span></span></p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-DataFlow"><span style="color:var(--ds-text,#172b4d);">Data Flow</span></h2><p><span style="color:var(--ds-text,#172b4d);"><span class="confluence-embedded-file-wrapper image-center-wrapper"><img class="confluence-embedded-image image-center" draggable="false" src="/confluence/download/attachments/66854913/Kafka%20Transactions%20Data%20Flow.png?version=1&amp;modificationDate=1487185558000&amp;api=v2" data-image-src="/confluence/download/attachments/66854913/Kafka%20Transactions%20Data%20Flow.png?version=1&amp;modificationDate=1487185558000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="68714951" data-linked-resource-version="1" data-linked-resource-type="attachment" data-linked-resource-default-alias="Kafka Transactions Data Flow.png" data-base-url="https://cwiki.apache.org/confluence" data-linked-resource-content-type="image/png" data-linked-resource-container-id="66854913" data-linked-resource-container-version="75" tabindex="0" alt=""></span><br/></span></p><p><span style="color:var(--ds-text,#172b4d);"> </span></p><p><span style="color:var(--ds-text,#172b4d);">In the diagram above, the sharp edged boxes represent distinct machines. The rounded boxes at the bottom represent Kafka TopicPartitions, and the diagonally rounded boxes represent logical entities which run inside brokers. </span></p><p><span style="color:var(--ds-text,#172b4d);">Each arrow represents either an RPC, or a write to a Kafka topic. These operations occur in the sequence indicated by the numbers next to each arrow. The sections below are numbered to match the operations in the diagram above, and describe the operation in question.</span></p><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-1.Findingatransactioncoordinator--theFindCoordinatorRequest"><span style="color:var(--ds-text,#172b4d);">1. Finding a transaction coordinator -- the FindCoordinatorRequest</span></h3><p>Since the transaction coordinator is at the center assigning PIDs and managing transactions, the first thing a producer has to do is issue a FindCoordinatorRequest <span><span style="color:var(--ds-text,#172b4d);">(previously known as </span><span style="color:var(--ds-text,#172b4d);">GroupCoordinatorRequest, but renamed for more general usage</span><span style="color:var(--ds-text,#172b4d);">)</span></span> to any broker to discover the location of its coordinator.</p><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-2.GettingaproducerId--theInitPidRequest"><span style="color:var(--ds-text,#172b4d);">2. Getting a producer Id -- the InitPidRequest</span></h3><p><span style="color:var(--ds-text-accent-magenta-bolder,#50253f);"><span><span style="color:var(--ds-text,#172b4d);">After discovering the location of its coordinator, the next step is to retrieve the producer’s </span><span style="color:var(--ds-text,#172b4d);">PID</span><span style="color:var(--ds-text,#172b4d);">. This is achieved by issuing a </span><span style="color:var(--ds-text,#172b4d);">InitPidRequest</span><span style="color:var(--ds-text,#172b4d);"> to the transaction coordinator</span></span></span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-2.1WhenanTransactionalIdisspecified"><span style="color:var(--ds-text,#172b4d);">2.1 When an TransactionalId is specified</span></h4><p><span style="color:var(--ds-text,#172b4d);">If the </span><span style="color:var(--ds-text,#172b4d);">transactional.id</span><span style="color:var(--ds-text,#172b4d);"> configuration is set, this TransactionalId passed along with the </span><span style="color:var(--ds-text,#172b4d);">InitPidRequest</span><span style="color:var(--ds-text,#172b4d);">, and the mapping to the corresponding PID is logged in the transaction log in step 2a. This enables us to return the same PID for the TransactionalId to future instances of the producer, and hence enables recovering or aborting previously incomplete transactions.</span></p><p><span style="color:var(--ds-text,#172b4d);">In addition to returning the PID, the </span><span style="color:var(--ds-text,#172b4d);">InitPidRequest</span><span style="color:var(--ds-text,#172b4d);"> performs the following tasks:</span></p><ol><li>Bumps up the epoch of the PID, so that the any previous zombie instance of the producer is fenced off and cannot move forward with its transaction.</li><li>Recovers (rolls forward or rolls back) any transaction left incomplete by the previous instance of the producer.</li></ol><p>The handling of the <span style="color:var(--ds-text,#172b4d);">InitPidRequest</span><span style="color:var(--ds-text,#172b4d);"> is synchronous. Once it returns, the producer can send data and start new transactions.</span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-2.2WhenanTransactionalIdisnotspecified"><span style="color:var(--ds-text,#172b4d);">2.2 When an TransactionalId is not specified</span></h4><p><span style="color:var(--ds-text,#172b4d);">If no TransactionalId is specified in the configuration, a fresh PID is assigned, and the producer only enjoys idempotent semantics and transactional semantics within a single session.</span></p><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-3.StartingaTransaction–ThebeginTransaction()API"><span style="color:var(--ds-text,#172b4d);">3. Starting a Transaction – The beginTransaction() API</span></h3><p><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">The new KafkaProducer will have a </span><span style="color:var(--ds-text,#172b4d);">beginTransaction()</span><span style="color:var(--ds-text,#172b4d);"> method which has to be called to signal the start of a new transaction. The producer records local state indicating that the transaction has begun, but the transaction won’t begin from the coordinator’s perspective until the first record is sent.</span></span></span></p><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-4.Theconsume-transform-produceloop"><span style="color:var(--ds-text,#172b4d);">4. The consume-transform-produce loop</span></h3><p><span style="color:var(--ds-text,#172b4d);">In this stage, the producer begins to consume-transform-produce the messages that comprise the transaction. This is a long phase and is potentially comprised of multiple requests.</span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-4.1AddPartitionsToTxnRequest"><span style="color:var(--ds-text,#172b4d);">4.1 AddPartitionsToTxnRequest</span></h4><p>The producer sends this request to the transaction coordinator the first time a new TopicPartition is written to as part of a transaction. The addition of this <span style="color:var(--ds-text,#172b4d);">TopicPartition</span><span style="color:var(--ds-text,#172b4d);"> to the transaction is logged by the coordinator in step 4.1a. We need this information so that we can write the commit or abort markers to each TopicPartition (see section 5.2 for details). </span><span style="color:var(--ds-text,#172b4d);">If this is the first partition added to the transaction, the coordinator will also start the transaction timer.</span></p><p><span style="color:var(--ds-text,#172b4d);"> </span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-4.2ProduceRequest"><span style="font-weight: bold;color:var(--ds-text,#172b4d);">4.2 ProduceRequest</span></h4><p><span style="color:var(--ds-text,#172b4d);">The producer writes a bunch of messages to the user’s TopicPartitions through one or more ProduceRequests (fired from the send method of the producer). These requests include the PID , epoch, and sequence number as denoted in 4.2a.</span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-4.3AddOffsetCommitsToTxnRequest"><span style="color:var(--ds-text,#172b4d);"> </span><span style="color:var(--ds-text,#172b4d);">4.3 AddOffsetCommitsToTxnRequest</span></h4><p><span style="color:var(--ds-text,#172b4d);">The producer has a new KafkaProducer.sendOffsetsToTransaction API method, which enables the batching of consumed and produced messages. This method takes a Map&lt;TopicPartitions, OffsetAndMetadata&gt; and a groupId argument.</span></p><p><span style="color:var(--ds-text,#172b4d);">The </span><span style="color:var(--ds-text,#172b4d);">sendOffsetsToTransaction method </span><span style="color:var(--ds-text,#172b4d);">sends an </span><span style="color:var(--ds-text,#172b4d);">AddOffsetCommitsToTxnRequests</span><span style="color:var(--ds-text,#172b4d);"> with the groupId to the transaction coordinator, from which it can deduce the TopicPartition for this consumer group in the internal </span><span style="color:var(--ds-text,#172b4d);">__consumer-offsets</span><span style="color:var(--ds-text,#172b4d);"> topic. The transaction coordinator logs the addition of this topic partition to the transaction log in step 4.3a.</span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-4.4TxnOffsetCommitRequest"><span style="color:var(--ds-text,#172b4d);">4.4 TxnOffsetCommitRequest</span></h4><p><span style="color:var(--ds-text,#172b4d);">Also as part of sendOffsets, the producer will send a TxnOffsetCommitRequest to the consumer coordinator to persist the offsets in the __consumer-offsets topic (step 4.4a). <span class="inline-comment-marker" data-ref="195159c3-15ec-484d-96db-add7e73e48ee">The consumer coordinator validates that the producer is allowed to make this request (and is not a zombie) by using the PID and producer epoch which are sent as part of this request.</span></span></p><p><span style="color:var(--ds-text,#172b4d);">The consumed offsets are not visible externally until the transaction is committed, the process for which we will discuss now.</span></p><h3 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-5.CommittingorAbortingaTransaction"><span style="font-size: 16.0px;color:var(--ds-text,#172b4d);">5. Committing or Aborting a Transaction</span></h3><p><span style="color:var(--ds-text,#172b4d);">Once the data has been written, the user must call the new </span><span style="color:var(--ds-text,#172b4d);">commitTransaction </span><span style="color:var(--ds-text,#172b4d);">or </span><span style="color:var(--ds-text,#172b4d);">abortTransaction</span><span style="color:var(--ds-text,#172b4d);"> methods of the KafkaProducer. These methods will begin the process of committing or aborting the transaction respectively.</span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-5.1EndTxnRequest"><span style="color:var(--ds-text,#172b4d);">5.1 EndTxnRequest</span></h4><p><span style="color:var(--ds-text,#172b4d);">When a producer is finished with a transaction, the newly introduced </span><span style="color:var(--ds-text,#172b4d);">KafkaProducer.commitTransaction </span><span style="color:var(--ds-text,#172b4d);">or </span><span style="color:var(--ds-text,#172b4d);">KafkaProducer.abortTransaction</span><span style="color:var(--ds-text,#172b4d);"> must be called. The former makes the data produced in 4 available to downstream consumers. The latter effectively erases the produced data from the log: it will never be accessible to the user, ie. downstream consumers will read and discard the aborted messages.</span></p><p><span style="color:var(--ds-text,#172b4d);">Regardless of which producer method is called, the producer issues an </span><span style="color:var(--ds-text,#172b4d);">EndTxnRequest</span><span style="color:var(--ds-text,#172b4d);"> to the transaction coordinator, with additional data indicating whether the transaction is to be committed or aborted. Upon receiving this request, the coordinator:</span></p><ol><li><span style="color:var(--ds-text,#172b4d);"> </span><span>Writes a </span><span>PREPARE_COMMIT </span><span>or </span><span>PREPARE_ABORT</span><span> message to the transaction log. (step 5.1a)</span></li><li><span>Begins the process of writing the command messages known as COMMIT (or ABORT) markers to the user logs through the WriteTxnMarkerRequest</span><span>. </span><span>(see section 5.2 below).</span></li><li><span> </span><span>Finally writes the </span><span>COMMITTED</span><span> (or </span><span>ABORTED)</span><span> message to transaction log. (see 5.3 below).</span></li></ol><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-5.2WriteTxnMarkerRequest"><span style="color:var(--ds-text,#172b4d);">5.2 WriteTxnMarkerRequest</span></h4><p><span style="color:var(--ds-text,#172b4d);">This request is issued by the transaction coordinator to the the leader of each TopicPartition which is part of the transaction. Upon receiving this request, each broker will write a </span><span style="color:var(--ds-text,#172b4d);">COMMIT(PID) </span><span style="color:var(--ds-text,#172b4d);">or </span><span style="color:var(--ds-text,#172b4d);">ABORT(PID)</span><span style="color:var(--ds-text,#172b4d);"> control message to the log. (step 5.2a)</span></p><p><span style="color:var(--ds-text,#172b4d);">This message indicates to consumers whether the messages with the given PID must be delivered to the user or dropped. As such, the consumer will buffer messages which have a PID until it reads a corresponding </span><span style="color:var(--ds-text,#172b4d);">COMMIT </span><span style="color:var(--ds-text,#172b4d);">or </span><span style="color:var(--ds-text,#172b4d);">ABORT</span><span style="color:var(--ds-text,#172b4d);"> message, at which point it will deliver or drop the messages respectively.</span></p><p><span style="color:var(--ds-text,#172b4d);">Note that, if the </span><span style="color:var(--ds-text,#172b4d);">__consumer-offsets</span><span style="color:var(--ds-text,#172b4d);"> topic is one of the TopicPartitions in the transaction, the commit (or abort) marker is also written to the log, and the consumer coordinator is notified that it needs to materialize these offsets in the case of a commit or ignore them in the case of an abort (step 5.2a on the left).</span></p><h4 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-5.3WritingthefinalCommitorAbortMessage"><span style="color:var(--ds-text,#172b4d);">5.3 Writing the final Commit or Abort Message</span></h4><p>After all the commit or abort markers are written the data logs, the transaction coordinator writes the final <span style="color:var(--ds-text,#172b4d);">COMMITTED </span><span style="color:var(--ds-text,#172b4d);">or </span><span style="color:var(--ds-text,#172b4d);">ABORTED</span><span style="color:var(--ds-text,#172b4d);"> message to the transaction log, indicating that the transaction is complete (step 5.3 in the diagram). At this point, most of the messages pertaining to the transaction in the transaction log can be removed.</span></p><p><span style="color:var(--ds-text,#172b4d);">We only need to retain the PID of the completed transaction along with a timestamp, so we can eventually remove the TransactionalId-&gt;PID mapping for the producer. See the Expiring PIDs section below.</span></p><h1 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Authorization"><span style="color:var(--ds-text,#172b4d);">Authorization </span> </h1><p><span style="color:var(--ds-text,#172b4d);">It is desirable to control access to the transaction log to ensure that clients cannot intentionally or unintentionally interfere with each other’s transactions. In this work, we introduce a new resource type to represent the TransactionalId tied to transactional producers, and an associated error code for authorization failures.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: scala; gutter: false">case object ProducerTransactionalId extends ResourceType {
+ val name = &quot;ProducerTransactionalId&quot;
+ val errorCode = Errors.TRANSACTIONAL_ID_AUTHORIZATION_FAILED.code
+}</pre>
+</div></div><p><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">The transaction coordinator handles each of the following requests: </span><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);"><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.z99xar1h2enr" rel="nofollow">InitP</a>id</span><span style="color:var(--ds-text,#172b4d);">, </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.r6klddrx9ibz" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">AddPartitionsToTxn</span></a><span style="color:var(--ds-text,#172b4d);">, </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.cqecubxziwie" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">AddOffsetsToTxn</span></a><span style="color:var(--ds-text,#172b4d);">, and </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.2dnhvqqi7mr7" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">EndTxn</span></a><span style="color:var(--ds-text,#172b4d);">. Each request to the transaction coordinator includes the producer’s TransactionalId and can be used for authorization. Each of these requests mutates the transaction state of the producer, so they all require </span><span style="color:var(--ds-text,#172b4d);">Write</span><span style="color:var(--ds-text,#172b4d);"> access to the corresponding </span><span style="color:var(--ds-text,#172b4d);">ProducerTransactionalId</span><span style="color:var(--ds-text,#172b4d);"> resource.  </span></span></span><span style="color:var(--ds-text,#172b4d);">Additionally, the </span><span style="color:var(--ds-text,#172b4d);">AddPartitionsToTxn</span><span style="color:var(--ds-text,#172b4d);"> API requires Write access to the topics corresponding to the included partitions, and the </span><span style="color:var(--ds-text,#172b4d);">AddOffsetsToTxn</span><span style="color:var(--ds-text,#172b4d);"> API requires Read access to the group included in the request.</span></p><p><span style="color:var(--ds-text,#172b4d);"><span style="color:var(--ds-text,#172b4d);"> </span></span></p><div><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">We also require additional authorization to produce transactional data. This can be used to minimize the risk of an “endless transaction attack,” in which a malicious producer writes transactional data without corresponding COMMIT or ABORT markers in order to prevent the LSO from advancing and consumers from making progress. We can use the </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.vg8ouwgaahtr" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">ProducerTransactionalId</span></a><span style="color:var(--ds-text,#172b4d);"> resource introduced above to ensure that the producer is authorized to write transactional data as the producer’s </span><span style="color:var(--ds-text,#172b4d);">TransactionalId</span><span style="color:var(--ds-text,#172b4d);"> is included in the </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.mkk6ckzh7jxl" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">ProduceRequest</span></a><span style="color:var(--ds-text,#172b4d);"> schema. </span></span></span><span style="color:var(--ds-text,#172b4d);">The WriteTxnMarker API is for inter-broker usage only, and therefore requires ClusterAction permission on the Cluster resource. Note that the writing of control messages is not permitted through the Produce API.</span></div><div><span style="color:var(--ds-text,#172b4d);"><span style="color:var(--ds-text,#172b4d);"> </span></span></div><div><span style="color:var(--ds-text,#172b4d);"><span style="color:var(--ds-text,#172b4d);">Clients will not be allowed to write directly to the transaction log using the Produce API, though it is useful to make it accessible to consumers with Read permission for the purpose of debugging.</span></span></div><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Discussiononlimitationsofcoordinatorauthorization"><span style="color:var(--ds-text,#172b4d);">Discussion on limitations of coordinator authorization</span></h2><p><span style="color:var(--ds-text,#172b4d);"><span><span style="color:var(--ds-text,#172b4d);">Although we can control access to the transaction log using the TransactionalId, we cannot prevent a malicious producer from hijacking the PID of another producer and writing data to the log. This would allow the attacker to either insert bad data into an active transaction or to fence the authorized producer by forcing an epoch bump. It is not possible for the malicious producer to finish a transaction, however, because the brokers do not allow clients to write control messages. Note also that the malicious producer would have to have </span><span style="color:var(--ds-text,#172b4d);">Write</span><span style="color:var(--ds-text,#172b4d);"> permission to the same set of topics used by the legitimate producer, so it is still possible to use topic ACLs combined with TransactionalId ACLs to protect sensitive topics. Future work can explore protecting the binding between TransactionalId and PID (e.g. through the use of message authentication codes).</span></span><br/></span></p><h1 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-RPCProtocolSummary"><span style="color:var(--ds-text,#172b4d);">RPC Protocol Summary</span></h1><p><span style="color:var(--ds-text,#172b4d);">We summarize all the new request / response pairs as well as modified requests in this section.</span></p><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-FetchRequest/Response"><span style="color:var(--ds-text,#172b4d);">FetchRequest/Response</span></h2><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Sent by the consumer to any partition leaders to fetch messages. We bump the API version to allow the consumer to specify the required </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.nogouvgyxtup" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">isolation level</span></a><span style="color:var(--ds-text,#172b4d);">.  We also modify the response schema to include the list of aborted transactions included in the range of fetched messages.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>FetchRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">// FetchRequest v4
+
+FetchRequest =&gt; ReplicaId MaxWaitTime MinBytes IsolationLevel [TopicName [Partition FetchOffset MaxBytes]]
+ ReplicaId =&gt; int32
+ MaxWaitTime =&gt; int32
+ MinBytes =&gt; int32
+ IsolationLevel =&gt; int8 (READ_COMMITTED | READ_UNCOMMITTED)
+ TopicName =&gt; string
+ Partition =&gt; int32
+ FetchOffset =&gt; int64
+ MaxBytes =&gt; int32</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>FetchResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">// FetchResponse v4
+
+FetchResponse =&gt; ThrottleTime [TopicName [Partition ErrorCode HighwaterMarkOffset LastStableOffset AbortedTransactions MessageSetSize MessageSet]]
+ ThrottleTime =&gt; int32
+ TopicName =&gt; string
+ Partition =&gt; int32
+ ErrorCode =&gt; int16
+ HighwaterMarkOffset =&gt; int64
+ LastStableOffset =&gt; int64
+ AbortedTransactions =&gt; [PID FirstOffset]
+   PID =&gt; int64
+   FirstOffset =&gt; int64
+ MessageSetSize =&gt; int32</pre>
+</div></div><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">When the consumer sends a request for an older version, the broker assumes the READ_UNCOMMITTED isolation level and converts the message set to the appropriate format before sending back the response. Hence zero-copy cannot be used. This conversion can be costly when compression is enabled, so it is important to update the client as soon as possible.</span></p><p><span style="color:var(--ds-text,#172b4d);">We have also added the LSO to the fetch response. In READ_COMMMITED, the consumer will use this to compute lag instead of the high watermark. Note also the addition of the field for aborted transactions. This is used by the consumer in READ_COMMITTED mode to know where aborted transactions begin. This allows the consumer to discard the aborted transaction data without buffering until the associated marker is read.</span></p><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-ProduceRequest/Response"><span style="color:var(--ds-text,#172b4d);">ProduceRequest/Response</span></h2><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Sent by the producer to any brokers to produce messages. Instead of allowing the protocol to send multiple message sets for each partition, we modify the schema to allow only one message set for each partition. This allows us to remove the message set size since each message set already contains a field for the size. More importantly, since there is only one message set to be written to the log, partial produce failures are no longer possible. The full message set is either successfully written to the log (and replicated) or it is not.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">We include the TransactionalId in order to ensure that producers using transactional messages (i.e. those with the transaction bit set in the attributes) are authorized to do so. If the client is not using transactions, this field should be null.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>ProduceRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">// ProduceRequest v3
+
+ProduceRequest =&gt; TransactionalId 
+                  RequiredAcks
+                  Timeout
+                  [TopicName [Partition MessageSetSize MessageSet]]
+ TransactionalId =&gt; nullableString
+ RequiredAcks =&gt; int16
+ Timeout =&gt; int32
+ Partition =&gt; int32
+ MessageSetSize =&gt; int32
+ MessageSet =&gt; bytes</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>ProduceResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">// ProduceResponse v3
+ProduceResponse =&gt; [TopicName [Partition ErrorCode Offset Timestamp]]
+                   ThrottleTime
+ TopicName =&gt; string
+ Partition =&gt; int32
+ ErrorCode =&gt; int16
+ Offset =&gt; int64
+ Timestamp =&gt; int64
+ ThrottleTime =&gt; int32</pre>
+</div></div><p>Error codes:</p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>DuplicateSequenceNumber [NEW]</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidSequenceNumber [NEW]</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidProducerEpoch [NEW]</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>UNSUPPORTED_FOR_MESSAGE_FORMAT</span></p></li></ul><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Note that clients sending version 3 of the produce request MUST use the new </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.pau6n6buvoee" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">message set format</span></a><span style="color:var(--ds-text,#172b4d);">. The broker may still down-convert the message to an older format when writing to the log, depending on the internal message format specified.</span></p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-ListOffsetRequest/Response"><span style="color:var(--ds-text,#172b4d);">ListOffsetRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by the client to search offsets by timestamp and to find the first and last offsets for a partition. In this proposal, we modify this request to also support retrieval of the last stable offset, which is needed by the consumer to implement </span><span style="color:var(--ds-text,#172b4d);">seekToEnd()</span><span style="color:var(--ds-text,#172b4d);"> in </span><span style="color:var(--ds-text,#172b4d);">READ_COMMITTED</span><span style="color:var(--ds-text,#172b4d);"> mode.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>ListOffsetRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">// ListOffsetRequestV2
+
+ListOffsetRequest =&gt; ReplicaId [TopicName [Partition Time]]
+ ReplicaId =&gt; int32
+ TopicName =&gt; string
+ Partition =&gt; int32
+ Time =&gt; int64</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>ListOffsetResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">ListOffsetResponse =&gt; [TopicName [PartitionOffsets]]
+ PartitionOffsets =&gt; Partition ErrorCode Timestamp [Offset]
+ Partition =&gt; int32
+ ErrorCode =&gt; int16
+ Timestamp =&gt; int64
+ Offset =&gt; int64</pre>
+</div></div><p>The schema is exactly the same as version 1, but we now support a new sentinel timestamp in the request (-3) to retrieve the LSO.</p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-FindCoordinatorRequest/Response"><span style="color:var(--ds-text,#172b4d);">FindCoordinatorRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by client to any broker to find the corresponding coordinator. This is the same API that was previously used to find the group coordinator, but we have changed the name to reflect the more general usage (there is no group for transactional producers). We bump up the version of the request and add a new field indicating the group type, which can be either Consumer or Txn. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.8biz78fs2t9" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>FindCoordinatorRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">// v2
+FindCoordinatorRequest =&gt; TransactionalId CoordinatorType
+ TransactionalId =&gt; string
+ CoordinatorType =&gt; byte /* 0: consumer, 1: transaction */</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>FindCoordinatorResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">FindCoordinatorResponse =&gt; ErrorCode Coordinator
+ ErrorCode =&gt; int16
+ Coordinator =&gt; NodeId Host Port
+   NodeId =&gt; int32
+   Host =&gt; string
+   Port =&gt; int32</pre>
+</div></div><p><span style="color:var(--ds-text,#172b4d);">Error codes:</span></p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>Ok</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>CoordinatorNotAvailable</span></p></li></ul><p><span style="color:var(--ds-text,#172b4d);">The node id is the identifier of the broker. We use the coordinator id to identify the connection to the corresponding broker.</span></p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-InitPidRequest/Response"><span style="color:var(--ds-text,#172b4d);">InitPidRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by producer to its transaction coordinator to to get the assigned PID, increment its epoch, and fence any previous producers sharing the same TransactionalId. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.jro89lml46du" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>InitPidRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">InitPidRequest =&gt; TransactionalId TransactionTimeoutMs
+ TransactionalId =&gt; String
+ TransactionTimeoutMs =&gt; int32</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>InitPidResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">InitPIDResponse =&gt; Error PID Epoch
+ Error =&gt; Int16
+ PID =&gt; Int64
+ Epoch =&gt; Int16</pre>
+</div></div><p>Error code:</p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>Ok</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>NotCoordinatorForTransactionalId</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>CoordinatorNotAvailable</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>ConcurrentTransactions</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidTransactionTimeout</span></p></li></ul><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-AddPartitionsToTxnRequest/Response"><span style="color:var(--ds-text,#172b4d);">AddPartitionsToTxnRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by producer to its transaction coordinator to add a partition to the current ongoing transaction. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.aywz22lp6tma" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>AddPartitionsToTxnRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">AddPartitionsToTxnRequest =&gt; TransactionalId PID Epoch [Topic [Partition]]
+ TransactionalId =&gt; string
+ PID =&gt; int64
+ Epoch =&gt; int16
+ Topic =&gt; string
+ Partition =&gt; int32</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>AddPartitionsToTxnResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">AddPartitionsToTxnResponse =&gt; ErrorCode
+ ErrorCode: int16</pre>
+</div></div><p>Error code:</p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>Ok</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>NotCoordinator</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>CoordinatorNotAvailable</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>CoordinatorLoadInProgress</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidPidMapping</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidTxnState</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>ConcurrentTransactions</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>GroupAuthorizationFailed</span></p></li></ul><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-AddOffsetsToTxnRequest"><span style="color:var(--ds-text,#172b4d);">AddOffsetsToTxnRequest</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by the producer to its transaction coordinator to indicate a consumer offset commit operation is called as part of the current ongoing transaction. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.5xa2hzric4h0" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>AddOffsetsToTxnRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">AddOffsetsToTxnRequest =&gt; TransactionalId PID Epoch ConsumerGroupID
+ TransactionalId =&gt; string
+ PID =&gt; int64
+ Epoch =&gt; int16
+ ConsumerGroupID =&gt; string</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>AddOffsetsToTxnResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">AddOffsetsToTxnResponse =&gt; ErrorCode
+ ErrorCode: int16</pre>
+</div></div><p>Error code:</p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>Ok</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidProducerEpoch</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidPidMapping</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>NotCoordinatorForTransactionalId</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>CoordinatorNotAvailable</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>ConcurrentTransactions</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidTxnRequest</span></p></li></ul><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-EndTxnRequest/Response"><span style="color:var(--ds-text,#172b4d);">EndTxnRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by producer to its transaction coordinator to prepare committing or aborting the current ongoing transaction. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.aqrq1dgbix3a" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>EndTxnRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">EndTxnRequest =&gt; TransactionalId PID Epoch Command
+ TransactionalId =&gt; string
+ PID =&gt; int64
+ Epoch =&gt; int16
+ Command =&gt; boolean (false(0) means ABORT, true(1) means COMMIT)</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>EndTxnResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">EndTxnResponse =&gt; ErrorCode
+ ErrorCode =&gt; int16</pre>
+</div></div><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Error code:</span></p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>Ok</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidProducerEpoch</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidPidMapping</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>CoordinatorNotAvailable</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>ConcurrentTransactions</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>NotCoordinatorForTransactionalId</span></p></li><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>InvalidTxnRequest</span></p></li></ul><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-WriteTxnMarkersRequest/Response"><span style="color:var(--ds-text,#172b4d);">WriteTxnMarkersRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by transaction coordinator to broker to commit the transaction. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.x3qeh1kmz4ka" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>WriteTxnMarkersRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">WriteTxnMarkersRequest =&gt; [CoorinadorEpoch PID Epoch Marker [Topic [Partition]]]
+ CoordinatorEpoch =&gt; int32
+ PID =&gt; int64
+ Epoch =&gt; int16
+ Marker =&gt; boolean (false(0) means ABORT, true(1) means COMMIT)
+ Topic =&gt; string
+ Partition =&gt; int32</pre>
+</div></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>WriteTxnMarkersResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">WriteTxnMarkersResponse =&gt; [PID [TopicName [Partition ErrorCode]]]
+ PID =&gt; int64
+ TopicName =&gt; string
+ Partition =&gt; int32
+ ErrorCode =&gt; int16</pre>
+</div></div><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Error code:</span></p><ul><li style="margin-left: 13.5pt;"><p style="text-align: justify;"><span>Ok</span></p></li></ul><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-TxnOffsetCommitRequest/Response"><span style="color:var(--ds-text,#172b4d);">TxnOffsetCommitRequest/Response</span></h2><p><span style="color:var(--ds-text,#172b4d);">Sent by transactional producers to consumer group coordinator to commit offsets within a single transaction. Request handling details can be found </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.55yzhvkppi6m" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Note that just like consumers, users will not be exposed to set the retention time explicitly, and the default value (</span><span style="color:var(--ds-text,#172b4d);">-1</span><span style="color:var(--ds-text,#172b4d);">) will always be used which lets broker to determine its retention time.</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>TxnOffsetCommitRequest</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">TxnOffsetCommitRequest   =&gt; ConsumerGroupID
+                           PID
+                           Epoch
+                           RetentionTime
+                           OffsetAndMetadata
+ ConsumerGroupID =&gt; string
+ PID =&gt; int64
+ Epoch =&gt; int16
+ RetentionTime =&gt; int64
+ OffsetAndMetadata =&gt; [TopicName [Partition Offset Metadata]]
+   TopicName =&gt; string
+   Partition =&gt; int32
+   Offset =&gt; int64
+   Metadata =&gt; string</pre>
+</div></div><p><span style="color:var(--ds-text,#172b4d);"><span> </span></span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>TxnOffsetCommitResponse</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">TxnOffsetCommitResponse =&gt; [TopicName [Partition ErrorCode]]]
+ TopicName =&gt; string
+ Partition =&gt; int32
+ ErrorCode =&gt; int16</pre>
+</div></div><p>Error code:</p><ul><li style="margin-left: 13.5pt;"><span>InvalidProducerEpoch</span></li></ul><p><span>Note: The following is tangential to the TxnOffsetCommitRequest/Response: When an  OffsetCommitRequest from a consumer failed with a retriable error, we return RetriableOffsetCommitException to the application callback. Previously, this 'RetriableOffsetCommitException' would include the underlying exception. With the changes in KIP-98, we no longer include the underlying exception in the 'RetriableOffsetCommitException'.</span></p><h1 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-MessageFormat"><span style="color:var(--ds-text,#172b4d);">Message Format</span></h1><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">In order to add new fields such as PID and epoch into the produced messages for transactional messaging and de-duplication, we need to change Kafka’s message format and bump up its version (i.e. the “magic byte”). More specifically, we need to add the following fields into each message:</span></p><ul><li><p style="text-align: justify;"><span>PID =&gt; int64</span></p></li><li><p style="text-align: justify;"><span>Epoch =&gt; int16</span></p></li><li><p style="text-align: justify;"><span>Sequence number =&gt; int32</span></p></li></ul><p><span style="color:var(--ds-text,#172b4d);">Adding these fields on the message-level format schema potentially adds a considerable amount of overhead; on the other hand, at least the PID and epoch will never change within a set of messages from a given producer. We therefore propose to enhance the current concept of a </span><span style="color:var(--ds-text,#172b4d);">message set</span><span style="color:var(--ds-text,#172b4d);"> by giving it a separate schema from an individual message. In this way, we can locate these fields only at the message set level which allows the additional overhead to be amortized across batches of messages rather than paying the cost for each message separately.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Both the epoch and sequence number will wrap around once int16_max and int32_max are reached. Since there is a single point of allocation and validation for both the epoch and sequence number, wrapping these values will not break either the idempotent or transactional semantics. </span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">For reference, the current message format (v1) is the following:</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">MessageSet =&gt; [Offset MessageSize Message]
+ Offset =&gt; int64
+ MessageSize =&gt; int32
+
+Message =&gt; Crc Magic Attributes Timestamp Key Value
+ Crc =&gt; int32
+ Magic =&gt; int8
+ Attributes =&gt; int8
+ Timestamp =&gt; int64
+ Key =&gt; bytes
+ Value =&gt; bytes</pre>
+</div></div><p><span style="color:var(--ds-text,#172b4d);">A message set is a sequence of messages. To support compression, we currently play a trick with this format and allow the compressed output of a message set to be embedded in the value field of another message (a.k.a., the “wrapper message”). In this design, we propose to extend this concept to non-compressed messages and to decouple the schema for the message wrapper (which contains the compressed message set). This allows us to maintain a separate set of fields at the message set level and avoid some costly redundancy:</span></p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">MessageSet =&gt; 
+  FirstOffset =&gt; int64
+  Length =&gt; int32
+  PartitionLeaderEpoch =&gt; int32 /* Added for KIP-101 */
+  Magic =&gt; int8  /* bump up to &ldquo;2&rdquo; */
+  CRC =&gt; int32 /* CRC32C which covers everything from Attributes on */
+  Attributes =&gt; int16
+  LastOffsetDelta =&gt; int32 {NEW}
+  FirstTimestamp =&gt; int64 {NEW}
+  MaxTimestamp =&gt; int64 {NEW}
+  PID =&gt; int64 {NEW}
+  ProducerEpoch =&gt; int16 {NEW}
+  FirstSequence =&gt; int32 {NEW}
+  Messages =&gt; [Message]
+
+Message =&gt; {ALL FIELDS NEW}
+  Length =&gt; varint
+  Attributes =&gt; int8
+  TimestampDelta =&gt; varint
+  OffsetDelta =&gt; varint
+  KeyLen =&gt; varint
+  Key =&gt; data
+  ValueLen =&gt; varint
+  Value =&gt; data
+
+  Headers =&gt; [Header] /* See KIP-82. Note the array uses a varint for the number of headers. */
+&nbsp;
+Header =&gt; HeaderKey HeaderVal
+  HeaderKeyLen =&gt; varint
+  HeaderKey =&gt; string
+  HeaderValueLen =&gt; varint
+  HeaderValue =&gt; data</pre>
+</div></div><p><br/></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The ability to store some fields only at the message set level allows us to conserve space considerably when batching messages into a message set. For example, there is no need to write the PID within each message since it will always be the same for all messages within each message set. In addition, by separating the message level format and message set format, now we can also use variable-length types for the inner (relative) offsets and save considerably over a fixed 8-byte field size.</span></p><h2 style="text-align: justify;" id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-MessageSetFields"><span style="color:var(--ds-text,#172b4d);">Message Set Fields</span></h2><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The first four fields of a message set in this format </span><span style="color:var(--ds-text,#172b4d);">must to</span><span style="color:var(--ds-text,#172b4d);"> be the same as the existing format because any fields before the magic byte cannot be changed in order to provide a path for upgrades following a similar approach as was used in </span><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-32+-+Add+timestamps+to+Kafka+message" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">KIP-32</span></a><span style="color:var(--ds-text,#172b4d);">. Clients which request an older version of the format will require conversion on the broker.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The offset provided in the message set header represents the offset </span><span style="color:var(--ds-text,#172b4d);">of the first message in the set</span><span style="color:var(--ds-text,#172b4d);">. Similarly, we the sequence number field represents the sequence number of the first message. We also include an “offset delta” at the message set level to provide an easy way to compute the last offset / sequence number in the set: i.e. the starting offset of the next message set should be “offset + offset delta”. This also allows us to search for the message set corresponding to a particular offset without scanning the individual messages, which may or may not be compressed. Similarly, we can use this to easily compute the next expected sequence number.</span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The offset, sequence number, and offset delta values of the message set </span><span style="color:var(--ds-text,#172b4d);">never</span><span style="color:var(--ds-text,#172b4d);"> change after the creation of the message set. The log cleaner may remove individual messages from the message set, and it may remove the message set itself once all messages have been removed, but we must preserve the range of sequence numbers that were ever used in a message set since we depend on this to determine the next sequence number expected for each PID.</span></p><p><span style="color:var(--ds-text,#172b4d);">Message Set Attributes</span><span style="color:var(--ds-text,#172b4d);">: The message set attributes are essentially the same as in the existing format, though we have added an additional byte for future use. In addition to the existing 3 bits used to indicate the compression codec  and 1 bit for timestamp type, we will use another bit to indicate that the message set is transactional (see </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#heading=h.mylukj7bg1rf" rel="nofollow" style="text-align: justify;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">Transaction Markers</span></a><span style="color:var(--ds-text,#172b4d);"> section). This lets consumers in READ_COMMITTED know whether a transaction marker is expected for a given message set.</span></p><div style="margin-left: 0.0pt;"><span style="color:var(--ds-text,#172b4d);"> </span></div><div style="margin-left: 0.0pt;"><span style="color:var(--ds-text,#172b4d);">The control flag indicates that the messages contained in the message set are not intended for application consumption (see below). </span></div><div style="margin-left: 0.0pt;"><p><br/></p><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/><col/><col/></colgroup><tbody><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Compression (3)</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Timestamp type (1)</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Transactional (1)</span></p></td><td colspan="1" class="confluenceTd">Control(1)</td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Unused (10)</span></p></td></tr></tbody></table></div></div><p><span style="text-align: justify;">Discussion on Maximum Message Size</span><span style="text-align: justify;">. The broker’s configuration </span><span style="text-align: justify;">max.message.size</span><span style="text-align: justify;"> previously controlled the maximum size of a single uncompressed message or a compressed set of messages. With this design, it now controls the maximum message set size, compressed or not. In practice, the difference is minor because a single message can be written as a singleton message set, with the small increase in overhead mentioned above.</span></p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-MessageFields"><span style="color:var(--ds-text,#172b4d);">Message Fields</span></h2><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">The length field of the message format is encoded as a signed variable-length integer. Similarly the offset delta and key length fields are encoded as unitVar as well. The message’s offset can then be calculated as the offset of the message set + offset delta. </span></p><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Message Attributes</span><span style="color:var(--ds-text,#172b4d);">: In this format, we have also added a single byte for individual message attributes. Only message sets can be compressed, so there is no need to reserve some of these attributes for the compression type. All of the message-level attributes are available for future use. </span></p><div style="margin-left: 0.0pt;"><p><br/></p><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/><col/><col/><col/><col/><col/><col/><col/></colgroup><tbody><tr><td class="confluenceTd"><p><span style="color:var(--ds-text,#172b4d);">Unused (8)</span></p></td></tr></tbody></table></div><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-ControlMessages">Control Messages</h2><p><span style="color:var(--ds-text,#172b4d);">We use control messages to represent transaction markers. All messages contained in a batch with the control attribute set (see above) are considered control messages and follow a specific format. </span><span style="color:var(--ds-text,#172b4d);">Each control message must have a non-null key, which is used to indicate the type of </span><span style="color:var(--ds-text,#172b4d);">control message type</span><span style="color:var(--ds-text,#172b4d);"> with the following schema:</span></p></div><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">ControlMessageKey =&gt; Version ControlMessageType
+  Version =&gt; int16
+  ControlMessageType =&gt; int16 </pre>
+</div></div><p><span style="color:var(--ds-text,#172b4d);">In this proposal, a control message type of 0 indicates a </span><span style="color:var(--ds-text,#172b4d);">COMMIT</span><span style="color:var(--ds-text,#172b4d);"> marker, and a control message type of 1 indicates an </span><span style="color:var(--ds-text,#172b4d);">ABORT</span><span style="color:var(--ds-text,#172b4d);"> marker. The schema for control values is generally specific to the control message type.</span></p><p><span style="color:var(--ds-text,#172b4d);">Discussion on Message-level Schema.</span><span style="color:var(--ds-text,#172b4d);"> A few additional notes about this schema:</span></p><ol><li><p style="text-align: justify;"><span>Having easy access to the offset of the first message allows us to stream messages to the user on demand. In the existing format, we only know the last offset in each message set, so we have to read the messages fully into memory in order to compute the offset of the first message to be returned to the user.</span></p></li><li><p style="text-align: justify;"><span>As before, the message set header has a fixed size. This is important because it allows us to do in-place offset/timestamp assignment on the broker before writing to disk. </span></p></li><li><p style="text-align: justify;"><span>We have removed the per-message CRC in this format. We hesitated initially to do so because of its use in some auditing applications for end-to-end validation. The problem is that it is not safe, even currently, to assume that the CRC seen by the producer will match that seen by the consumer. One case where it is not preserved is when the topic is configured to use the log append time. Another is when messages need to be up-converted prior to appending to the log. For these reasons, and to conserve space and save computation, we have removed the CRC and deprecated client usage of these fields.</span></p></li><li><p style="text-align: justify;"><span>The message set CRC covers the header and message data. Alternatively, we could let it cover only the header, but if compressed data is corrupted, then decompression may fail with obscure errors. Additionally, that would require us to add the message-level CRC back to the message.</span></p></li><li><p style="text-align: justify;"><span>The CRC32C polynomial is used for all CRC computations in the new format because optimised implementations are significantly faster  (i.e. if they use the </span>CRC32 instruction introduced in SSE4.2).</p></li><li><p style="text-align: justify;"><span>Individual messages within a message set have their full size (including header, key, and value) as the first field. This is designed to make deserialization efficient. As we do for the message set itself, we can read the size from the input stream, allocate memory accordingly, and do a single read up to the end of the message. This also makes it easier to skip over the messages if we are looking for a particular one, which potentially saves us from copying the key and value. </span></p></li><li><p style="text-align: justify;"><span>We have not included a field for the size of the value in the message schema since it can be computed directly using the message size and the length of the header and key. </span></p></li><li><p style="text-align: justify;"><span>We have used a variable length integer to represent timestamps. Our approach is to let the first message </span></p></li></ol><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-SpaceComparison"><span style="color:var(--ds-text,#172b4d);">Space Comparison</span></h2><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">As the batch size increases, the overhead of the new format grows smaller compared to the old format because of the eliminated redundancy. The overhead per message in the old format is fixed at 34 bytes. For the new format, the message set overhead is 53 bytes, while per-message overhead ranges from 6 to 25 bytes. This makes it more costly to send individual messages, but space is quickly recovered with even modest batching. For example, assuming a fixed message size of 1K with 100 byte keys and reasonably close timestamps, the overhead increases by only 7 bytes for each additional batched message (2 bytes for the message size, 1 byte for attributes, 2 bytes for timestamp delta, 1 byte for offset delta, and 1 byte for key size) :</span></p><div style="margin-left: 0.0pt;"><div style="margin-left: 0.0pt;"><p><br/></p><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/><col/></colgroup><tbody><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Batch Size</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">Old Format Overhead</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">New Format Overhead</span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">1</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">34*1 = 34</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">53 + 1*7 = 60</span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">3</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">34*3 = 102</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">53 + 3*7 = 74</span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">10</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">34*10 = 340</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">53 + 10*7 = 123</span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">50</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">34*50 = 1700</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">53 + 50*7 = 403</span></p></td></tr><tr><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">100</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">34*100 = 3400</span></p></td><td class="confluenceTd"><p style="text-align: justify;"><span style="color:var(--ds-text,#172b4d);">53 + 100*7 = 753</span></p></td></tr></tbody></table></div><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Metrics">Metrics</h1><p>As part of this work, we would need to expose new metrics to make the system operable. These would include:</p><ol><li>Number of live PIDs (a proxy for the size of the PID-&gt;Sequence map)</li><li>Current LSO per partition (useful to detect stuck consumers and lost commit/abort markers).</li><li>Number of active transactionalIds (proxy for the memory consumed by the transaction coordinator).</li></ol></div></div><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Compatibility,Deprecation,andMigrationPlan">Compatibility, Deprecation, and Migration Plan</h1><p>We follow the same approach used in <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-32+-+Add+timestamps+to+Kafka+message" rel="nofollow" style="font-size: 14.0px;"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">KIP-32</span></a><span style="color:var(--ds-text,#172b4d);">. To upgrade from a previous message format version, users should:</span></p><div><ol><li><p><span>Upgrade the brokers once with the inter-broker protocol set to the previous deployed version.</span></p></li><li><p><span>Upgrade the brokers again with an updated inter-broker protocol, but leaving the message format unchanged.</span></p></li><li><p><span>Notify clients that they can upgrade, BUT should not start using the idempotent / transactional message APIs yet.</span></p></li><li><p><span>[When observed that most of the clients have upgraded] Restart the brokers, with the message format version set to the latest.</span></p></li><li><p><span>Notify upgraded clients that they can now start using the idempotent / transactional message APIs.</span></p></li></ol><p><span style="color:var(--ds-text,#172b4d);">The reason for step 3 is to avoid the performance cost for down-converting messages to an older format, which effectively loses the “zero-copy” optimization. Ideally, all consumers are upgraded before the producers even begin writing to the new message format.</span></p><p><span style="color:var(--ds-text,#172b4d);">Note: Since the old producer has long since been deprecated and the old consumer will be deprecated in 0.11.0, these clients will not support the new format. In order to avoid the conversion hit, users will have to upgrade to the new clients. It is possible to selectively enable the message format on topics which are already using the new clients.</span></p><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-TestPlan"><span style="color:var(--ds-text,#172b4d);">Test Plan</span></h1><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Correctness"><span style="color:var(--ds-text,#172b4d);">Correctness</span></h2><p><span style="color:var(--ds-text,#172b4d);">The new features will be tested through unit, integration, and system tests.</span></p><p><span style="color:var(--ds-text,#172b4d);">The integration tests will focus on ensuring that the basic guarantees (outlined in the Summary of Guarantees section) are satisfied across components.</span></p><p><span style="color:var(--ds-text,#172b4d);">The system tests will focus on ensuring that the guarantees are satisfied even with failing components, ie. that the system works even when consumers, producers, brokers are killed in various states.</span></p><p><span style="color:var(--ds-text,#172b4d);">We will also add to existing compatibility system tests to ensure that old clients can still talk to the new brokers with the new message format.</span></p><h2 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-Performance"><span style="color:var(--ds-text,#172b4d);">Performance</span></h2><p><span style="color:var(--ds-text,#172b4d);">This KIP introduces significant changes to the message format along with the new features. </span></p><p><span style="color:var(--ds-text,#172b4d);">We plan on introducing changes in a staged fashion, with the first change being to the message format. We will run our performance test suite on these message format changes and ensure that there is a minimal performance impact thanks to these changes at worst. Note that the message format changes are the only ones which can affect users who don't enable the idempotent producer and don't use transactions.</span></p><p><span style="color:var(--ds-text,#172b4d);">Then, we will benchmark the performance of the idempotent producer and the transactional producer separately. Finally, we will benchmark the consumer and broker performance when transactions are in use and read_committed mode is enabled. We will publish the results of all these benchmarks so that users can make informed decisions about when and how to use these features. </span></p><h1 id="KIP98ExactlyOnceDeliveryandTransactionalMessaging-RejectedAlternatives"><span style="color:var(--ds-text,#172b4d);">Rejected Alternatives</span></h1><p><span style="color:var(--ds-text,#172b4d);">As mentioned earlier, we have a separate design document which explores the design space --including rejected alternatives-- as well as all the implementation details. The latter also includes the specifics of message format changes, new RPCs, error handling, etc. </span></p><p><span style="color:var(--ds-text,#172b4d);">The design document is </span><a class="external-link" href="https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/" rel="nofollow"><span style="text-decoration: underline;color:var(--ds-text-accent-blue,#0055cc);">available here</span></a><span style="color:var(--ds-text,#172b4d);">.</span></p></div><div><span style="font-family: monospace;white-space: pre-wrap;color:var(--ds-text,#172b4d);"> </span></div>
+
+                
+        
+    
+        </div>
+
+                        
+    
+
+
+
+<div id="labels-section" class="pageSection group">
+    <div class="labels-section-content content-column" entityid="66854913" entitytype="page">
+	<div class="labels-content">
+		
+    <ul class="label-list label-list-right ">
+            <li class="no-labels-message">
+            No labels
+        </li>
+            </ul>
+
+    </div>
+</div>
+</div>
+        
+		
+            
+
+
+
+
+            
+        
+
+
+
+
+
+
+
+
+                        
+    
+<div id="comments-section" class="pageSection group">
+        
+    
+
+
+
+</div>
+        
+
+
+                
+    
+            
+</div>
+
+    
+
+    
+
+
+
+
+    
+    
+
+    
+    
+    
+    
+
+
+    
+<div id="space-tools-web-items" class="hidden">
+                <div data-label="Overview" data-href="/confluence/spaces/viewspacesummary.action?key=KAFKA">Overview</div>
+            <div data-label="Content Tools" data-href="/confluence/pages/reorderpages.action?key=KAFKA">Content Tools</div>
+    </div>
+        
+
+
+
+
+        <div id="sidebar-container">
+                                                                </div><!-- \#sidebar-container -->
+
+            </main><!-- \#main -->
+            
+    
+    
+        
+            
+            
+
+<div id="footer" role="contentinfo">
+    <section class="footer-body">
+
+                                                            <p class="license license-opensource">
+                    Powered by a free <b>Atlassian Confluence Open Source Project License</b> granted to Apache Software Foundation. <a href="https://www.atlassian.com/software/views/opensource-community-additional-license-offer">Evaluate Confluence today</a>.<br>
+                </p>
+                    
+        
+
+        <ul id="poweredby">
+            <li class="noprint">Powered by <a href="https://www.atlassian.com/software/confluence" class="hover-footer-link" rel="nofollow">Atlassian Confluence</a> <span id='footer-build-information'>9.2.28</span></li>
+            <li class="print-only">Printed by Atlassian Confluence 9.2.28</li>
+            <li class="noprint"><a href="https://support.atlassian.com/confluence-server/" class="hover-footer-link" rel="nofollow">Report a bug</a></li>
+            <li class="noprint"><a href="https://www.atlassian.com/company" class="hover-footer-link" rel="nofollow">Atlassian News</a></li>
+        </ul>
+
+        
+
+        <div id="footer-logo"><a href="https://www.atlassian.com/" rel="nofollow">Atlassian</a></div>
+
+                    
+        
+    </section>
+</div>
+
+    
+</div>
+
+</div><!-- \#full-height-container -->
+</div><!-- \#page -->
+
+    <span style="display:none;" id="confluence-server-performance">{"serverDuration": 133, "requestCorrelationId": "349491ad36a9faf4"}</span>
+</body>
+</html>
+    

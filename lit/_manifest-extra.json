@@ -1,0 +1,8 @@
+[
+  {"key": "hanley1983", "kind": "abstract",
+   "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:%2210.1001/jama.1983.03330370053031%22&format=json&resultType=core"},
+  {"key": "fisher1922", "kind": "abstract",
+   "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE:%22On%20the%20interpretation%20of%20chi%20square%20from%20contingency%20tables%22&format=json&resultType=core"},
+  {"key": "clopper1934", "kind": "abstract",
+   "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE:%22The%20use%20of%20confidence%20or%20fiducial%20limits%20illustrated%20in%20the%20case%20of%20the%20binomial%22&format=json&resultType=core"}
+]

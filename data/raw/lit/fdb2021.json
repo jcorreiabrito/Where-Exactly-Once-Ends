@@ -1,0 +1,13 @@
+{
+  "crossref_doi": "10.1145/3448016.3457559",
+  "crossref_fetched_utc": "2026-11-24T12:04:29Z",
+  "crossref_title": "FoundationDB: A Distributed Unbundled Transactional Key Value Store",
+  "crossref_container": "Proceedings of the 2021 International Conference on Management of Data",
+  "crossref_year": 2021,
+  "crossref_authors": "Zhou, Jingyu; Xu, Meng; Shraer, Alexander; Namasivayam, Bala; Miller, Alex; Tschannen, Evan; Atherton, Steve; Beamon, Andrew J.; Sears, Rusty; Leach, John; Rosenthal, Dave; Dong, Xin; Wilson, Will; Collins, Ben; Scherer, David; Grieser, Alec; Liu, Young; Moore, Alvin; Muppana, Bhaskar; Su, Xiaoge; Yadav, Vishesh",
+  "unpaywall_fetched_utc": "2026-11-24T12:07:29Z",
+  "is_oa": false,
+  "oa_status": "closed",
+  "openalex_fetched_utc": "2026-11-24T12:16:06Z",
+  "openalex_title": "FoundationDB: A Distributed Unbundled Transactional Key Value Store"
+}

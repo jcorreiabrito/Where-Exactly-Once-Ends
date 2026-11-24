@@ -1,0 +1,11 @@
+{
+  "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE:%22Two-sided%20confidence%20intervals%20for%20the%20single%20proportion%22&format=json&resultType=core",
+  "final_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE:%22Two-sided%20confidence%20intervals%20for%20the%20single%20proportion%22&format=json&resultType=core",
+  "fetched_utc": "2026-11-24T12:26:52Z",
+  "http_status": 200,
+  "content_type": "application/json",
+  "cache": "data/raw/lit/newcombe1998.txt",
+  "source_kind": "abstract",
+  "sha256": "0da0b2602f4688d7e2565c8c3bc0d8acefbd5f1779174ca0c1b0a49c69b88af3",
+  "bytes": 5807
+}

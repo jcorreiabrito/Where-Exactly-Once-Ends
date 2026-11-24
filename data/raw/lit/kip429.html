@@ -1,0 +1,1098 @@
+    
+
+<!DOCTYPE html>
+<html lang="en-US"   data-theme="dark:dark light:light" data-color-mode-auto  >
+<head>
+            
+        
+
+                            <title>KIP-429: Kafka Consumer Incremental Rebalance Protocol - Apache Kafka - Apache Software Foundation</title>
+    
+        
+
+                        
+    
+                        
+    
+
+                
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=EDGE,chrome=IE7">
+<meta charset="UTF-8">
+<meta id="confluence-context-path" name="confluence-context-path" content="/confluence">
+<meta id="confluence-base-url" name="confluence-base-url" content="https://cwiki.apache.org/confluence">
+
+    <meta id="atlassian-token" name="atlassian-token" content="9ad76f78cf65c824bc78be0a6aa2c2102f5490d0">
+
+
+<meta id="confluence-space-key" name="confluence-space-key" content="KAFKA">
+<script type="text/javascript">
+        var contextPath = '/confluence';
+</script>
+
+    
+
+    <meta name="confluence-request-time" content="1795522735825">
+        
+    
+        
+            <meta name="ajs-use-keyboard-shortcuts" content="true">
+            <meta name="ajs-is-confluence-admin" content="false">
+            <meta name="ajs-connection-timeout" content="10000">
+            <script type="text/x-template" title="gliffy-webpanel-footer">
+        <div class="gliffy-webpanel-footer"><span>This Confluence installation runs a Free Gliffy License - Evaluate the <a href="http://www.gliffy.com/products/confluence-plugin/">Gliffy Confluence Plugin</a> for your Wiki!</span></div>
+</script>
+
+
+            <style>.ia-fixed-sidebar, .ia-splitter-left {width: 285px;}.theme-default .ia-splitter #main {margin-left: 285px;}.ia-fixed-sidebar {visibility: hidden;}</style>
+            <meta name="ajs-discovered-plugin-features" content="$discoveredList">
+            <meta name="ajs-keyboardshortcut-hash" content="f53cdc7a7358f5b579a749480e9b6c59d0325357503f299e8e9cdfa4e2f1faeb">
+            <meta name="ajs-emojis-allow-current-user-upload-emojis" content="true">
+<meta name="ajs-emojis-max-upload-file-size" content="1">
+
+            
+    
+    
+            <meta name="ajs-page-title" content="KIP-429: Kafka Consumer Incremental Rebalance Protocol">
+            <meta name="ajs-latest-published-page-title" content="KIP-429: Kafka Consumer Incremental Rebalance Protocol">
+            <meta name="ajs-space-name" content="Apache Kafka">
+            <meta name="ajs-page-id" content="103090108">
+            <meta name="ajs-latest-page-id" content="103090108">
+            <meta name="ajs-content-type" content="page">
+            <meta name="ajs-parent-page-title" content="Kafka Improvement Proposals">
+            <meta name="ajs-parent-page-id" content="50859233">
+            <meta name="ajs-space-key" content="KAFKA">
+            <meta name="ajs-quicksearch-request-timeout" content="5000">
+            <meta name="ajs-max-number-editors" content="12">
+            <meta name="ajs-macro-placeholder-timeout" content="5000">
+            <meta name="ajs-http-connection-timeout" content="30000">
+            <meta name="ajs-http-socket-timeout" content="10000">
+            <meta name="ajs-jira-metadata-count" content="3">
+            <meta name="ajs-jira-metadata-count-incomplete" content="false">
+            <meta name="ajs-from-page-title" content="">
+            <meta name="ajs-can-remove-page" content="false">
+            <meta name="ajs-can-remove-page-hierarchy" content="false">
+            <meta name="ajs-browse-page-tree-mode" content="view">
+            <meta name="ajs-shared-drafts" content="true">
+            <meta name="ajs-context-path" content="/confluence">
+            <meta name="ajs-base-url" content="https://cwiki.apache.org/confluence">
+            <meta name="ajs-version-number" content="9.2.28">
+            <meta name="ajs-build-number" content="9117">
+            <meta name="ajs-remote-user" content="">
+            <meta name="ajs-remote-user-key" content="">
+            <meta name="ajs-remote-user-has-licensed-access" content="false">
+            <meta name="ajs-remote-user-has-browse-users-permission" content="false">
+            <meta name="ajs-current-user-fullname" content="">
+            <meta name="ajs-current-user-avatar-uri-reference" content="/confluence/images/icons/profilepics/anonymous.svg">
+            <meta name="ajs-static-resource-url-prefix" content="/confluence">
+            <meta name="ajs-global-settings-attachment-max-size" content="52428800">
+            <meta name="ajs-global-settings-quick-search-enabled" content="true">
+            <meta name="ajs-user-locale" content="en_US">
+            <meta name="ajs-user-timezone-offset" content="0">
+            <meta name="ajs-enabled-dark-features" content="site-wide.shared-drafts,site-wide.synchrony,migration-assistant.enable.assess-l1-cloud-tooling.feature,confluence.view.edit.transition,confluence.attachments.bulk.delete,confluence-inline-comments-resolved,http.session.registrar,theme.switcher,scope.manage.subscriptions,atlassian.cdn.static.assets,confluence.efi.onboarding.rich.space.content,file-annotations,applinks.uniconn,crowd.sync.nested.groups.group.membership.changes.batching.enabled,atlassian.webresource.performance.tracking.disable,confluence.page.readtime,atlassian.authentication.sso.fallback.to.cached.user.when.operation.failed,lucene.caching.filter,confluence.table.resizable,notification.batch,confluence-inline-comments-rich-editor,confluence.copy-heading-link,site-wide.synchrony.opt-in,atlassian.webresource.twophase.js.i18n.disabled,confluence.edit.wordcount,gatekeeper-ui-v2,confluence.search.improvements.ranking,crowd.event.transformer.directory.manager.cache,mobile.supported.version,crowd.sync.delete.user.memberships.batching.enabled,confluence.dark.theme.text.colors,quick-reload-inline-comments-flags,cql.search.screen,clc.quick.create,nps.survey.inline.dialog,confluence.efi.onboarding.new.templates,pdf-preview,com.atlassian.analytics.essential.supported,confluence.retention.rules.trash.fast.removal,previews.sharing,previews.versions,collaborative-audit-log,confluence.reindex.improvements,previews.conversion-service,atlassian.servlet.filter.default.to.licensed.access.enabled,read.only.mode,graphql,benefits.modal,previews.trigger-all-file-types,AsyncReplicationCache,attachment.extracted.text.extractor,confluence.readable.url,previews.sharing.pushstate,tc.tacca.dacca,confluence.reindex.audit,atlassian.rest.default.to.licensed.access.enabled,confluence.retention.rules.version.fast.removal,confluence.denormalisedpermissions,file-annotations.likes,v2.content.name.searcher,confluence.reindex.spaces,confluence.fast-xml-backup-restore,embedded.crowd.directory.azuread.enabled,pulp,confluence-inline-comments,confluence-inline-comments-dangling-comment,confluence.retention.rules">
+            <meta name="ajs-atl-token" content="9ad76f78cf65c824bc78be0a6aa2c2102f5490d0">
+            <meta name="ajs-user-date-pattern" content="dd MMM yyyy">
+            <meta name="ajs-access-mode" content="READ_WRITE">
+            <meta name="ajs-render-mode" content="READ_WRITE">
+            <meta name="ajs-same-site-cookie-default-policy" content="Lax">
+            <meta name="ajs-date.format" content="MMM dd, yyyy">
+    
+    <link rel="shortcut icon" href="/confluence/s/-klt66k/9117/u8nj3q/1/_/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/confluence/s/-klt66k/9117/u8nj3q/1/_/favicon.ico">
+
+<link rel="search" type="application/opensearchdescription+xml" href="/confluence/opensearch/osd.action" title="Apache Software Foundation"/>
+    
+                    
+            <meta name="ajs-create-issue-metadata-show-discovery" content="false">
+            
+
+    <script>
+window.WRM=window.WRM||{};window.WRM._unparsedData=window.WRM._unparsedData||{};window.WRM._unparsedErrors=window.WRM._unparsedErrors||{};
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.entity-types"]="{\u0022singular\u0022:{\u0022refapp.charlie\u0022:\u0022Charlie\u0022,\u0022fecru.project\u0022:\u0022Crucible Project\u0022,\u0022fecru.repository\u0022:\u0022FishEye Repository\u0022,\u0022stash.project\u0022:\u0022Stash Project\u0022,\u0022generic.entity\u0022:\u0022Generic Project\u0022,\u0022confluence.space\u0022:\u0022Confluence Space\u0022,\u0022bamboo.project\u0022:\u0022Bamboo Project\u0022,\u0022jira.project\u0022:\u0022Jira Project\u0022},\u0022plural\u0022:{\u0022refapp.charlie\u0022:\u0022Charlies\u0022,\u0022fecru.project\u0022:\u0022Crucible Projects\u0022,\u0022fecru.repository\u0022:\u0022FishEye Repositories\u0022,\u0022stash.project\u0022:\u0022Stash Projects\u0022,\u0022generic.entity\u0022:\u0022Generic Projects\u0022,\u0022confluence.space\u0022:\u0022Confluence Spaces\u0022,\u0022bamboo.project\u0022:\u0022Bamboo Projects\u0022,\u0022jira.project\u0022:\u0022Jira Projects\u0022}}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-license-banner:confluence-license-banner-resources.license-details"]="{\u0022daysBeforeLicenseExpiry\u0022:0,\u0022daysBeforeMaintenanceExpiry\u0022:0,\u0022showLicenseExpiryBanner\u0022:false,\u0022showMaintenanceExpiryBanner\u0022:false,\u0022renewUrl\u0022:null,\u0022salesUrl\u0022:null}";
+WRM._unparsedData["com.atlassian.plugins.atlassian-plugins-webresource-plugin:context-path.context-path"]="\u0022/confluence\u0022";
+WRM._unparsedData["confluence.macro.metadata.provider:macro-browser-metadata-resources.macro-meta-client-cache-key"]="\u00221795097726090\u0022";
+WRM._unparsedData["com.atlassian.analytics.analytics-client:policy-update-init.policy-update-data-provider"]="false";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.authentication-types"]="{\u0022com.atlassian.applinks.api.auth.types.BasicAuthenticationProvider\u0022:\u0022Basic Access\u0022,\u0022com.atlassian.applinks.api.auth.types.TrustedAppsAuthenticationProvider\u0022:\u0022Trusted Applications\u0022,\u0022com.atlassian.applinks.api.auth.types.CorsAuthenticationProvider\u0022:\u0022CORS\u0022,\u0022com.atlassian.applinks.api.auth.types.OAuthAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuthAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuthWithImpersonationAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.ThreeLeggedOAuth2AuthenticationProvider\u0022:\u0022OAuth 2.0\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuth2AuthenticationProvider\u0022:\u0022OAuth 2.0\u0022}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-search-ui-plugin:confluence-search-ui-plugin-resources.i18n-data"]="{\u0022search.ui.recent.link.text\u0022:\u0022View more recently visited\u0022,\u0022search.ui.search.results.empty\u0022:\u0022We couldn\u0027\u0027t find anything matching \u005C\u0022{0}\u005C\u0022.\u0022,\u0022search.ui.filter.clear.selected\u0022:\u0022Clear selected items\u0022,\u0022search.ui.content.name.search.items.panel.load.all.top.items.button.text\u0022:\u0022Show more app results...\u0022,\u0022search.ui.filter.contributor.button.text\u0022:\u0022Contributor\u0022,\u0022search.ui.filter.space.current.label\u0022:\u0022CURRENT\u0022,\u0022search.ui.clear.input.button.text\u0022:\u0022Clear text\u0022,\u0022search.ui.search.results.clear.button\u0022:\u0022clear your filters.\u0022,\u0022help.search.ui.link.title\u0022:\u0022Search tips\u0022,\u0022search.ui.container.close.text\u0022:\u0022Close\u0022,\u0022search.ui.filter.date.month.text\u0022:\u0022The past month\u0022,\u0022search.ui.infinite.scroll.button.text\u0022:\u0022More results\u0022,\u0022search.ui.filter.date.button.text\u0022:\u0022Date\u0022,\u0022search.ui.filter.date.week.text\u0022:\u0022The past week\u0022,\u0022search.ui.result.subtitle.calendar\u0022:\u0022Team calendar\u0022,\u0022search.ui.filter.date.heading\u0022:\u0022Last modified within\u0022,\u0022search.ui.filter.space.input.label\u0022:\u0022Find spaces...\u0022,\u0022search.ui.generic.error\u0022:\u0022Something went wrong. Refresh the page, or contact your admin if this keeps happening.\u0022,\u0022search.ui.recent.spaces\u0022:\u0022Recent Spaces\u0022,\u0022search.ui.result.subtitle.space\u0022:\u0022Space\u0022,\u0022search.ui.filter.space.category.input.label\u0022:\u0022Find space categories...\u0022,\u0022search.ui.filter.space.archive.label\u0022:\u0022Search archived spaces\u0022,\u0022search.ui.filter.label\u0022:\u0022filter\u0022,\u0022search.ui.filter.date.all.text\u0022:\u0022Any time\u0022,\u0022search.ui.filter.date.hour.text\u0022:\u0022The past day\u0022,\u0022search.ui.filters.heading\u0022:\u0022Filter by\u0022,\u0022search.ui.filter.label.input.label\u0022:\u0022Find labels...\u0022,\u0022search.ui.recent.items.anonymous\u0022:\u0022Start exploring. Your search results will appear here.\u0022,\u0022search.ui.input.label\u0022:\u0022Search\u0022,\u0022search.ui.input.aria.label\u0022:\u0022Search query\u0022,\u0022search.ui.search.result\u0022:\u0022{0,choice,1#{0} search result|1\u003c{0} search results}\u0022,\u0022search.ui.filter.label.button.text\u0022:\u0022Label\u0022,\u0022search.ui.container.clear.ariaLabel\u0022:\u0022Clear\u0022,\u0022search.ui.input.alert\u0022:\u0022Hit enter to search\u0022,\u0022search.ui.filter.no.result.text\u0022:\u0022We can\u0027\u0027t find anything matching your search\u0022,\u0022search.ui.result.subtitle.user\u0022:\u0022User profile\u0022,\u0022search.ui.filter.contributor.input.label\u0022:\u0022Find people...\u0022,\u0022search.ui.filter.content.type.button.text\u0022:\u0022Type\u0022,\u0022search.ui.filter.date.year.text\u0022:\u0022The past year\u0022,\u0022search.ui.advanced.search.link.text\u0022:\u0022Advanced search\u0022,\u0022search.ui.filter.space.button.text\u0022:\u0022Space\u0022,\u0022search.ui.search.results.clear.line2\u0022:\u0022Try a different search term or\u0022,\u0022search.ui.filter.space.category.button.text\u0022:\u0022Space category\u0022,\u0022search.ui.search.results.clear.line1\u0022:\u0022We couldn\u0027\u0027t find anything matching your search.\u0022,\u0022search.ui.content.name.search.items.panel.load.all.top.items.admin.button.text\u0022:\u0022Show more settings and app results...\u0022,\u0022search.ui.recent.pages\u0022:\u0022Recently visited\u0022,\u0022search.ui.search.result.anonymous\u0022:\u0022{0,choice,1#{0} search result|1\u003c{0} search results}. Have an account? {1}Log in{2} to expand your search.\u0022,\u0022search.ui.recent.items.empty\u0022:\u0022Start exploring. Pages and spaces you\u0027\u0027ve visited recently will appear here.\u0022,\u0022search.ui.filter.space.init.heading\u0022:\u0022recent spaces\u0022}";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.applinks-types"]="{\u0022crowd\u0022:\u0022Crowd\u0022,\u0022confluence\u0022:\u0022Confluence\u0022,\u0022fecru\u0022:\u0022FishEye / Crucible\u0022,\u0022stash\u0022:\u0022Stash\u0022,\u0022uniconn.backbone\u0022:\u0022Atlassian Cloud\u0022,\u0022jiraMobile\u0022:\u0022Jira DC Mobile Application\u0022,\u0022jira\u0022:\u0022Jira\u0022,\u0022uniconn.cloud-product\u0022:\u0022Cloud Product\u0022,\u0022refapp\u0022:\u0022Reference Application\u0022,\u0022bamboo\u0022:\u0022Bamboo\u0022,\u0022confluenceMobile\u0022:\u0022Confluence DC Mobile Application\u0022,\u0022generic\u0022:\u0022Generic Application\u0022}";
+WRM._unparsedData["com.atlassian.confluence.plugins.synchrony-interop:synchrony-status-banner-loader.synchrony-status"]="false";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.applinks-help-paths"]="{\u0022entries\u0022:{\u0022applinks.docs.root\u0022:\u0022https://confluence.atlassian.com/display/APPLINKS-101/\u0022,\u0022applinks.docs.diagnostics.troubleshoot.sslunmatched\u0022:\u0022SSL+and+application+link+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthsignatureinvalid\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthtimestamprefused\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.delete.entity.link\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.docs.adding.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.administration.guide\u0022:\u0022Application+Links+Documentation\u0022,\u0022applinks.docs.oauth.security\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.troubleshoot.application.links\u0022:\u0022Troubleshoot+application+links\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unknownerror\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.trusted.apps\u0022:\u0022Configuring+Trusted+Applications+authentication+for+an+application+link\u0022,\u0022applinks.docs.diagnostics.troubleshoot.authlevelunsupported\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.ssluntrusted\u0022:\u0022SSL+and+application+link+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unknownhost\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.delete.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.adding.project.link\u0022:\u0022Configuring+Project+links+across+Applications\u0022,\u0022applinks.docs.link.applications\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthproblem\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.migration\u0022:\u0022Update+application+links+to+use+OAuth\u0022,\u0022applinks.docs.relocate.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.administering.entity.links\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.uniconn.configuring.link\u0022:\u0022https://confluence.atlassian.com/enterprise/connect-data-center-to-cloud-in-admin-hub-1671463000.html\u0022,\u0022applinks.docs.upgrade.application.link\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.diagnostics.troubleshoot.connectionrefused\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.oauth\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.insufficient.remote.permission\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.configuring.application.link.auth\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.diagnostics\u0022:\u0022Application+links+diagnostics\u0022,\u0022applinks.docs.configured.authentication.types\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.adding.entity.link\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unexpectedresponse\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.basic\u0022:\u0022Configuring+Basic+HTTP+Authentication+for+an+Application+Link\u0022,\u0022applinks.docs.diagnostics.troubleshoot.authlevelmismatch\u0022:\u0022OAuth+troubleshooting+guide\u0022}}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-feature-discovery-plugin:confluence-feature-discovery-plugin-resources.test-mode"]="false";
+if(window.WRM._dataArrived)window.WRM._dataArrived();</script>
+<link rel="stylesheet" href="/confluence/s/0d623e943c22f8571e717b82aae94154-CDN/-klt66k/9117/u8nj3q/168e675a2b337b02bc9a495b220b47bf/_/download/contextbatch/css/_super/batch.css" data-wrm-key="_super" data-wrm-batch-type="context" media="all">
+<link rel="stylesheet" href="/confluence/s/7d368be2c85a38de6a95af606b7ddedf-CDN/-klt66k/9117/u8nj3q/6dcd84a0ebc3cf22d99120e87d62c596/_/download/contextbatch/css/atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super/batch.css?cefp_collab_enabled=true&amp;cefp_ed_perm=false&amp;cefp_is_admin=false&amp;gatekeeper-ui-v2=true&amp;highlightactions=true&amp;hostenabled=true&amp;table-resizable.breaking-text=false&amp;theme.switcher=true" data-wrm-key="atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super" data-wrm-batch-type="context" media="all">
+<link rel="stylesheet" href="/confluence/s/d41d8cd98f00b204e9800998ecf8427e-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes.css" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes" data-wrm-batch-type="resource" media="all">
+<script src="/confluence/s/a208977d57fbf688cdf1f3fb51cedf73-CDN/-klt66k/9117/u8nj3q/168e675a2b337b02bc9a495b220b47bf/_/download/contextbatch/js/_super/batch.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="_super" data-wrm-batch-type="context" data-initially-rendered></script>
+<script src="/confluence/s/aaa2f030370ea666b56fab6f62375011-CDN/-klt66k/9117/u8nj3q/6dcd84a0ebc3cf22d99120e87d62c596/_/download/contextbatch/js/atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super/batch.js?cefp_collab_enabled=true&amp;cefp_ed_perm=false&amp;cefp_is_admin=false&amp;gatekeeper-ui-v2=true&amp;highlightactions=true&amp;hostenabled=true&amp;i18n-function-namespace-disabled=false&amp;locale=en-US&amp;table-resizable.breaking-text=false&amp;theme.switcher=true" data-wrm-key="atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super" data-wrm-batch-type="context" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd/com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd/com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a/com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a/com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-api/com.atlassian.auiplugin:split_aui.page.design-tokens-api.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-api" data-wrm-batch-type="resource" data-initially-rendered></script>
+
+    
+
+        
+    
+
+        
+        <meta name="ajs-site-title" content="Apache Software Foundation" />
+            
+    
+
+    
+                <link rel="canonical" href="https://cwiki.apache.org/confluence/spaces/KAFKA/pages/103090108/KIP-429+Kafka+Consumer+Incremental+Rebalance+Protocol">
+        <link rel="shortlink" href="https://cwiki.apache.org/confluence/x/vAclBg">
+    <meta name="wikilink" content="[KAFKA:KIP-429: Kafka Consumer Incremental Rebalance Protocol]">
+    <meta name="page-version" content="156">
+    <meta name="ajs-page-version" content="156">
+
+</head>
+
+    
+<body      id="com-atlassian-confluence" class="theme-default  aui-layout aui-theme-default">
+
+        
+            <div id='stp-licenseStatus-banner'></div>
+    <div id="page">
+<div id="full-height-container">
+    <div id="header-precursor">
+        <div class="cell">
+            <p style="text-align:center;font-size:1.2em;font-weight:bolder;background-color:#FFFFC5">DUE TO SPAM, SIGN-UP IS DISABLED. Goto <a href="https://selfserve.apache.org/confluence-account.html">Selfserve wiki signup</a> and request an account.</p>
+                            </div>
+    </div>
+    
+    
+
+
+
+
+
+
+<header id="header" role="banner">
+            <a class="aui-skip-link" href="https://cwiki.apache.org/confluence/login.action?os_destination=%2Fspaces%2FKAFKA%2Fpages%2F103090108%2FKIP-429%2BKafka%2BConsumer%2BIncremental%2BRebalance%2BProtocol" tabindex="1">Log in</a>
+        <nav class="aui-header aui-dropdown2-trigger-group" aria-label="Site"><div class="aui-header-inner"><div class="aui-header-before"><button class=" aui-dropdown2-trigger app-switcher-trigger aui-dropdown2-trigger-arrowless" aria-controls="app-switcher" aria-haspopup="true" role="button" data-aui-trigger href="#app-switcher"><span class="aui-icon aui-icon-small aui-iconfont-appswitcher">Linked Applications</span></button><div id="app-switcher" class="aui-dropdown2 aui-style-default" role="menu" hidden data-is-user-admin="false" data-is-switcher="true"><div class="app-switcher-loading">Loading...</div></div></div><div class="aui-header-primary"><span id="logo" class="aui-header-logo aui-header-logo-confluence"><a href="/confluence/" aria-label="Go to home page"><span class="aui-header-logo-device">Apache Software Foundation</span></a></span><ul class="aui-nav">
+                            <li>
+            
+    
+        
+<a  id="space-directory-link" href="/confluence/spacedirectory/view.action"  class=" aui-nav-imagelink"   title="Spaces">
+            <span>Spaces</span>
+    </a>
+        </li>
+                                <li class="aui-buttons">
+            </li>
+</ul>
+</div><div class="aui-header-secondary"><ul class="aui-nav">
+                        <li>
+        <div id="search-ui" class="aui-quicksearch dont-default-focus header-quicksearch"><button id="quick-search-query-button" aria-label="Search" aria-haspopup= "dialog" ></button><input id="quick-search-query" title="Search query" aria-label="Search query" placeholder="Search" type="text" aria-haspopup= "dialog" /><div id="quick-search-alert" role="alert">Hit enter to search</div><aui-spinner size="small"></aui-spinner></div>
+    </li>
+        <li>
+            
+        <a id="help-menu-link" role="button" class="aui-nav-link aui-dropdown2-trigger aui-dropdown2-trigger-arrowless" href="#" aria-haspopup="true" aria-owns="help-menu-link-content" title="Help">
+        <span class="aui-icon aui-icon-small aui-iconfont-question-filled">Help</span>
+    </a>
+    <nav id="help-menu-link-content" class="aui-dropdown2 aui-style-default" >
+                    <div class="aui-dropdown2-section">
+                                    <strong role="heading" aria-level="2"></strong>
+                                <ul role="menu"
+                     role="menu"                    aria-label="Help"                    id="help-menu-link-pages"                    class="aui-list-truncate section-pages first">
+                                            <li role="presentation">
+        
+            
+<a role="menuitem"  id="confluence-help-link" href="https://docs.atlassian.com/confluence/docs-92/" class="    "      title="Visit the Confluence documentation home"  target="_blank"
+>
+        Online Help
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="keyboard-shortcuts-link" href="/confluence" class="    "      title="View available keyboard shortcuts" >
+        Keyboard Shortcuts
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="feed-builder-link" href="/confluence/configurerssfeed.action" class="    "      title="Create your custom RSS feed." >
+        Feed Builder
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="whats-new-menu-link" href="https://docs.atlassian.com/confluence/docs-92/help.whats.new.iframe.link" class="    "   >
+        What’s new
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="whats-new-menu-link" href="https://confluence.atlassian.com/display/DOC/Confluence+9.2+Release+Notes" class="    "   >
+        What’s new
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="confluence-about-link" href="/confluence/aboutconfluencepage.action" class="    "      title="Get more information about Confluence" >
+        About Confluence
+</a>
+</li>
+                                    </ul>
+            </div>
+            </nav>
+    
+    </li>
+        <li>
+                
+    
+    </li>
+        <li>
+            
+    </li>
+        <li>
+                                            <li>
+        
+            
+<a role="menuitem"  id="login-link" href="/confluence/login.action?os_destination=%2Fspaces%2FKAFKA%2Fpages%2F103090108%2FKIP-429%2BKafka%2BConsumer%2BIncremental%2BRebalance%2BProtocol" class="   user-item login-link "   >
+        Log in
+</a>
+</li>
+                        
+    </li>
+    </ul>
+</div></div><!-- .aui-header-inner--><aui-header-end></aui-header-end></nav><!-- .aui-header -->
+    <br class="clear">
+</header>
+    
+
+    
+    	<div class="ia-splitter">
+    		<div class="ia-splitter-left">
+    			<div class="ia-fixed-sidebar" role="complementary" aria-label=sidebar>
+                                            
+                            <div class="acs-side-bar ia-scrollable-section"><div class="acs-side-bar-space-info tipsy-enabled" data-configure-tooltip="Edit space details"><a class="space-information-link" href="/confluence/spaces/KAFKA/pages/27821303/Index" title="Apache Kafka"><div class="avatar"><div class="space-logo" data-key="KAFKA" data-name="Apache Kafka" data-entity-type="confluence.space"><div class="avatar-img-container"><div class="avatar-img-wrapper"><img class="avatar-img" src="/confluence/download/attachments/27821302/KAFKA?version=2&amp;modificationDate=1391968911000&amp;api=v2" alt=""></div></div></div></div><div class="space-information-container"><div class="name" title="Apache Kafka">Apache Kafka</div></div></a><button type="button" class="flyout-handle icon aui-icon aui-icon-small aui-iconfont-edit" title="Edit space details" >Edit space details</button></div><div class="acs-side-bar-content"><div class="acs-nav-wrapper"><div class="acs-nav" data-has-create-permission="false" data-quick-links-state="null" data-page-tree-state="null" data-nav-type="pages"><div class="acs-nav-sections"><div class="main-links-section "><ul class="acs-nav-list"><li class="acs-nav-item wiki aui-iconfont-page current-item" aria-current="true" data-collector-key="spacebar-pages"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/collector/pages.action?key=KAFKA" data-collapsed-tooltip="Pages"><span class="aui-icon wiki aui-iconfont-page"></span><span class="acs-nav-item-label">Pages</span></a></li><li class="acs-nav-item blog aui-iconfont-quote" data-collector-key="spacebar-blogs"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/pages/viewrecentblogposts.action?key=KAFKA" data-collapsed-tooltip="Blog"><span class="aui-icon blog aui-iconfont-quote"></span><span class="acs-nav-item-label">Blog</span></a></li></ul></div><div class="quick-links-wrapper"><h2 class="ia-quick-links-header-title">Space shortcuts</h2><button class="aui-button icon aui-icon aui-iconfont-shortcut confluence-sidebar-closed-icon-spaceshortcut sidebar-flyout-button quick-links-section-button tipsy-enabled" aria-label="Space shortcuts" aria-haspopup="dialog"></button><div class="quick-links-section "><ul class="acs-nav-list"><li class="acs-nav-item pinned_page aui-iconfont-page blueprint retrospective"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/spaces/KAFKA/pages/68717313/Retrospectives" data-collapsed-tooltip="null"><span class="aui-icon pinned_page aui-iconfont-page blueprint retrospective"></span><span class="acs-nav-item-label">Retrospectives</span></a></li></ul></div></div></div></div></div><div class="ia-secondary-container tipsy-enabled" data-tree-type="pages"><div class="ia-secondary-header"><h5 class="ia-secondary-header-title pages"><span class="label">Child pages</span></h5></div><div class="ia-secondary-parent-content"><ul class="parent ia-secondary-header-title wiki"><li class="parent-item"><button id="child-pages-button" class="aui-button icon aui-icon aui-iconfont-location sidebar-flyout-button" aria-label="Child pages" aria-haspopup="dialog"></button><a class="parent-item-link" href="/confluence/spaces/KAFKA/pages/50859233/Kafka+Improvement+Proposals" title="Kafka Improvement Proposals"><span class="aui-icon aui-icon-small aui-iconfont-location"></span><span class="label">Kafka Improvement Proposals</span></a></li></ul></div><div class="ia-secondary-current-content"><ul class="ia-secondary-currentPage-title wiki current-item"><li><span class="icon"></span><span class="label">KIP-429: Kafka Consumer Incremental Rebalance Protocol</span></li></ul></div><div class="ia-secondary-content"><div class="contextual-nav-child-pages"></div></div></div></div><div class="hidden"><a href="/confluence/collector/pages.action?key=KAFKA" id="space-pages-link"></a><script type="text/x-template" title="logo-config-content"><h2>Space Details</h2><div class="personal-space-logo-hint">Your profile picture is used as the logo for your personal space. <a href="/confluence/users/profile/editmyprofilepicture.action" target="_blank">Change your profile picture</a>.</div></script></div></div><div class="space-tools-section"><div id="space-tools-menu-additional-items" class="hidden"><div data-label="Browse pages" data-class="" data-href="/confluence/pages/reorderpages.action?key=KAFKA">Browse pages</div></div><button id="space-tools-menu-trigger"  class=" aui-dropdown2-trigger aui-button aui-button-subtle tipsy-enabled aui-dropdown2-trigger-arrowless " aria-controls="space-tools-menu" aria-haspopup="true" role="button" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-configure">Configure</span><span class="aui-button-label">Space tools</span><span class="aui-icon "></span></button><div id="space-tools-menu" class="aui-dropdown2 aui-style-default space-tools-dropdown" role="menu" hidden data-aui-alignment="top left"></div><a href="#" role="button" class="expand-collapse-trigger aui-icon aui-icon-small aui-iconfont-chevron-double-left" aria-expanded="true"></a></div>
+                    
+                        			</div>
+    		</div>
+        <!-- \#header -->
+
+            
+    
+        <main role="main" id="main" class=" aui-page-panel clearfix">
+                        <div id="main-header">
+                        
+    <div id="navigation" class="content-navigation view" role="region" aria-label="Page tools">
+                    <ul class="ajs-menu-bar">
+                                            
+        <li class="normal ajs-menu-item">
+        <a id="action-menu-link" class="action aui-dropdown2-trigger-arrowless aui-button aui-button-subtle ajs-menu-title aui-dropdown2-trigger" href="#" aria-haspopup="true" aria-label="More options" aria-owns="action-menu" data-container="#navigation">
+            <span>
+                                    <span class="aui-icon aui-icon-small aui-iconfont-more" aria-label="More options" role="button"></span>
+                                
+            </span>
+        </a>         <div id="action-menu" class="aui-dropdown2 aui-style-default confluence-dropdown2-scrollable"  role="menu" aria-labelledby="action-menu-link" >
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-primary"                          class="section-primary first"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-attachments-link"                href="/confluence/pages/viewpageattachments.action?pageId=103090108"
+                rel="nofollow"
+                class="action-view-attachments"
+                 accessKey="t"                 title="View Attachments"                                                 role="menuitem"                >
+
+                        <span>
+                                A<u>t</u>tachments (3)
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-view-history-link"                href="/confluence/pages/viewpreviousversions.action?pageId=103090108"
+                rel="nofollow"
+                class="action-view-history"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Page History
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-secondary"                          class="section-secondary"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-resolved-comments"                href="/confluence"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Resolved comments
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-page-info-link"                href="/confluence/pages/viewinfo.action?pageId=103090108"
+                rel="nofollow"
+                class="action-view-info"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Page Information
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-in-hierarchy-link"                href="/confluence/pages/reorderpages.action?key=KAFKA&amp;openId=103090108#selectedPageInHierarchy"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                View in Hierarchy
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-view-source-link"                href="/confluence/plugins/viewsource/viewpagesrc.action?pageId=103090108"
+                rel="nofollow"
+                class="action-view-source popup-link"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                View Source
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-export-pdf-link"                href="/confluence/spaces/flyingpdf/pdfpageexport.action?pageId=103090108&amp;atl_token=9ad76f78cf65c824bc78be0a6aa2c2102f5490d0"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Export to PDF
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-export-word-link"                href="/confluence/exportword?pageId=103090108"
+                rel="nofollow"
+                class="action-export-word"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Export to Word
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-modify"                          class="section-modify"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="treecopy-action"                href="/confluence/plugins/tree-copy/preparing-copying.action?pageId=103090108"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Copy Page Tree
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                    </div>
+    </li>
+            </ul>
+    </div>
+
+            
+            <div id="title-heading" class="pagetitle with-breadcrumbs">
+                
+                                    <div id="breadcrumb-section">
+                        
+    
+    
+    <nav aria-label="Breadcrumbs">
+        <ol id="breadcrumbs">
+                                                            
+                                
+            <li class="first" >
+                                
+                                    <span class=""><a href="/confluence/collector/pages.action?key=KAFKA">Pages</a></span>
+                                                                                                                    
+                                
+            <li>
+                                
+                                    <span class=""><a href="/confluence/spaces/KAFKA/pages/27821303/Index">Index</a></span>
+                                                                                                                    
+                                
+            <li>
+                                
+                                    <span class=""><a href="/confluence/spaces/KAFKA/pages/50859233/Kafka+Improvement+Proposals">Kafka Improvement Proposals</a></span>
+                                                                                                    </ol>
+    </nav>
+
+
+                    </div>
+                
+                
+                
+            <div id="page-metadata-banner"><ul class="banner"><li id="system-content-items" class="noprint"><a href="" aria-label="Unrestricted" data-tooltip="Unrestricted" id="content-metadata-page-restrictions-hidden"  class="hidden"></a><a href="/confluence/pages/viewpageattachments.action?pageId=103090108&amp;metadataLink=true" aria-label="3 attachments" data-tooltip="3 attachments" id="content-metadata-attachments"  class="aui-icon aui-icon-small aui-iconfont-attachment"></a></li><li class="page-metadata-item noprinthas-button"  id="content-metadata-jira-wrapper"><a href=""  id="content-metadata-jira"  class="aui-button aui-button-subtle content-metadata-jira tipsy-disabled hidden"><span>Jira links</span></a></li></ul></div>
+        
+
+                                    <div id="title-text" class="with-breadcrumbs">
+                                    <a href="/confluence/spaces/KAFKA/pages/103090108/KIP-429+Kafka+Consumer+Incremental+Rebalance+Protocol"><h1>KIP-429: Kafka Consumer Incremental Rebalance Protocol</h1></a>
+                        </div>
+                            </div>
+        </div><!-- \#main-header -->
+        
+        
+
+        
+    
+
+        
+
+
+
+
+            
+    
+
+                                
+    
+
+    
+    
+        
+    
+    
+                    
+    
+
+    
+
+    
+            
+        
+
+    
+    
+
+    
+            
+        
+
+
+
+    
+<div id="content" class="page view">
+    
+
+
+<div id="action-messages">
+                        </div>
+
+
+
+            <script type="text/x-template" title="searchResultsGrid">
+    <table class="aui">
+        <thead>
+            <tr class="header">
+                <th class="search-result-title">Page Title</th>
+                <th class="search-result-space">Space</th>
+                <th class="search-result-date">Updated</th>
+            </tr>
+        </thead>
+    </table>
+</script>
+<script type="text/x-template" title="searchResultsGridCount">
+    <p class="search-result-count">{0}</p>
+</script>
+<script type="text/x-template" title="searchResultsGridRow">
+    <tr class="search-result">
+        <td class="search-result-title"><a href="{1}" class="content-type-{2}"><span>{0}</span></a></td>
+        <td class="search-result-space"><a class="space" href="/confluence/display/{4}/" title="{3}">{3}</a></td>
+        <td class="search-result-date"><span class="date" title="{6}">{5}</span></td>
+    </tr>
+</script>
+
+        
+    
+            
+
+        
+                            
+    
+
+                    
+
+        
+        <div class="page-metadata">
+    <ul>
+        <li class="page-metadata-modification-info">
+            
+        
+    
+    
+        
+    
+        
+            
+            Created by <span class='author'>     <a href="    /confluence/display/~bchen225242
+"
+            aria-label="created by Boyang Chen"                       class="url fn"
+                            >Boyang Chen</a></span>, last updated by <span class='editor'>     <a href="    /confluence/display/~ableegoldman
+"
+            aria-label="last.updated.by A. Sophie Blee-Goldman"                       class="url fn"
+                            >A. Sophie Blee-Goldman</a></span> on <a class='last-modified' aria-label='modified on May 11, 2021, select to show changes' title='Show changes' href='/confluence/pages/diffpagesbyversion.action?pageId=103090108&amp;selectedPageVersions=155&amp;selectedPageVersions=156'>May 11, 2021</a>
+    
+            <span class="read-time">
+            28 minute read
+        </span>
+            </li>
+    </ul>
+</div>
+        
+                                            
+        <div id="main-content" class="wiki-content">
+                           
+        <p><div class="toc-macro client-side-toc-macro conf-macro output-block" data-headerelements="H1,H2,H3,H4,H5,H6,H7" data-hasbody="false" data-macro-name="toc"></div></p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Status">Status</h1><p><strong>Current state</strong>: <em>Accepted (2.4.0)</em></p><p><strong>Discussion thread</strong>: <a class="external-link" href="http://mail-archives.apache.org/mod_mbox/kafka-dev/201904.mbox/browser" rel="nofollow">link</a><em><br/></em></p><p><strong>JIRA</strong>:  <div id="refresh-module-1571987081" class="refresh-module-id jira-table conf-macro output-block" data-client-id="TABLE_5aa69414-a9e9-3523-82ec-879b028fb15b_103090108_anonymous_a2V5ID0gS0FGS0EtODAxOSBvciBrZXkgPSBLQUZLQS04MTc5IA==_a2V5c3VtbWFyeXR5cGVjcmVhdGVkdXBkYXRlZGR1ZWFzc2lnbmVlcmVwb3J0ZXJwcmlvcml0eXN0YXR1c3Jlc29sdXRpb24=" data-jira-key="issue-table-TABLE_5aa69414-a9e9-3523-82ec-879b028fb15b_103090108_anonymous_a2V5ID0gS0FGS0EtODAxOSBvciBrZXkgPSBLQUZLQS04MTc5IA==_a2V5c3VtbWFyeXR5cGVjcmVhdGVkdXBkYXRlZGR1ZWFzc2lnbmVlcmVwb3J0ZXJwcmlvcml0eXN0YXR1c3Jlc29sdXRpb24=" data-hasbody="false" data-macro-name="jira">
+<p>
+            </p><div id="refresh-1571987081" class="refresh-macro">
+        </div>
+    
+        
+    
+        
+    <div id="jira-issues-1571987081" style="width: 100%;  overflow: auto;" class="jira-issues">
+        <table class="aui">
+            <tbody>
+                <tr></tr>                 <tr>
+                                                                        <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Key
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Summary
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">T
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Created
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Updated
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Due
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Assignee
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Reporter
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">P
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Status
+                            </th>
+                                                                                                <th style="text-align: left;" class="jira-macro-table-underline-pdfexport">Resolution
+                            </th>
+                                                            </tr>
+                                            </tbody>
+        </table>
+    </div>
+            <div class="refresh-issues-bottom">
+                                        <span class="refresh-action-group">
+                        <div id="refresh-issues-loading-1571987081" class="button-spinner refresh-issues-loading">
+                            <span class="aui-icon aui-icon-wait">Loading...</span>
+                        </div>
+                        <a id="refresh-issues-button-1571987081" class="icon icon-refresh refresh-action refresh-issues-button" rel="nofollow"></a>
+                        <a id="refresh-issues-link-1571987081" class="refresh-action refresh-issues-link" rel="nofollow">Refresh</a>
+                        <span id="error-message-1571987081" class="error-message hidden"></span>
+                        <input type="hidden" class="refresh-wiki" id="refresh-wiki-1571987081" data-wikimarkup="&lt;ac:structured-macro ac:name=&quot;jira&quot; ac:schema-version=&quot;1&quot; ac:macro-id=&quot;275a1998-77ce-4000-943a-651ad482b1b2&quot;&gt;&lt;ac:parameter ac:name=&quot;server&quot;&gt;ASF JIRA&lt;/ac:parameter&gt;&lt;ac:parameter ac:name=&quot;columns&quot;&gt;key,summary,type,created,updated,due,assignee,reporter,priority,status,resolution&lt;/ac:parameter&gt;&lt;ac:parameter ac:name=&quot;maximumIssues&quot;&gt;20&lt;/ac:parameter&gt;&lt;ac:parameter ac:name=&quot;jqlQuery&quot;&gt;key = KAFKA-8019 or key = KAFKA-8179 &lt;/ac:parameter&gt;&lt;ac:parameter ac:name=&quot;serverId&quot;&gt;5aa69414-a9e9-3523-82ec-879b028fb15b&lt;/ac:parameter&gt;&lt;ac:parameter ac:name=&quot;: = | RAW | = :&quot;&gt;server=ASF JIRA|columns=key,summary,type,created,updated,due,assignee,reporter,priority,status,resolution|maximumIssues=20|jqlQuery=key = KAFKA-8019 or key = KAFKA-8179 |serverId=5aa69414-a9e9-3523-82ec-879b028fb15b&lt;/ac:parameter&gt;&lt;ac:parameter ac:name=&quot;: = | TOKEN_TYPE | = :&quot;&gt;BLOCK&lt;/ac:parameter&gt;&lt;/ac:structured-macro&gt;" data-pageid="103090108"/>
+                    </span>
+                    </div>
+        <p></p>
+
+            <div class="jim-sortable-dark-layout"></div>
+    
+</div><em><br/></em></p><p>Please keep the discussion on the mailing list rather than commenting on the wiki (wiki discussions get unwieldy fast).</p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Motivation">Motivation</h1><p><span style="color:var(--ds-text,#172b4d);">Recently Kafka community is promoting </span><a href="https://cwiki.apache.org/confluence/display/KAFKA/Incremental+Cooperative+Rebalancing%3A+Support+and+Policies#IncrementalCooperativeRebalancing:SupportandPolicies-Motivation" rel="nofollow"><span style="color:var(--ds-text-accent-blue,#0055cc);">cooperative rebalancing</span></a><span style="color:var(--ds-text,#172b4d);"> to mitigate the pain points in the stop-the-world rebalancing protocol and an <span>initiation for</span> <span>Kafka Connect </span>already started as </span><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-415%3A+Incremental+Cooperative+Rebalancing+in+Kafka+Connect" rel="nofollow"><span style="color:var(--ds-text-accent-blue,#0055cc);">KIP-415</span></a><span style="color:var(--ds-text,#172b4d);">. </span></p><p><span style="color:var(--ds-text,#172b4d);">This KIP is trying to customize the incremental rebalancing approach for Kafka consumer client, which will be beneficial for heavy-stateful consumers such as Kafka Streams applications.</span></p><p><span style="color:var(--ds-text,#172b4d);">In short, the goals of this KIP are:</span></p><ul><li><span style="color:var(--ds-text,#172b4d);">Reduce unnecessary downtime due to unnecessary partition migration: i.e. partitions being revoked and re-assigned.</span></li><li>Better rebalance behavior for falling out members.</li></ul><p><br/></p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Background">Background</h1><h2 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerRebalanceProtocol:Stop-The-WorldEffect">Consumer Rebalance Protocol: Stop-The-World Effect</h2><p>As mentioned in motivation, we also want to mitigate the stop-the-world effect of current global rebalance protocol. A quick recap of current rebalance semantics on KStream: when rebalance starts, <span style="color:var(--ds-text,#172b4d);">all stream threads would</span></p><ol><li style="list-style-type: decimal;"><p>Join group with all currently assigned tasks revoked.</p></li><li style="list-style-type: decimal;"><p>Wait until group assignment finish to get assigned tasks and resume working.</p></li><li style="list-style-type: decimal;"><p>Replay the assigned tasks state.</p></li><li style="list-style-type: decimal;"><p>Once all replay jobs finish, stream thread transits to running mode.</p></li></ol><p><span style="color:var(--ds-text,#172b4d);">The reason for revoking all ongoing tasks is because we need to guarantee each topic partition is assigned with exactly one consumer at any time. In this way, any</span><span style="color:var(--ds-text,#172b4d);"> topic partition<strong> could not be re-assigned before it is revoked</strong></span><strong><span style="color:var(--ds-text,#172b4d);">.</span></strong></p><p><span style="color:var(--ds-text,#172b4d);">Below shows the process of the rebalance protocol with a new member joining the group.</span></p><p><strong><span style="color:var(--ds-text,#172b4d);"><span class="confluence-embedded-file-wrapper"><img class="confluence-embedded-image" draggable="false" src="/confluence/download/attachments/103090108/Rebalance%20Today.jpg?version=1&amp;modificationDate=1554837450000&amp;api=v2" data-image-src="/confluence/download/attachments/103090108/Rebalance%20Today.jpg?version=1&amp;modificationDate=1554837450000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="110693617" data-linked-resource-version="1" data-linked-resource-type="attachment" data-linked-resource-default-alias="Rebalance Today.jpg" data-base-url="https://cwiki.apache.org/confluence" data-linked-resource-content-type="image/jpeg" data-linked-resource-container-id="103090108" data-linked-resource-container-version="156" tabindex="0" alt=""></span></span></strong></p><h2 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Example:StreamsAssignorRebalanceMetadata">Example: Streams Assignor Rebalance Metadata</h2><p>Today Streams embed a full fledged <code>Consumer</code> client, which hard-code a <code>ConsumerCoordinator</code> inside. Streams then injects a <code>StreamsPartitionAssignor</code> to its pluggable <code>PartitionAssignor</code> interface and inside the <code>StreamsPartitionAssignor</code> we also have a <code>TaskAssignor</code> interface whose default implementation is <code>StickyPartitionAssignor</code>. Streams partition assignor logic today sites in the latter two classes. Hence the hierarchy today is:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">KafkaConsumer -&gt; ConsumerCoordinator -&gt; StreamsPartitionAssignor -&gt; StickyTaskAssignor.</pre>
+</div></div><p><br/></p><p>StreamsPartitionAssignor uses the subscription / assignment metadata byte array field to encode additional information for sticky partitions. More specifically on subscription:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">KafkaConsumer:
+
+
+Subscription =&gt; TopicList SubscriptionInfo
+   TopicList               =&gt; List&lt;String&gt;
+   UserData                =&gt; Bytes
+
+------------------
+
+
+StreamsPartitionAssignor:
+
+UserData (encoded in version 4) =&gt; VersionId LatestSupportVersionId ClientUUID PrevTasks StandbyTasks EndPoint
+   VersionId               =&gt; Int32
+   LatestSupportVersionId  =&gt; Int32
+   ClientUUID              =&gt; 128bit
+   PrevTasks               =&gt; Set&lt;TaskId&gt;
+   StandbyTasks            =&gt; Set&lt;TaskId&gt;
+   EndPoint                =&gt; HostInfo</pre>
+</div></div><p><br/></p><p>And on assignment: </p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">KafkaConsumer:
+
+Assignment = AssignedPartitions AssignmentInfo
+   AssignedPartitions      =&gt; List&lt;String, List&lt;Int32&gt;&gt;
+   UserData                =&gt; Bytes
+
+------------------
+
+StreamsPartitionAssignor:
+
+UserData (encoded in version 4) =&gt; VersionId, LatestSupportedVersionId, ActiveTasks, StandbyTasks, PartitionsByHost, ErrorCode
+   VersionId               =&gt; Int32
+   LatestSupportVersionId  =&gt; Int32
+   ActiveTasks             =&gt; List&lt;TaskId&gt;
+   StandbyTasks            =&gt; Map&lt;TaskId, Set&lt;TopicPartition&gt;&gt;
+   PartitionsByHost        =&gt; Map&lt;HostInfo, Set&lt;TopicPartition&gt;&gt;
+   ErrorCode               =&gt; Int32</pre>
+</div></div><p><br/></p><h2 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Example:ConsumerStickyAssignor">Example: Consumer Sticky Assignor </h2><p>We also have a StickyAssignor provided out of the box trying to mitigate the cost of unnecessary partition migrations. This assignor only relies on subscription metadata but not modifying assignment metadata, as follows:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">KafkaConsumer:
+
+
+Subscription =&gt; TopicList SubscriptionInfo
+   TopicList               =&gt; List&lt;String&gt;
+   UserData                =&gt; Bytes
+
+------------------
+
+
+StickyAssignor:
+
+UserData (encoded in version 1) =&gt; AssignedPartitions
+   AssignedPartitions      =&gt; List&lt;String, List&lt;Int32&gt;&gt;</pre>
+</div></div><p><br/></p><p>The goal of this incremental protocol, is to fully leverage on the sticky assignors which will try to reassign partitions to its previous owners in best effort, such that we will revoke less partitions as possible since the revocation process is costly.</p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-ProposedChanges:IncrementalConsumerRebalanceProtocol"><br/>Proposed Changes: Incremental Consumer Rebalance Protocol</h1><p>We will augment the consumer's rebalance protocol as proposed in <a href="/confluence/spaces/KAFKA/pages/94797868/Incremental+Cooperative+Rebalancing+Support+and+Policies">Incremental Cooperative Rebalancing: Support and Policies</a> with some tweaks compared to <a href="/confluence/spaces/KAFKA/pages/100828003/KIP-415+Incremental+Cooperative+Rebalancing+in+Kafka+Connect">KIP-415</a>. The key idea is that, instead of relying on the single rebalance's synchronization barrier to rebalance the group and hence enforce everyone to give up all the assigned partitions before joining the group as the new generation, we use consecutive rebalances where the end of the first rebalance will actually be used as the synchronization barrier.</p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerProtocol">Consumer Protocol</h3><p>More specifically, we would first inject more metadata at the consumer-layer, as:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">KafkaConsumer:
+
+Subscription =&gt; TopicList UserData AssignedPartitions
+   TopicList               =&gt; List&lt;String&gt;
+   UserData                =&gt; Bytes   
+   AssignedPartitions      =&gt; List&lt;String, List&lt;Int32&gt;&gt;   // new field
+
+
+Assignment = AssignedPartitions UserData
+   AssignedPartitions      =&gt; List&lt;String, List&lt;Int32&gt;&gt;
+   UserData                =&gt; Bytes
+</pre>
+</div></div><p>Note that it is compatible to inject additional fields after the assignor-specific SubscriptionInfo / AssignmentInfo bytes, since on serialization we would first call assignor to encode the info bytes, and then re-allocate larger buffer to append consumer-specific bytes; with the new protocol, we just need to append some fields before, and some fields (a.k.a. those new fields) after the assignor-specific info bytes, and vice-versa on deserialization. So adding fields after the assignor-bytes is still naturally compatible with the plug-in assignor. However there are indeed some compatibility challenges for the consumer protocol upgrade itself, which we will tackle <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Smooth+Auto-Scaling+for+Kafka+Streams#KIP-429:SmoothAuto-ScalingforKafkaStreams-CompatibilityandUpgradePath" rel="nofollow">below</a>.</p><p><br/>In addition, we want to resolve a long-lasting issue that when consumer's being kicked out of the group, since it no longer owns the partitions the `commit` call would doom to fail. To distinguish this case with the normal case that consumers are likely still within the group but just try to re-join, we introduce a new API into the consumer rebalance listener:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">public interface ConsumerRebalanceListener {
+
+
+    void onPartitionsRevoked(Collection&lt;TopicPartition&gt; partitions);
+
+
+    void onPartitionsAssigned(Collection&lt;TopicPartition&gt; partitions);
+
+
+    // new API
+    default void onPartitionsLost(Collection&lt;TopicPartition&gt; partitions) {
+        onPartitionsRevoked(partitions);
+    }
+}</pre>
+</div></div><p><br/>For users implementing this rebalance listener, they would not need to make code changes necessarily if they do not need to instantiate different logic; but they'd still need to <strong>recompile their implementation class</strong>. The semantics of these callbacks do differ in the new cooperative protocol however, so you should review your implementation to make sure there are no logical changes needed. For details, see <strong>ConsumerRebalanceListener and ConsumerPartitionAssignor Semantics</strong> below.</p><p>Note that adding new fields would increase the size of the request, especially in cases like Streams where user metadata has been heavily encoded wither assignor-specific metadata. We are working on <span class="jira-issue conf-macro output-block" data-jira-key="KAFKA-7149" data-client-id="SINGLE_5aa69414-a9e9-3523-82ec-879b028fb15b_103090108_anonymous" data-hasbody="false" data-macro-name="jira">
+                    <a href="https://issues.apache.org/jira/browse/KAFKA-7149" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>KAFKA-7149</a>
+                            -
+            <span class="summary">Getting issue details...</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+                </span> with compression / reformation to reduce the user metadata footprint, and with that we believe adding this new field would not be pushing the size exceeding the message size limit.</p><p><br/></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerCoordinatorAlgorithm">Consumer Coordinator Algorithm</h3><p>Rebalance behavior of the consumer (captured in the consumer coordinator layer) would be changed as follows.</p><ol><li>For every consumer: before sending the join-group request, change the behavior as follows based on the join-group triggering event:<ol><li>If subscription has changed: revoke all partitions who are not of subscription interest by calling <strong><span style="color:var(--ds-icon-accent-magenta,#cd519d);">onPartitionsRevoked</span></strong>, send join-group request with whatever left in the owned partitions in Subscription.</li><li>If topic metadata has changed: call <span style="color:var(--ds-background-accent-green-bolder,#1f845a);"><strong>onPartitionsLost</strong></span> on those owned-but-no-longer-exist partitions; and if the consumer is the leader, send join-group request.</li><li>If received REBALANCE_IN_PROGRESS from heartbeat response / commit response: re-join group with all the currently owned partitions as assigned partitions.</li><li>If received UNKNOWN_MEMBER_ID or ILLEGAL_GENERATION from join-group / sync-group / commit / heartbeat response: reset generation / clear member-id correspondingly, call rebalance listener's <span style="color:var(--ds-background-accent-green-bolder,#1f845a);"><strong>onPartitionsLost</strong></span> for all the partition and then re-join group with <em>empty</em> assigned partition.</li><li>If received MEMBER_ID_REQUIRED from join-group request: set the member id, and then re-send join-group (at this moment the owned partitions should be empty).</li></ol></li><li>For the leader<span>: after getting the received subscription topics, as well as the assigned-partitions, do the following:</span><br/><ol><li>Collect the partitions that are claimed as currently owned from the subscriptions; let's call it <strong>owned-partitions.</strong></li><li>Call the registered assignor of the selected protocol, passing in the cluster metadata and get the returned assignment; let's call the returned assignment <strong>assigned-partitions.</strong> Note the this set could be different from owned-partitions.</li><li>Compare the owned-partitions with assigned-partitions and generate three exclusive sub-sets:<ol><li>Intersection(owned-partitions, assigned-partitions). These are partitions that are still owned by some members, and some of them may be now allocated for new members. Let's call it <strong>maybe-revoking-partitions.</strong></li><li>Minus(assigned-partitions, owned-partitions). These are partitions that are not previously owned by any one. This set is non-empty when its previous owner is on older version and hence revoked them already before joining, or a partition is revoked in previous rebalance by the new versioned member and hence not in any assigned partitions, or it is a newly created partition due to add-partitions. Let's call it <strong>ready-to-migrate-partitions</strong>.</li><li>Minus(owned-partitions, assigned-partitions). These are partitions that does not exist in assigned partitions, but are claimed to be owned by the members. It is non-empty if some topics are deleted, or if the leader's metadata is stale (and hence the generated assignment does not have those topics), or if the previous leader has created some topics in its assignor that are not in the cluster yet (consider the Streams case). Let's call it <strong>unknown-but-owned-partitions</strong>.</li></ol></li><li>For maybe-revoking-partitions, check if the owner has changed. If yes, exclude them from the assigned-partitions list to the new owner. The old owner will realize it does not own it any more, revoke it and then trigger another rebalance for these partitions to finally be reassigned</li><li>For ready-to-migrate-partitions, it is safe to move them to the new member immediately since we know no one owns it before, and hence we can encode the owner from the newly-assigned-partitions directly.</li><li>For unknown-but-owned-partitions, it is also safe to just give them back to whoever claimed to be their owners by encoding them directly as well. If this is due to topic metadata update, then a later rebalance will be triggered anyways.</li></ol></li><li>For every consumer: after received the sync-group response, do the following:<ol><li>Calculate the <strong>newly-added-partitions</strong> as <em>Minus(assigned-partitions, owned-partitions)</em> and the <strong>revoked-partitions</strong> as <em>Minus(owned-partitions, assigned-partitions).</em></li><li>Update the assigned-partitions list.</li><li>If the set of revoked-partitions is non-empty, call the rebalance listener's <strong><span style="color:var(--ds-icon-accent-magenta,#cd519d);">onPartitionsRevoked</span></strong> and rejoin to trigger another rebalance.</li><li>For those newly-added-partitions, call the rebalance listener's <span style="color:var(--ds-background-accent-blue-bolder,#0c66e4);"><strong>onPartitionsAssigned </strong></span>(even if empty).</li></ol></li></ol><p><br/></p><p>Below is a more illustrative of the different set of partitions and their assignment logic:</p><p><span class="confluence-embedded-file-wrapper"><img class="confluence-embedded-image" draggable="false" src="/confluence/download/attachments/103090108/Partition%20assignment.jpg?version=4&amp;modificationDate=1554240923000&amp;api=v2" data-image-src="/confluence/download/attachments/103090108/Partition%20assignment.jpg?version=4&amp;modificationDate=1554240923000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="109455897" data-linked-resource-version="4" data-linked-resource-type="attachment" data-linked-resource-default-alias="Partition assignment.jpg" data-base-url="https://cwiki.apache.org/confluence" data-linked-resource-content-type="image/jpeg" data-linked-resource-container-id="103090108" data-linked-resource-container-version="156" tabindex="0" alt=""></span></p><p><br/></p><p>No changes required from the broker side, since this logic change is completely wrapped inside the consumer protocol / coordinator implementation itself, and to brokers it is just the same as previous version's rebalances.</p><p>Note that one minor difference compared with <span style="color:var(--ds-text-accent-blue,#0055cc);"><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-415%3A+Incremental+Cooperative+Rebalancing+in+Kafka+Connect" rel="nofollow">KIP-415</a> </span>is that we do not introduce the scheduledDelay in the protocol, but instead the consumer will trigger rebalance immediately. This is because the consumer protocol would applies to all consumers (including streams) and hence should be kept simple, and also because <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-345%3A+Introduce+static+membership+protocol+to+reduce+consumer+rebalances" rel="nofollow">KIP-345</a> is being developed in parallel which is aimed for tackling the scaling out / rolling bounce scenarios already.</p><p>We would omit the common scenarios description here since it is already covered in KIP-415, which is very similar to this KIP with the difference of the scheduledDelay above.</p><p><br/></p><p><strong>NOTE</strong> that for this new algorithm to be effective in reducing rebalance costs, it is really expecting the plug-in assignor to be &quot;sticky&quot; in some way, such that the diff of the newly-assigned-partitions and the existing-assigned-partitions can be small, and hence only a few subset of the total number of partitions need to be revoked / migrated at each rebalance in practice – otherwise, we are just paying more rebalance for little benefits. We will talk about how sticky StreamsPartitionAssignor would be updated accordingly in Part II.</p><p>Now the new process for the same new-member-joining example becomes the following under the new protocol (note that on the existing member we will now only call revoke on b-0 once, and no longer revoking both a-0 and b-0 and then later assigning a-0 again:</p><p><span class="confluence-embedded-file-wrapper"><img class="confluence-embedded-image" draggable="false" src="/confluence/download/attachments/103090108/Rebalance%20Incrementally.jpg?version=1&amp;modificationDate=1554837612000&amp;api=v2" data-image-src="/confluence/download/attachments/103090108/Rebalance%20Incrementally.jpg?version=1&amp;modificationDate=1554837612000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="110693619" data-linked-resource-version="1" data-linked-resource-type="attachment" data-linked-resource-default-alias="Rebalance Incrementally.jpg" data-base-url="https://cwiki.apache.org/confluence" data-linked-resource-content-type="image/jpeg" data-linked-resource-container-id="103090108" data-linked-resource-container-version="156" tabindex="0" alt=""></span></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-RebalanceCallbackErrorHandling">Rebalance Callback Error Handling</h3><p>Today, when a user customized rebalance listener callback throws an exception, as long as it is not WakeupException / InterruptedException it will be swallowed and logged with an error. This has been complained by our users that it was not an efficient way for notifying them when it happened (<span class="jira-issue conf-macro output-block" data-jira-key="KAFKA-4600" data-client-id="SINGLE_5aa69414-a9e9-3523-82ec-879b028fb15b_103090108_anonymous" data-hasbody="false" data-macro-name="jira">
+                    <a href="https://issues.apache.org/jira/browse/KAFKA-4600" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>KAFKA-4600</a>
+                            -
+            <span class="summary">Getting issue details...</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+                </span>).</p><p>In this KIP, we propose to slightly modify the semantics of the listener, such that the callback is used more like a &quot;notification&quot; to users about what gets assigned and what gets revoked, etc, and even exceptions gets thrown, it would not cause any of these assignment / revocation results to be changed. Also, if the ConsumerCoordinator found out that there's no need to notify since no &quot;new&quot; partitions have been assigned or revoked, the corresponding callback would not be triggered either.</p><p>More specifically, we will change this behavior as well:</p><ol><li>ConsumerCoordinator will check if the newly assigned / revoked / lost partitions set is empty or not; and if not, we will not trigger the corresponding listener.</li><li>When the listener callback throws an exception, ConsumerCoordinator will log an error, and then re-throws this exception all the way up to KafkaConsumer.poll().<ol><li>Note that with the new rebalance protocol, onPartitionsAssigned / onPartitionsRevoked may be called sequentially. If one throws an exception, we would still proceed to complete the rest of the callbacks while remembering the &quot;first-thrown exception&quot;, and then at the end throws the remembered exception to the user.</li></ol></li></ol><p>Upon capturing the error, users can do the following depend on their exception handling logic:</p><ul><li>Shutdown the consumer gracefully if the exception is considered a fatal error.</li><li>Retry consumer.poll() if they believe the exception is re-triable, be aware that <strong>it will be treated as if no side-effects are taken at all from the exception-thrown callback</strong>.</li></ul><p><br/></p><p><span style="color:var(--ds-text,#172b4d);">To give a concrete example, suppose your current assigned partitions are<span> {</span></span>1,2}<span style="color:var(--ds-text,#172b4d);">, and the newly assigned partitions are<span> {</span></span>2,3}. T<span style="color:var(--ds-text,#172b4d);">he consumer will call onPartitionsRevoked(1) and then onPartitionsAssigned(3). Suppose the former failed with an exception, ConsumerCoordinator would still proceed to complete the latter callback (and assume the latter callback succeeds). If users decide to retry, it is still considered as having successfully changed to {2, 3}</span><span style="color:var(--ds-text,#172b4d);"> – i.e. we consider all of the effects user indicated in the callback have taken place.</span></p><p><br/></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerMetrics">Consumer Metrics</h3><p>As part of this KIP we will also add some metrics on the consumer side related to rebalancing. These include:</p><ol><li>listener callback latency<ol><li>partitions-revoked-latency-avg</li><li>partitions-revoked-latency-max</li><li>partitions-assigned-latency-avg</li><li>partitions-assigned-latency-max</li><li>partitions-lost-latency-avg</li><li>partitions-lost-latency-max</li></ol></li><li>rebalance rate and latency (# rebalances per day, and latency including the callback time as well)<ol><li>rebalance-rate-per-hour</li><li>rebalance-total</li><li>rebalance-latency-avg</li><li>rebalance-latency-max</li><li>rebalance-latency-total</li><li>failed-rebalance-rate-per-hour</li><li>failed-rebalance-total</li></ol></li><li>last-rebalance-seconds-ago (dynamic gauge)</li></ol><p><br/></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-CooperativeStickyAssignorandcustomCOOPERATIVEAssignors">CooperativeStickyAssignor and custom COOPERATIVE Assignors</h3><p>Since we've already encoded the assigned partitions at the consumer protocol layer, for consumer's sticky partitioner we are effectively duplicating this data at both consumer protocol and assignor's user data. Similarly we have a StreamsPartitionAssignor which is sticky as well but relying on its own user data to do it. We have added a new out-of-the-box assignor for users that leverages the Subscription's built-in ownedPartitions. Consumer groups plugging in the new &quot;cooperative-sticky&quot; assignor will follow the incremental cooperative rebalancing protocol. A specific upgrade path is required for users wishing to do a rolling upgrade to the new cooperative assignor, as described in the compatibility section below. </p><p>Users may also wish to implement their own custom assignor, or are already doing so, and want to use the new cooperative protocol. Any assignor that returns COOPERATIVE among the list in #supportedProtocols indicates to the ConsumerCoordinator that it should use the cooperative protocol, and must follow specific assignment logic. First, the assignor should try and be as &quot;sticky&quot; as possible, meaning it should assign partitions back to their previous owner as much as possible. The assignor can leverage the new ownedPartitions field that the Subscription has been augmented with in order to determine the previous assignment. Note that &quot;stickiness&quot; is important for the cooperative protocol to be effective, as in the limit that the new assignment is totally different than the previous one then the cooperative protocol just reduces to the old eager protocol as each member will have to completely revoke all partitions and get a whole new assignment. In addition, any time a partition has to be revoked it will trigger a follow up rebalance, so the assignor should seek to minimize partition movement. Second, in order to ensure safe resource management and clear ownership, the assignor must make sure a partition is revoked by its previous owner before it can be assigned to a new one. Practically speaking, this means that the assignor should generate its &quot;intended&quot; assignment and then check against the previous assignment to see if any partitions are being revoked (that is, in the ownedPartitions but not in the new assignment for a given consumer). If that is the case, that partition should be removed from the new assignment for that round, and wait until it has been revoked so that it can be assigned to its final owner in the second rebalance. See the CooperativeStickyAssignor implementation for an example.</p><p>Note that the CooperativeStickyAssignor is for use by plain consumer clients – the existing StreamsPartitionAssignor has simply been modified to support cooperative so users should not try to plug in the CooperativeStickyAssignor (or any other). The upgrade path for Streams differs slightly from that of the clients CooperativeStickyAssignor as well. See the section on Streams below for details.</p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerRebalanceListenerandConsumerPartitionAssignorSemantics">ConsumerRebalanceListener and ConsumerPartitionAssignor Semantics</h3><p>If you do choose to plug in a cooperative assignor and have also implemented a custom ConsumerRebalanceListener, you should be aware of how the semantics and ordering of these callbacks has changed. In the eager protocol, the timeline of a rebalance is always exactly as follows:</p><ol><li><strong><em>Listener#onPartitionsLost</em></strong><em>:</em> if the member has missed a rebalance and fallen out of the group, this new callback will be invoked on the set of all owned partitions (unless empty). The member will then rejoin the group.</li><li><em><strong>Listener#onPartitionsRevoked</strong></em>: called on the full set of assigned partitions</li><li><strong><em>Assignor#subscriptionUserdata</em>:</strong> called when sending the JoinGroup request</li><li><strong><em>Assignor#assign</em>:</strong> called only for group leader</li><li><em><strong>Assignor#onAssignment</strong></em>: invoked after receiving the new assignment</li><li><strong><em>Listener#onPartitionsAssigne</em>d</strong>: called on the full set of assigned partitions (may have overlap with the partitions passed to #onPartitionsRevoked</li></ol><p>In the cooperative protocol, the timeline is less exact as some methods may or may not be called, at different times, and on different sets of partitions. This will instead look something like the following:</p><ol><li><strong><em>Listener#onPartitionsLost:</em></strong> if the member has missed a rebalance and fallen out of the group, this new callback will be invoked on the set of all owned partitions (unless empty). The member will then rejoin the group.</li><li><strong><em>Listener#onPartitionsRevoked</em></strong><em>:</em> if the topic metadata has changed such that some owned partitions are no longer in our subscription or don't exist, this callback will be invoked on that subset. If there are no partitions to revoke for those reasons, this callback will not be invoked at this point (note that this will likely be the case in a typical rebalance due to membership changes, eg scaling in/out, member crashes/restarts, etc)</li><li><em><strong>Assignor#subscriptionUserdata</strong></em>: called when sending the JoinGroup request</li><li><strong><em>Assignor#assig</em>n</strong><em>:</em> called only for group leader. Note that the #assign method will now have access to the <em>ownedPartitions</em> for each group member (minus any partitions lost/revoked in step 0. or 1.)</li><li><em><strong>Listener#onPartitionsRevoked</strong></em>: this will be called on the subset of previously owned partitions that are intended to be reassigned to another consumer. <em>If this subset is empty, this will not be invoked at all</em>. If this <em>is</em> invoked, it means that a followup rebalance will be triggered so that the revoked partitions can be given to their final intended owner.</li><li><em><strong>Assignor#onAssignment</strong></em>: invoked after receiving the new assignment (will always be <em>after</em> any #onPartitionsRevoked calls, and <em>before</em> #onPartitionsAssigned).</li><li><strong><em>Listener#onPartitionsAssigne</em>d</strong><em>:</em> called on the subset of assigned partitions that were not previously owned before this rebalance. There should be no overlap with the revoked partitions (if any). This will <em>always </em> be called, even if there are no new partitions being assigned to a given member.</li></ol><p>The <em>italics</em> indicate a callback that may not be called at all during a rebalance. Take note in particular that it is possible for #onPartitionsRevoked to never be invoked at all during a rebalance, and should not be relied on to signal that a rebalance has started. The #onPartitionsAssigned callback will however always be called, and can therefore be used to signal to your app that a rebalance has just completed.</p><p><br/></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-CompatibilityandUpgradePath">Compatibility and Upgrade Path</h3><p>Since we are modifying the <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Smooth+Auto-Scaling+for+Kafka+Streams#KIP-429:SmoothAuto-ScalingforKafkaStreams-ConsumerProtocol" rel="nofollow">consumer protocol</a> as above, we need to design the upgrade path to enable consumers upgrade to the new rebalance protocol in an online manner. In fact, the most tricky thing for this KIP is actually how to support safe online upgrade path, such that even if users made mistakes and not strictly following the instructions, we can pause the consumer from proceeding and hence eventually users will realized it by seeing e.g. consumer lags and investigating logs, rather than letting them to fall into an undefined behavior or even worse, having some partitions to be owned by more than one member.</p><p>Note that since we are injecting additional fields at the end of the consumer protocol, the new protocol would still be compatible with the old version. That means, an old-versioned consumer would still be able to deserialize a newer-versioned protocol data (as long as we only append new fields at the end, this would be the case).</p><p>However, when consumers with V1 is joining the group, there's a key behavioral difference that they would NOT revoke their partitions, and hence it is not safe to re-assign any of their partitions as we did in the current (V0) assignment logic. That means, <strong>the leader can only proceed the assignment when it knew that all the members are either on V0, or V1 versions</strong>. </p><p>Another thing to keep in mind that, if the leader itself is still on older version, it would still be able to deserialize the V1 subscription protocol as V0, by ignoring the additional fields, and hence it may &quot;think&quot; everyone is still on V0, while some of them may actually be on the newer version.</p><p><br/></p><p>The key idea to resolve this, is to let Assignor implementors themselves to indicate the ConsumerCoordinator whether they are compatible with the protocol, and then relying ton multi-assignor protocols for a safe upgrade path: users need to keep two assignors when switching the rebalance protocol, and after that they can use another rolling bounce to remove the old versioned protocol.</p><p><br/></p><p>More specifically, we will introduce the new public API ConsumerPartitionAssignor class and its #Subscription / #Assignment (the old classes are actually in `internal` package mistakenly, so we use this KIP to deprecate that class with this new one, along with augmented methods) as follows:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">ConsumerGroupMetadata {
+    public String groupId();
+
+    public int generationId();
+
+    public String memberId();
+
+    public Optional&lt;String&gt; groupInstanceId();
+}
+
+public interface ConsumerPartitionAssignor {
+
+    /**
+     * Return serialized data that will be included in the {@link Subscription} sent to the leader
+     * and can be leveraged in {@link #assign(Cluster, GroupSubscription)} ((e.g. local host/rack information)
+     *
+     * @param topics Topics subscribed to through {@link org.apache.kafka.clients.consumer.KafkaConsumer#subscribe(java.util.Collection)}
+     *               and variants
+     * @return nullable subscription user data
+     */
+    default ByteBuffer subscriptionUserData(Set&lt;String&gt; topics) {
+        return null;
+    }
+
+    /**
+     * Perform the group assignment given the member subscriptions and current cluster metadata.
+     * @param metadata Current topic/broker metadata known by consumer
+     * @param groupSubscription Subscriptions from all members including metadata provided through {@link #subscriptionUserData(Set)}
+     * @return A map from the members to their respective assignments. This should have one entry
+     *         for each member in the input subscription map.
+     */
+    GroupAssignment assign(Cluster metadata, GroupSubscription groupSubscription);
+
+    /**
+     * Callback which is invoked when a group member receives its assignment from the leader.
+     * @param assignment The local member's assignment as provided by the leader in {@link #assign(Cluster, GroupSubscription)}
+     * @param metadata Additional metadata on the consumer (optional)
+     */
+    default void onAssignment(Assignment assignment, ConsumerGroupMetadata metadata) {
+    }
+
+    /**
+     * Indicate which rebalance protocol this assignor works with;
+     * By default it should always work with {@link RebalanceProtocol#EAGER}.
+     */
+    default List&lt;RebalanceProtocol&gt; supportedProtocols() {
+        return Collections.singletonList(RebalanceProtocol.EAGER);
+    }
+
+    /**
+     * Return the version of the assignor which indicates how the user metadata encodings
+     * and the assignment algorithm gets evolved.
+     */
+    default short version() {
+        return (short) 0;
+    }
+
+    /**
+     * Unique name for this assignor (e.g. &quot;range&quot; or &quot;roundrobin&quot; or &quot;sticky&quot;). Note, this is not required
+     * to be the same as the class name specified in {@link ConsumerConfig#PARTITION_ASSIGNMENT_STRATEGY_CONFIG}
+     * @return non-null unique name
+     */
+    String name();
+
+    final class Subscription {
+        public List&lt;String&gt; topics();
+
+        public ByteBuffer userData();
+
+        public List&lt;TopicPartition&gt; ownedPartitions();
+
+        public void setGroupInstanceId(Optional&lt;String&gt; groupInstanceId);
+
+        public Optional&lt;String&gt; groupInstanceId();
+    }
+
+    final class Assignment {
+        public List&lt;TopicPartition&gt; partitions();
+
+        public ByteBuffer userData();
+    }
+
+    final class GroupSubscription {
+        public GroupSubscription(Map&lt;String, Subscription&gt; subscriptions);
+
+        public Map&lt;String, Subscription&gt; groupSubscription();
+    }
+
+    final class GroupAssignment {
+        public GroupAssignment(Map&lt;String, Assignment&gt; assignments);
+
+        public Map&lt;String, Assignment&gt; groupAssignment();
+    }
+
+    /**
+     * The rebalance protocol defines partition assignment and revocation semantics. The purpose is to establish a
+     * consistent set of rules that all consumers in a group follow in order to transfer ownership of a partition.
+     * {@link ConsumerPartitionAssignor} implementors can claim supporting one or more rebalance protocols via the
+     * {@link ConsumerPartitionAssignor#supportedProtocols()}, and it is their responsibility to respect the rules
+     * of those protocols in their {@link ConsumerPartitionAssignor#assign(Cluster, GroupSubscription)} implementations.
+     * Failures to follow the rules of the supported protocols would lead to runtime error or undefined behavior.
+     *
+     * The {@link RebalanceProtocol#EAGER} rebalance protocol requires a consumer to always revoke all its owned
+     * partitions before participating in a rebalance event. It therefore allows a complete reshuffling of the assignment.
+     *
+     * {@link RebalanceProtocol#COOPERATIVE} rebalance protocol allows a consumer to retain its currently owned
+     * partitions before participating in a rebalance event. The assignor should not reassign any owned partitions
+     * immediately, but instead may indicate consumers the need for partition revocation so that the revoked
+     * partitions can be reassigned to other consumers in the next rebalance event. This is designed for sticky assignment
+     * logic which attempts to minimize partition reassignment with cooperative adjustments.
+     */
+    enum RebalanceProtocol {
+        EAGER((byte) 0), COOPERATIVE((byte) 1);
+
+        private final byte id;
+
+        RebalanceProtocol(byte id) {
+            this.id = id;
+        }
+
+        public byte id() {
+            return id;
+        }
+
+        public static RebalanceProtocol forId(byte id) {
+            switch (id) {
+                case 0:
+                    return EAGER;
+                case 1:
+                    return COOPERATIVE;
+                default:
+                    throw new IllegalArgumentException(&quot;Unknown rebalance protocol id: &quot; + id);
+            }
+        }
+    }
+}</pre>
+</div></div><p><br/></p><p>Note the semantical difference between the above added fields:</p><ol><li>The <strong>assignor version</strong> indicate that for the same assignor series, when its encoded metadata and algorithm changed. It is assumed the newer versioned assignor is compatible with older versions, i.e. it is able to deserialize the metadata and adjust its assignment logic to cope with other older versioned members. It will be used in the JoinGroup request so that broker-side coordinator can select the one with highest version to be the leader (details see below). As for the upcoming release, it is not necessary to be used but in the future it can be useful if brokers have also been upgraded to support the augmented JoinGroup request.</li><li>The <strong>assignor preferred protocol</strong> indicate the rebalance protocol it would work with. Note that the same assignor cannot change this preferred protocol value across in higher versions. ConsumerCoordinate will get this information and with that value it will decide which rebalance logic (e.g. the old one, or the newly proposed process in this KIP) to be used.</li><li>The <strong>subscription / assignment version</strong> will be aligned with the assignor version, and it will not be exposed via public APIs to users since they are only used for Consumer Coordinator internally. Upon deserialization / serialization, the version of the subscription / assignment will be de / encoded first and the follow-up serde logic can then be selected correspondingly.</li></ol><p><br/></p><p>With the existing built-in Assignor implementations, they will be updated accordingly:</p><div class="table-wrap"><table class="relative-table wrapped confluenceTable" style="width: 54.3531%;"><colgroup><col style="width: 26.208%;"/><col style="width: 19.929%;"/><col style="width: 24.7065%;"/><col style="width: 28.8015%;"/></colgroup><tbody><tr><th class="confluenceTh"><br/></th><th class="confluenceTh">Highest Version</th><th colspan="1" class="confluenceTh">Supported Strategy</th><th colspan="1" class="confluenceTh">Notes</th></tr><tr><th class="confluenceTh">RangeAssignor</th><td class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd">Current default value.</td></tr><tr><th class="confluenceTh">RoundRobinAssignor</th><td class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><th colspan="1" class="confluenceTh">StickyAssignor</th><td colspan="1" class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><th colspan="1" class="confluenceTh">CooperativeStickyAssignor</th><td colspan="1" class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager, Cooperative</td><td colspan="1" class="confluenceTd">To be default value in 3.0</td></tr><tr><th colspan="1" class="confluenceTh">StreamsAssignor</th><td colspan="1" class="confluenceTd">4</td><td colspan="1" class="confluenceTd">Eager, Cooperative</td><td colspan="1" class="confluenceTd"><br/></td></tr></tbody></table></div><p>The reason we make &quot;range&quot; and &quot;round-robin&quot; to not support cooperative rebalance is that, this protocol implicitly relies on the assignor to be somewhat sticky to make benefits by trading an extra rebalance. However, for these two assignors, they would not be sticky (although sometimes range may luckily reassign partitions back to old owners, it is not best-effort) and hence we've decided to not make them be selected for cooperative protocol. The existing StickyAssignor was not made to support Cooperative to ensure users follow the smooth upgrade path outlined below, and avoid running into trouble if they already use the StickyAssignor and blindly upgrade.</p><p><br/></p><p>The ConsumerCoordinator layer, on the other hand, will select which protocol to use based on the first assignor specified in its configs, as the following:</p><ul><li>Only consider protocols that are supported by all the assignors. If there is no common protocols supported across all the assignors, throw an exception during starting up time.</li><li>If there are multiple protocols that are commonly supported, select the one with the highest id (i.e. the id number indicates how advanced is the protocol, and we would always want to select the most advanced one).</li></ul><p class="diff-block-context">The specific upgrade path is described below. Note that this will be different depending on whether you have a plain consumer app or a Streams app, so make sure to follow the appropriate one.</p><h4 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Consumer">Consumer</h4><p class="diff-block-context">From the user's perspective, the upgrade path of leveraging new protocols is similar to switching to a new assignor. For example, assuming the current version of Kafka consumer is 2.2 and &quot;range&quot; assignor is specified in the config (or no assignor is configured, which is identical as the RangeAssignor is the default below 3.0). The upgrade path would be:</p><ol><li class="diff-block-context">The first rolling bounce is to replace the byte code (i.e. swap the jars) and introduce the cooperative assignor: set the assignors to &quot;cooperative-sticky, range&quot; (or round-robin/sticky/etc if you are using a different assignor already). At this stage, the new versioned byte code sends both assignors in their join-group request, but will still choose EAGER as the protocol since it's still configured with the &quot;range&quot; assignor, and the selected rebalancing protocol must be supported by <em>all</em> assignors. in the list. The &quot;range&quot; assignor will be selected to assign partitions while everyone is following the EAGER protocol. This rolling bounce is safe.</li><li class="diff-block-context">The second rolling bounce is to remove the &quot;range&quot; (or round-robin/sticky/etc) assignor, i.e. only leave the &quot;cooperative-sticky&quot; assignor in the config. At this stage, whoever has been bounced will then choose the COOPERATIVE protocol and not revoke partitions while others not-yet-bounced will still go with EAGER and revoke everything. However the &quot;cooperative-sticky&quot; assignor will be chosen since at least one member who's already bounced will not have &quot;range&quot; any more. The &quot;cooperative-sticky&quot; assignor works even when there are some members in EAGER and some members in COOPERATIVE: it is fine as long as the leader can recognize them and make assignment choice accordingly, and for EAGER members, they've revoked everything and hence did not have any pre-assigned-partitions anymore in the subscription information, hence it is safe just to move those partitions to other members immediately based on the assignor's output.</li></ol><p class="diff-block-context">The key point behind this two rolling bounce is that, we want to avoid the situation where leader is on old byte-code and only recognize &quot;eager&quot;, but due to compatibility would still be able to deserialize the new protocol data from newer versioned members, and hence just go ahead and do the assignment while new versioned members did not revoke their partitions before joining the group. Note the difference with KIP-415 here: since on consumer we do not have the luxury to leverage on list of built-in assignors since it is user-customizable and hence would be black box to the consumer coordinator, we'd need two rolling bounces instead of one rolling bounce to complete the upgrade, whereas Connect only need one rolling bounce.</p><h4 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Streams">Streams</h4><p>Streams embeds its own assignor which will determine the supported protocol. In 2.4 it will enable cooperative rebalancing by default, so a specific upgrade path must be followed in order to safely upgrade to 2.4+ since assignors on the earlier versions do not know how to handle a cooperative rebalance safely (or even what it is). To do so you must perform two rolling bounces as follows:</p><ol><li class="diff-block-context">The first rolling bounce is to replace the byte code (i.e. swap the jars): set the UPGRADE_FROM config to 2.3 (or whatever version you are upgrading from) and then bounce each instance to upgrade it to 2.4. The UPGRADE_FROM config will turn off cooperative rebalancing in the cluster until everyone is on the new byte code, and we can be sure that the leader will be able to safely complete a rebalance. </li><li class="diff-block-context">The second rolling bounce is to remove the UPGRADE_FROM config: simply remove this and bounce each instance for it to begin using the cooperative protocol. Note that unlike plain consumer apps, this means you will have some members on COOPERATIVE while others may still be on EAGER – as long as everyone is on version 2.4 or later, this is safe as the Streams assignor knows how to handle the assignment with either protocol in use. </li></ol><p>Note that as long as the UPGRADE_FROM parameter is set to 2.3 or lower, Streams will stay on EAGER. If for some reason you decide you would like to stay on eager, or return to it after switching to cooperative, you can simply set/leave the UPGRADE_FROM parameter in place. If you intend to use this config to stay on eager even after upgrading, it is recommended that you set it to a version in the range 2.0 - 2.3 as setting it to earlier than 2.0 will force Streams to remain stuck on an earlier metadata version.</p><p>These changes should all be fairly transparent to Streams apps, as there are no semantics only improved rebalancing performance. However, users using Interactive Queries (IQ) or implementing a StateListener will notice that Streams spends less time in the REBALANCING state, as we will not transition to that until the end of the rebalance. This means all owned stores will remain open for IQ while the rebalance is in progress, and Streams will continue to restore active tasks if there are any that are not yet running, and will process standbys if there aren't.</p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-AllowConsumertoReturnRecordsinRebalance">Allow Consumer to Return Records in Rebalance</h3><p>As summarized in <span class="jira-issue conf-macro output-block" data-jira-key="KAFKA-8421" data-client-id="SINGLE_5aa69414-a9e9-3523-82ec-879b028fb15b_103090108_anonymous" data-hasbody="false" data-macro-name="jira">
+                    <a href="https://issues.apache.org/jira/browse/KAFKA-8421" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>KAFKA-8421</a>
+                            -
+            <span class="summary">Getting issue details...</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+                </span>, a further optimization would be to allow consumers to still return messages belong to its owned partitions even when it is within a rebalance.</p><p>In order to do this, we'd need to allow the consumer#commit API to throw RebalanceInProgressException if it is committing offset while a rebalance is undergoing.</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">    /**
+     * ...
+     *
+     * @throws org.apache.kafka.common.errors.RebalanceInProgressException if the consumer instance is in the middle of a rebalance
+     *            so it is not yet determined which partitions would be assigned to the consumer. In such cases you can first
+     *            complete the rebalance by calling {@link #poll(Duration)} and commit can be reconsidered afterwards.
+     *            NOTE when you reconsider committing after the rebalance, the assigned partitions may have changed,
+     *            and also for those partitions that are still assigned their fetch positions may have changed too
+     *            if more records are returned from the {@link #poll(Duration)} call.
+     * ...
+     */
+    @Override
+    public void commitSync() {
+        commitSync(Duration.ofMillis(defaultApiTimeoutMs));
+    }</pre>
+</div></div><p>With this optimization (implemented in 2.5.0) consumer groups can continue to process some records even while a rebalance is in progress. This means that in addition to processing standby and restoring tasks during a rebalance, Streams apps will be able to make progress on running active tasks.</p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-LookingintotheFuture:HeartbeatCommunicatedProtocol">Looking into the Future: Heartbeat Communicated Protocol</h3><p>Note that the above upgrade path relies on the fact that COOPERATIVE and EAGER members can work together within the same generation as long as the leader recognize both; this however may not be true moving forward if we add a third rebalance protocol. One idea to resolve this in the future is that, instead of letting the members to decide which protocol to use &quot;locally&quot; before sending the join-group request, we will use Heartbeat request / response to piggy-back the communication of the group's supported protocols and let members to rely on that &quot;global&quot; information to make decisions. More specifically:</p><ul><li>On Heartbeat Request, we will add additional field as a list of protocols that this member supports.</li><li>On Heartbeat Response, we will add additional field as a single protocol indicating which to use if the error code suggests re-joining the group.</li></ul><p>The broker, upon receiving the heartbeat request, if the indicated supported protocols does not contain the one it has decided to use for the up-coming rebalance, then reply with an fatal error.</p><p><br/></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-LookingintotheFuture:AssignorVersion">Looking into the Future: Assignor Version</h3><p>One semi-orthogonal issue with the current assignor implementation is that, the same assignor may evolve its encoded user metadata byte format; and when that happens, if the leader does not recognize the new format it will cause it to crash. For example today StreamsAssignor has evolved to version 4 of its user metadata bytes, and to cope with old versioned leader we have introduced the &quot;version probing&quot; feature which will require additional rebalances.</p><p>To resolve this issue, I'd propose to modify the JoinGroup protocol in this KIP as well to take the read `protocol version` from the PartitionAssignor.</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">JoinGroupRequest (v5) =&gt; groupId SessionTimeout RebalanceTimeout memberId ProtocolType Protocols ProtocolVersion
+   GroupId                 =&gt; String
+   SessionTimeout          =&gt; Int32
+   RebalanceTimeout        =&gt; Int32
+   MemberId                =&gt; String
+   ProtocolType            =&gt; String
+   Protocols               =&gt; List&lt;Protocol&gt;
+
+Protocol (v0) =&gt; ProtocolName ProtocolMetadata
+   ProtocolName            =&gt; String
+   ProtocolMetadata        =&gt; Bytes
+   ProtocolVersion         =&gt; Int32                   // new field</pre>
+</div></div><p><br/>And then on the broker side, when choosing the leader it will pick the one with the highest protocol version instead of picking it &quot;first come first serve&quot;.</p><p>Although this change will not benefit the upgrade path at this time, in the future if we need to upgrade the assignor again, as long as they would not change the rebalance semantics (e.g. like we did in this KIP, from &quot;eager&quot; to &quot;cooperative&quot;) we can actually use one rolling bounce instead since as long as there's one member on the newer version, that consumer will be picked.</p><p>For example, this can also help saving &quot;version probing&quot; cost on Streams as well: suppose we augment the join group schema with `protocol version` in Kafka version 2.3, and then with both brokers and clients being in version 2.3+, on the first rolling bounce where subscription and assignment schema and / or user metadata has changed, this protocol version will be bumped. On the broker side, when receiving all member's join-group request, it will choose the one that has the highest protocol version (also it assumes higher versioned protocol is always backward compatible, i.e. the coordinator can recognize lower versioned protocol as well) and select it as the leader. Then the leader can decide, based on its received and deserialized subscription information, how to assign partitions and how to encode the assignment accordingly so that everyone can understand it. With this, in Streams for example, no version probing would be needed since we are guaranteed the leader knows everyone's version -- again it is assuming that higher versioned protocol is always backward compatible -- and hence can successfully do the assignment at that round.</p><p><br/></p><h3 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-EdgeCasesDiscussion">Edge Cases Discussion</h3><p>This proposal depends on user's correct behavior that when upgrading to the new version everyone is still using &quot;eager&quot; protocol. But if user mades mistakes, it is still not going to fall into undefined behavior, as the assignor mechanism will guarantee that we must form a consensus on the protocol names, and whoever does not support the chosen one will be kicked out of the group and hence users would be notified about the mis-configure.</p><p>There's a few edge cases to illustrate this:</p><h4 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Non-activepartitionassignor">Non-active partition assignor</h4><p>In some assignors like StreamsPartitionAssignor, there are secondary type of resources (e.g. standby-tasks) being assigned in addition to the active partition assignment which may not obey the cooperative manner since the assignor may not know the &quot;currently owned&quot; list of such resources from the subscription, and therefore it could immediately reassign such resources from one owner to another even if they are not revoked at all from the current owner yet.</p><p>In this case, as long as the secondary resources does not require any synchronization between its owners like the active partition (e.g. reading previously committed offsets) it should be fine. Take StreamsPartitionAssignor for example, its standby-task are owned separately and independently between instances and are only depend on local state directories (including the data as well as the checkpoint file corresponding to the offset). When a standby task is assigned to a host:</p><ul><li>If the host does not contain any state directory for this task, it would bootstrap the standby-task from scratch, this is okay;</li><li>If the host does contain a state directory for this task, AND it also has this standby-task in previous generation (and it is not revoked at all), in this case we should just proceed normally and it is okay;</li><li>If the host does contain a state directory for this task, AND it does not have this standby-task in previous generation, then we should find its checkpoint offset from the current directory gracefully committed when this task migrates out of this instance more than one generation ago. It would resume from that checkpointed offset and is okay.</li></ul><p>So more generally, an assignor supporting COOPERATIVE protocol and is assigning other types of resources than the partition as well would need to make sure that these resource assignment is also respecting the COOPERATIVE rules, or their assignment does not require any synchronization between instances as well.</p><h4 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-DowngradingandOld-VersionedNewMember">Downgrading and Old-Versioned New Member</h4><p>If a consumer is downgraded incorrectly after the above upgrade path is complete: i.e. it just replaced with the old jar without changing any configs, it is treated as first leaving the group, and then rejoining the group as an new member with &quot;eager&quot;. This situation can also be reflected when a new member with &quot;eager&quot; is joining a group (probably mistakenly) whereas everyone else have been switched to &quot;cooperative&quot;. </p><p>At the moment, no consensus protocol can be chosen with this member joining, and hence this member or everyone else will be kicked out of the group with a fatal error.</p><p>The right way to downgrade is to perform a rolling bounce to first add back the RangeAssignor (or whichever assignor you wish to use), and then perform a second rolling bounce in which you remove the CooperativeStickyAssignor and also downgrade the consumers to the old byte code. It's essentially the same as the upgrade path, but in reverse.</p><p><br/></p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-PublicInterface">Public Interface</h1><p>This is to quickly summarize what we would change on the public interface exposed to the user. </p><ol><li>Introducing the new {ConsumerPartitionAssignor} interface and deprecate the old {PartitionAssignor} interface (details see <a href="/confluence/pages/viewpage.action?pageId=103090110#KIP429:KafkaConsumerIncrementalRebalanceProtocol-429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerProtocol">ConsumerProtocol</a>).</li><li>Augmenting the existing {ConsumerRebalanceListener} interface with the new {onPartitionsLost} function (details see <a href="/confluence/pages/viewpage.action?pageId=103090110#KIP429:KafkaConsumerIncrementalRebalanceProtocol-429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerProtocol">ConsumerProtocol</a>).</li><li>Adding a list of new metrics to the consumer instance reflecting rebalance events (details see <a href="/confluence/pages/viewpage.action?pageId=103090110#KIP429:KafkaConsumerIncrementalRebalanceProtocol-429:KafkaConsumerIncrementalRebalanceProtocol-ConsumerMetrics">ConsumerMetrics</a>).</li><li>Augmenting the JoinGroupRequest protocol with the protocol version (details see <a href="/confluence/pages/viewpage.action?pageId=103090110#KIP429:KafkaConsumerIncrementalRebalanceProtocol-429:KafkaConsumerIncrementalRebalanceProtocol-LookingintotheFuture:AssignorVersion">LookingintotheFuture:AssignorVersion</a>).</li></ol><p><br/></p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-Compatibility,Deprecation,andMigrationPlan">Compatibility, Deprecation, and Migration Plan</h1><h2 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-MinimumVersionRequirement"><span style="color:var(--ds-text,#172b4d);">Minimum Version Requirement</span></h2><p><span style="color:var(--ds-text,#172b4d);">This change requires Kafka broker version &gt;= 0.9, where broker will react with a rebalance when a normal consumer rejoin the encoded metadata. </span><span style="color:var(--ds-text,#172b4d);">Client application needs to update to the earliest version which includes KIP-429 version 1.0 change.</span></p><h2 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-RecommendedUpgradeProcedure"><span style="color:var(--ds-text,#172b4d);">Recommended Upgrade Procedure</span></h2><p>As we have mentioned above, a new protocol type shall be created. To ensure smooth upgrade, we need to make sure the existing job won't fail. The procedure is described above.</p><h1 id="KIP429:KafkaConsumerIncrementalRebalanceProtocol-RejectedAlternatives">Rejected Alternatives</h1><p>Another solution that we have discussed about, is to make each assignor only supports one protocol, i.e.:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">interface PartitionAssignor {
+
+    // existing interfaces
+
+    short version();             // new API, the version of the assignor which indicate the user metadata / algorithmic difference.
+
+    String name();
+
+    PartitionAssignorProtocol supportedProtocol();    // new API, indicate the ConsumerCoordinator the rebalance strategy it would work with.
+}</pre>
+</div></div><p><br/></p><p>The existing built-in Assignor implementations will then be updated to:</p><div class="table-wrap"><table class="relative-table wrapped confluenceTable" style="width: 54.5159%;"><colgroup><col style="width: 27.4494%;"/><col style="width: 20.7909%;"/><col style="width: 22.5574%;"/><col style="width: 28.9441%;"/></colgroup><tbody><tr><th class="confluenceTh"><br/></th><th class="confluenceTh">Highest Version</th><th colspan="1" class="confluenceTh">Supported Strategy</th><th colspan="1" class="confluenceTh">Notes</th></tr><tr><th class="confluenceTh">RangeAssignor</th><td class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd">Current default.</td></tr><tr><th class="confluenceTh">RoundRobinAssignor</th><td class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><th class="confluenceTh">StickAssignor (old)</th><td class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><th colspan="1" class="confluenceTh">StickAssignor (new)</th><td colspan="1" class="confluenceTd">0</td><td colspan="1" class="confluenceTd">Cooperative</td><td colspan="1" class="confluenceTd">Will be new default in 3.0</td></tr><tr><th colspan="1" class="confluenceTh">StreamsAssignor (old)</th><td colspan="1" class="confluenceTd">4</td><td colspan="1" class="confluenceTd">Eager</td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><th colspan="1" class="confluenceTh">StreamsAssignor (new)</th><td colspan="1" class="confluenceTd">4</td><td colspan="1" class="confluenceTd">Cooperative</td><td colspan="1" class="confluenceTd"><br/></td></tr></tbody></table></div><p><br/></p><p>Although it makes the upgrade path simpler since we would no longer need the &quot;rebalance.protocol&quot; config on consumer anymore, while just encoding multiple assignors during the first rolling bounce of the upgrade path, it requires duplicated assignor class (of course, the new class could just be extending from the old one and there's not much LOC duplicated) which is a bit cumbersome.</p><p><br/></p>
+
+                
+        
+    
+        </div>
+
+                        
+    
+
+
+
+<div id="labels-section" class="pageSection group">
+    <div class="labels-section-content content-column" entityid="103090108" entitytype="page">
+	<div class="labels-content">
+		
+    <ul class="label-list label-list-right ">
+            <li class="no-labels-message">
+            No labels
+        </li>
+            </ul>
+
+    </div>
+</div>
+</div>
+        
+		
+            
+
+
+
+
+            
+        
+
+
+
+
+
+
+
+
+                        
+    
+<div id="comments-section" class="pageSection group">
+        
+    
+
+
+
+</div>
+        
+
+
+                
+    
+            
+</div>
+
+    
+
+    
+
+
+
+
+    
+    
+
+    
+    
+    
+    
+
+
+    
+<div id="space-tools-web-items" class="hidden">
+                <div data-label="Overview" data-href="/confluence/spaces/viewspacesummary.action?key=KAFKA">Overview</div>
+            <div data-label="Content Tools" data-href="/confluence/pages/reorderpages.action?key=KAFKA">Content Tools</div>
+    </div>
+        
+
+
+
+
+        <div id="sidebar-container">
+                                                                </div><!-- \#sidebar-container -->
+
+            </main><!-- \#main -->
+            
+    
+    
+        
+            
+            
+
+<div id="footer" role="contentinfo">
+    <section class="footer-body">
+
+                                                            <p class="license license-opensource">
+                    Powered by a free <b>Atlassian Confluence Open Source Project License</b> granted to Apache Software Foundation. <a href="https://www.atlassian.com/software/views/opensource-community-additional-license-offer">Evaluate Confluence today</a>.<br>
+                </p>
+                    
+        
+
+        <ul id="poweredby">
+            <li class="noprint">Powered by <a href="https://www.atlassian.com/software/confluence" class="hover-footer-link" rel="nofollow">Atlassian Confluence</a> <span id='footer-build-information'>9.2.28</span></li>
+            <li class="print-only">Printed by Atlassian Confluence 9.2.28</li>
+            <li class="noprint"><a href="https://support.atlassian.com/confluence-server/" class="hover-footer-link" rel="nofollow">Report a bug</a></li>
+            <li class="noprint"><a href="https://www.atlassian.com/company" class="hover-footer-link" rel="nofollow">Atlassian News</a></li>
+        </ul>
+
+        
+
+        <div id="footer-logo"><a href="https://www.atlassian.com/" rel="nofollow">Atlassian</a></div>
+
+                    
+        
+    </section>
+</div>
+
+    
+</div>
+
+</div><!-- \#full-height-container -->
+</div><!-- \#page -->
+
+    <span style="display:none;" id="confluence-server-performance">{"serverDuration": 119, "requestCorrelationId": "59093c97cba83487"}</span>
+</body>
+</html>
+    

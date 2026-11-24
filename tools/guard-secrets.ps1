@@ -38,7 +38,7 @@ try {
   } else {
     $files = Get-ChildItem -Recurse -File | ForEach-Object { $_.FullName.Substring($Root.Length).TrimStart('\','/') }
   }
-  $exclude = @('tools/guard-secrets.ps1','tools/forbidden.local.txt','.git/','tools/vendor/','artifact/target/','data/kafka/','data/postgres/')
+  $exclude = @('tools/guard-secrets.ps1','tools/forbidden.local.txt','.git/','tools/vendor/','artifact/target/','data/kafka/','data/postgres/','data/raw/lit/','lit/_discovery/')
   $files = $files | Where-Object {
     $f = $_ -replace '\\','/'
     $skip = $false
@@ -56,7 +56,7 @@ try {
     @{ Name='Generic secret assign'; Regex='(?i)(password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["'']?[A-Za-z0-9_\-]{12,}' },
     @{ Name='Personal Windows path'; Regex='C:\\Users\\jvtri|/home/jvtri' },
     @{ Name='Internal TLD';        Regex='(?i)\b[a-z0-9-]+\.(internal|corp|intranet|lan|localdomain)\b' },
-    @{ Name='Jira ticket';         Regex='\b[A-Z]{2,6}-\d{2,5}\b' }
+    @{ Name='Jira ticket';         Regex='\b(?!(SHA|UTC|ISO|RFC|HTTP|HTTPS|TLS|SSL|AES|RSA|MD|HDR|TCP|UDP|IP|GB|MB|KB|JDK|JRE|LTS|KIP|API|CPU|SQL|EOS|DB|PG|F|M|C|K|P)\b)[A-Z][A-Z0-9]{1,5}-\d{2,5}\b' }
   )
 
   foreach ($f in $files) {

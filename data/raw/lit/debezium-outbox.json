@@ -1,0 +1,11 @@
+{
+  "url": "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html",
+  "final_url": "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html",
+  "fetched_utc": "2026-11-24T12:19:32Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/debezium-outbox.html",
+  "source_kind": "doc",
+  "sha256": "7e63a9dcb5264e2c55da6d6983a9e49e8375e7eda89b44e63cd7cd54e3d7b8c2",
+  "bytes": 94299
+}

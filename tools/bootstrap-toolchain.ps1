@@ -8,7 +8,7 @@
     - Apache Kafka 3.7.2 (Scala 2.13, KRaft mode)
     - PostgreSQL 16.11 portable binaries (EnterpriseDB)
     - Toxiproxy 2.9.0 (server + cli, Windows amd64)
-  Runtime data (Kafka logs, PostgreSQL data dir, broker configs) lives OUTSIDE the OneDrive-backed
+  Runtime data (Kafka logs, PostgreSQL data dir, broker configs) lives OUTSIDE the cloud-synced
   workspace by default, under %LOCALAPPDATA%\eos-runtime, so sync does not perturb measurements.
   Downloads are cached; checksums are written to vendor/VERSIONS.txt and committed.
 .PARAMETER Force

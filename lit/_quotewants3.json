@@ -1,0 +1,6 @@
+﻿[
+ {"key":"kafka-design","terms":["external system","coordinate"]},
+ {"key":"kip98","terms":["exactly-once delivery","transactional guarantees","atomic write"]},
+ {"key":"debezium-outbox","terms":["exactly","at least once","duplicate"]},
+ {"key":"theodolite2021","terms":["scalability","benchmark","measurement"]}
+]

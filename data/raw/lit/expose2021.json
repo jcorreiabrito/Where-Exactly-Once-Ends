@@ -1,0 +1,22 @@
+{
+  "crossref_doi": "10.1007/978-3-030-84924-5_2",
+  "crossref_fetched_utc": "2026-11-24T12:03:58Z",
+  "crossref_title": "EXPOSE: Experimental Performance Evaluation of Stream Processing Engines Made Easy",
+  "crossref_container": "Lecture Notes in Computer Science",
+  "crossref_year": 2021,
+  "crossref_authors": "Volnes, Espen; Plagemann, Thomas; Goebel, Vera; Kristiansen, Stein",
+  "unpaywall_fetched_utc": "2026-11-24T12:07:16Z",
+  "is_oa": false,
+  "oa_status": "closed",
+  "openalex_fetched_utc": "2026-11-24T12:15:52Z",
+  "openalex_title": "EXPOSE: Experimental Performance Evaluation of Stream Processing Engines Made Easy",
+  "url": "https://doi.org/10.1007/978-3-030-84924-5_2",
+  "final_url": "https://link.springer.com/10.1007/978-3-030-84924-5_2",
+  "fetched_utc": "2026-11-24T12:22:05Z",
+  "http_status": 200,
+  "content_type": "",
+  "cache": "data/raw/lit/expose2021.bin",
+  "source_kind": "landing",
+  "sha256": "32ed63159c77e21ee19ca1b9aa3213ccf0218eb59539560b132a8e68ef0e18ea",
+  "bytes": 3038
+}

@@ -1,0 +1,20 @@
+﻿
+## clopper  (Clopper-Pearson confidence interval binomial proportion exact)  -> 8 hits
+   10.2991/jsta.2014.13.4.3               2014 Journal of Statistical Theory and Applications          Modified Clopper-Pearson Confidence Interval for Binomial Proportion
+   10.32614/cran.package.genbinomapps     2013 CRAN: Contributed Packages                              GenBinomApps: Clopper-Pearson Confidence Interval and Generalized Binomial Distribution
+   10.1002/9781118445112.stat01453        2014 Wiley StatsRef: Statistics Reference Online             Binomial Parameter, Clopper‐Pearson Interval Estimation
+   10.1002/0471667196.ess0360.pub2        2005 Encyclopedia of Statistical Sciences                    Binomial Parameter, Clopper‐Pearson Interval Estimation
+   10.1080/10629360500107527              2006 Journal of Statistical Computation and Simulation       Generalised Clopper–Pearson confidence intervals for the binomial proportion
+   10.1080/03610910903391270              2009 Communications in Statistics - Simulation and Computati The Shortest Clopper–Pearson Confidence Interval for Binomial Probability
+   10.1080/00031305.2015.1019646          2015 The American Statistician                               There's Nothing Wrong With Clopper–Pearson Binomial Confidence Limits
+   10.1093/biomet/26.4.404                1934 Biometrika                                              THE USE OF CONFIDENCE OR FIDUCIAL LIMITS ILLUSTRATED IN THE CASE OF THE BINOMIAL
+
+## ruleofthree  (interpreting zero numerators confidence interval 3/n rule of three)  -> 8 hits
+   10.1001/jama.1983.03330370053031       1983 JAMA                                                    If Nothing Goes Wrong, Is Everything All Right?
+   10.1515/ijb-2022-0061                  2023 The International Journal of Biostatistics              A modified rule of three for the one-sided binomial confidence interval
+   10.4324/9781315225647-54               2017 Interpreting Basic Statistics                           Percentage and 95% Confidence Interval
+   10.4324/9781315266404-57               2016 Interpreting Basic Statistics                           Attitudes and Beliefs About Cigars: Percentage and 95% Confidence Interval
+   10.4324/9781003096764-51               2021 Interpreting Basic Statistics                           Percentage, Standard Error, and 95% Confidence Interval
+   10.1007/springerreference_81873        None SpringerReference                                       Confidence Interval
+   10.1007/springerreference_205267       None SpringerReference                                       Confidence Interval
+   10.1007/springerreference_60839        None SpringerReference                                       Confidence Interval

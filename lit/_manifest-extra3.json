@@ -1,0 +1,5 @@
+[
+  {"key": "newcombe1998", "kind": "abstract",
+   "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE:%22Two-sided%20confidence%20intervals%20for%20the%20single%20proportion%22&format=json&resultType=core"},
+  {"key": "helland-msr", "kind": "landing", "url": "https://www.microsoft.com/en-us/research/publication/idempotence-is-not-a-medical-condition/"}
+]

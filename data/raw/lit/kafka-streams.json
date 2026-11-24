@@ -1,0 +1,11 @@
+{
+  "url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/streams/developer-guide/config-streams.md",
+  "final_url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/streams/developer-guide/config-streams.md",
+  "fetched_utc": "2026-11-24T12:22:22Z",
+  "http_status": 200,
+  "content_type": "text/plain",
+  "cache": "data/raw/lit/kafka-streams.txt",
+  "source_kind": "doc",
+  "sha256": "3b81a98aed3f7e0eee57f75ea74620441bffbdcf013c54ac6079a2d1f226fdc5",
+  "bytes": 80090
+}

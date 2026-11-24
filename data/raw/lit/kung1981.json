@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/319566.319567",
+  "crossref_fetched_utc": "2026-11-24T12:04:31Z",
+  "crossref_title": "On optimistic methods for concurrency control",
+  "crossref_container": "ACM Transactions on Database Systems",
+  "crossref_year": 1981,
+  "crossref_authors": "Kung, H. T.; Robinson, John T.",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:54Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "https://dl.acm.org/doi/pdf/10.1145/319566.319567",
+  "oa_landing": "https://dl.acm.org/doi/pdf/10.1145/319566.319567",
+  "openalex_fetched_utc": "2026-11-24T12:15:30Z",
+  "openalex_title": "On optimistic methods for concurrency control",
+  "openalex_oa_pdf": "https://dl.acm.org/doi/pdf/10.1145/319566.319567",
+  "oa_fetch_utc": "2026-11-24T12:21:08Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

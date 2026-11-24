@@ -1,0 +1,65 @@
+﻿
+######## theodolite2021 [pdf]
+Theodolite: Scalability Benchmarking of Distributed Stream
+Processing Engines in Microservice Architectures
+S¨oren Henninga,∗, Wilhelm Hasselbringa
+aSoftware Engineering Group, Kiel University, 24098 Kiel, Germany
+Abstract
+Distributed stream processing engines are designed with a focus on scalability to process big
+data volumes in a continuous manner. We present the Theodolite method for benchmarking the
+scalability of distributed stream processing engines. Core of this method is the deﬁnition of use
+cases that microservices implementing stream processing have to fulﬁll. For each use case, our
+method identiﬁes relevant workload dimensions that might aﬀect the scalability of a use case.
+We propose to design one benchmark per use case and relevant workload dimension.
+We present a general benchmarking framework, which can be applied to execute the indi-
+vidual benchmarks for a given use case and workload dimension. Our framework executes an
+implementation of the use case’s dataﬂow architecture for diﬀerent workloads of the given di-
+mension and various numbers of processing instances. This way, it identiﬁes how resources
+demand evolves with increasing workloads.
+Within the scope of this paper, we present 4 identiﬁed use cases, derived from processing
+Industrial Internet of Things data, and 7 corresponding workload dimensions. We provide imple-
+mentations of 4 benchmarks with Kafka Streams and Apache Flink as well as an implementation
+of our benchmarking framework to execute scalability benchmarks in cloud environments. We
+use both for evaluating the Theodolite method and for benchmarking Kafka Streams’ and Flink’s
+scalability for diﬀerent deployment options.
+Keywords: Stream Processing, Microservices, Benchmarking, Scalability
+1. Introduction
+The era of big data with its immense volume of data and often varying or unpredictable
+workloads requires software systems to “scale out”, for example, by being distributed among
+multiple computing nodes in elastic cloud environme
+
+######## georges2007 [pdf]
+Statistically Rigorous Java Performance Evaluation
+Andy Georges Dries Buytaert Lieven Eeckhout
+Department of Electronics and Information Systems, Ghent University, Belgium
+{ageorges,dbuytaer,leeckhou}@elis.ugent.be
+Abstract
+Java performance is far from being trivial to benchmark because
+it is affected by various factors such as the Java application, its
+input, the virtual machine, the garbage collector, the heap size, etc.
+In addition, non-determinism at run-time causes the execution time
+of a Java program to differ from run to run. There are a number of
+sources of non-determinism such as Just-In-Time (JIT) compilation
+and optimization in the virtual machine (VM) driven by timer-
+based method sampling, thread scheduling, garbage collection, and
+various system effects.
+There exist a wide variety of Java performance evaluation
+methodologies used by researchers and benchmarkers. These
+methodologies differ from each other in a number of ways. Some
+report average performance over a number of runs of the same
+experiment; others report the best or second best performance ob-
+served; yet others report the worst. Some iterate the benchmark
+multiple times within a single VM invocation; others consider mul-
+tiple VM invocations and iterate a single benchmark execution; yet
+others consider multiple VM invocations and iterate the benchmark
+multiple times.
+This paper shows that prevalent methodologies can be mis-
+leading, and can even lead to incorrect conclusions. The reason
+is that the data analysis is not statistically rigorous. In this pa-
+per, we present a survey of existing Java performance evaluation
+methodologies and discuss the importance of statistically rigorous
+data analysis for dealing with non-determinism. We advocate ap-
+proaches to quantify startup as well as steady-state performance,
+and, in addition, we provide the JavaStats software to automatically
+obtain performance numbers in a rigorous manner. Although this
+paper focuses on Java performance evaluation, many

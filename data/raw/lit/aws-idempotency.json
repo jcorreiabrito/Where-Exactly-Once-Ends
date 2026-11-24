@@ -1,0 +1,11 @@
+{
+  "url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+  "final_url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+  "fetched_utc": "2026-11-24T12:19:41Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/aws-idempotency.html",
+  "source_kind": "doc",
+  "sha256": "a21a29d78bb99a9364aee21d388bde9aff199e34b943f79630d9b2c7a00e8a60",
+  "bytes": 453538
+}

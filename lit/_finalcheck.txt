@@ -1,0 +1,6 @@
+﻿csv rows 63 matrix rows 63 bib entries 63
+csv==bib True csv==matrix True
+types {'peer': 49, 'gray': 14}
+placeholder rows []
+sections 9
+dois 49 empty doi peer 0

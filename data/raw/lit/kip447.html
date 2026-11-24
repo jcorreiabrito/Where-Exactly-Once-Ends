@@ -1,0 +1,1124 @@
+    
+
+<!DOCTYPE html>
+<html lang="en-US"   data-theme="dark:dark light:light" data-color-mode-auto  >
+<head>
+            
+        
+
+                            <title>KIP-447: Producer scalability for exactly once semantics - Apache Kafka - Apache Software Foundation</title>
+    
+        
+
+                        
+    
+                        
+    
+
+                
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=EDGE,chrome=IE7">
+<meta charset="UTF-8">
+<meta id="confluence-context-path" name="confluence-context-path" content="/confluence">
+<meta id="confluence-base-url" name="confluence-base-url" content="https://cwiki.apache.org/confluence">
+
+    <meta id="atlassian-token" name="atlassian-token" content="3f45e8a5f7c2bcee040d176d22b635bb08e33572">
+
+
+<meta id="confluence-space-key" name="confluence-space-key" content="KAFKA">
+<script type="text/javascript">
+        var contextPath = '/confluence';
+</script>
+
+    
+
+    <meta name="confluence-request-time" content="1795522733631">
+        
+    
+        
+            <meta name="ajs-use-keyboard-shortcuts" content="true">
+            <meta name="ajs-is-confluence-admin" content="false">
+            <meta name="ajs-connection-timeout" content="10000">
+            <script type="text/x-template" title="gliffy-webpanel-footer">
+        <div class="gliffy-webpanel-footer"><span>This Confluence installation runs a Free Gliffy License - Evaluate the <a href="http://www.gliffy.com/products/confluence-plugin/">Gliffy Confluence Plugin</a> for your Wiki!</span></div>
+</script>
+
+
+            <style>.ia-fixed-sidebar, .ia-splitter-left {width: 285px;}.theme-default .ia-splitter #main {margin-left: 285px;}.ia-fixed-sidebar {visibility: hidden;}</style>
+            <meta name="ajs-discovered-plugin-features" content="$discoveredList">
+            <meta name="ajs-keyboardshortcut-hash" content="f53cdc7a7358f5b579a749480e9b6c59d0325357503f299e8e9cdfa4e2f1faeb">
+            <meta name="ajs-emojis-allow-current-user-upload-emojis" content="true">
+<meta name="ajs-emojis-max-upload-file-size" content="1">
+
+            
+    
+    
+            <meta name="ajs-page-title" content="KIP-447: Producer scalability for exactly once semantics">
+            <meta name="ajs-latest-published-page-title" content="KIP-447: Producer scalability for exactly once semantics">
+            <meta name="ajs-space-name" content="Apache Kafka">
+            <meta name="ajs-page-id" content="103093950">
+            <meta name="ajs-latest-page-id" content="103093950">
+            <meta name="ajs-content-type" content="page">
+            <meta name="ajs-parent-page-title" content="Kafka Improvement Proposals">
+            <meta name="ajs-parent-page-id" content="50859233">
+            <meta name="ajs-space-key" content="KAFKA">
+            <meta name="ajs-quicksearch-request-timeout" content="5000">
+            <meta name="ajs-max-number-editors" content="12">
+            <meta name="ajs-macro-placeholder-timeout" content="5000">
+            <meta name="ajs-http-connection-timeout" content="30000">
+            <meta name="ajs-http-socket-timeout" content="10000">
+            <meta name="ajs-jira-metadata-count" content="-1">
+            <meta name="ajs-from-page-title" content="">
+            <meta name="ajs-can-remove-page" content="false">
+            <meta name="ajs-can-remove-page-hierarchy" content="false">
+            <meta name="ajs-browse-page-tree-mode" content="view">
+            <meta name="ajs-shared-drafts" content="true">
+            <meta name="ajs-context-path" content="/confluence">
+            <meta name="ajs-base-url" content="https://cwiki.apache.org/confluence">
+            <meta name="ajs-version-number" content="9.2.28">
+            <meta name="ajs-build-number" content="9117">
+            <meta name="ajs-remote-user" content="">
+            <meta name="ajs-remote-user-key" content="">
+            <meta name="ajs-remote-user-has-licensed-access" content="false">
+            <meta name="ajs-remote-user-has-browse-users-permission" content="false">
+            <meta name="ajs-current-user-fullname" content="">
+            <meta name="ajs-current-user-avatar-uri-reference" content="/confluence/images/icons/profilepics/anonymous.svg">
+            <meta name="ajs-static-resource-url-prefix" content="/confluence">
+            <meta name="ajs-global-settings-attachment-max-size" content="52428800">
+            <meta name="ajs-global-settings-quick-search-enabled" content="true">
+            <meta name="ajs-user-locale" content="en_US">
+            <meta name="ajs-user-timezone-offset" content="0">
+            <meta name="ajs-enabled-dark-features" content="site-wide.shared-drafts,site-wide.synchrony,migration-assistant.enable.assess-l1-cloud-tooling.feature,confluence.view.edit.transition,confluence.attachments.bulk.delete,confluence-inline-comments-resolved,http.session.registrar,theme.switcher,scope.manage.subscriptions,atlassian.cdn.static.assets,confluence.efi.onboarding.rich.space.content,file-annotations,applinks.uniconn,crowd.sync.nested.groups.group.membership.changes.batching.enabled,atlassian.webresource.performance.tracking.disable,confluence.page.readtime,atlassian.authentication.sso.fallback.to.cached.user.when.operation.failed,lucene.caching.filter,confluence.table.resizable,notification.batch,confluence-inline-comments-rich-editor,confluence.copy-heading-link,site-wide.synchrony.opt-in,atlassian.webresource.twophase.js.i18n.disabled,confluence.edit.wordcount,gatekeeper-ui-v2,confluence.search.improvements.ranking,crowd.event.transformer.directory.manager.cache,mobile.supported.version,crowd.sync.delete.user.memberships.batching.enabled,confluence.dark.theme.text.colors,quick-reload-inline-comments-flags,cql.search.screen,clc.quick.create,nps.survey.inline.dialog,confluence.efi.onboarding.new.templates,pdf-preview,com.atlassian.analytics.essential.supported,confluence.retention.rules.trash.fast.removal,previews.sharing,previews.versions,collaborative-audit-log,confluence.reindex.improvements,previews.conversion-service,atlassian.servlet.filter.default.to.licensed.access.enabled,read.only.mode,graphql,benefits.modal,previews.trigger-all-file-types,AsyncReplicationCache,attachment.extracted.text.extractor,confluence.readable.url,previews.sharing.pushstate,tc.tacca.dacca,confluence.reindex.audit,atlassian.rest.default.to.licensed.access.enabled,confluence.retention.rules.version.fast.removal,confluence.denormalisedpermissions,file-annotations.likes,v2.content.name.searcher,confluence.reindex.spaces,confluence.fast-xml-backup-restore,embedded.crowd.directory.azuread.enabled,pulp,confluence-inline-comments,confluence-inline-comments-dangling-comment,confluence.retention.rules">
+            <meta name="ajs-atl-token" content="3f45e8a5f7c2bcee040d176d22b635bb08e33572">
+            <meta name="ajs-user-date-pattern" content="dd MMM yyyy">
+            <meta name="ajs-access-mode" content="READ_WRITE">
+            <meta name="ajs-render-mode" content="READ_WRITE">
+            <meta name="ajs-same-site-cookie-default-policy" content="Lax">
+            <meta name="ajs-date.format" content="MMM dd, yyyy">
+    
+    <link rel="shortcut icon" href="/confluence/s/-klt66k/9117/u8nj3q/1/_/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/confluence/s/-klt66k/9117/u8nj3q/1/_/favicon.ico">
+
+<link rel="search" type="application/opensearchdescription+xml" href="/confluence/opensearch/osd.action" title="Apache Software Foundation"/>
+    
+                    
+            <meta name="ajs-create-issue-metadata-show-discovery" content="false">
+            
+
+    <script>
+window.WRM=window.WRM||{};window.WRM._unparsedData=window.WRM._unparsedData||{};window.WRM._unparsedErrors=window.WRM._unparsedErrors||{};
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.entity-types"]="{\u0022singular\u0022:{\u0022refapp.charlie\u0022:\u0022Charlie\u0022,\u0022fecru.project\u0022:\u0022Crucible Project\u0022,\u0022fecru.repository\u0022:\u0022FishEye Repository\u0022,\u0022stash.project\u0022:\u0022Stash Project\u0022,\u0022generic.entity\u0022:\u0022Generic Project\u0022,\u0022confluence.space\u0022:\u0022Confluence Space\u0022,\u0022bamboo.project\u0022:\u0022Bamboo Project\u0022,\u0022jira.project\u0022:\u0022Jira Project\u0022},\u0022plural\u0022:{\u0022refapp.charlie\u0022:\u0022Charlies\u0022,\u0022fecru.project\u0022:\u0022Crucible Projects\u0022,\u0022fecru.repository\u0022:\u0022FishEye Repositories\u0022,\u0022stash.project\u0022:\u0022Stash Projects\u0022,\u0022generic.entity\u0022:\u0022Generic Projects\u0022,\u0022confluence.space\u0022:\u0022Confluence Spaces\u0022,\u0022bamboo.project\u0022:\u0022Bamboo Projects\u0022,\u0022jira.project\u0022:\u0022Jira Projects\u0022}}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-license-banner:confluence-license-banner-resources.license-details"]="{\u0022daysBeforeLicenseExpiry\u0022:0,\u0022daysBeforeMaintenanceExpiry\u0022:0,\u0022showLicenseExpiryBanner\u0022:false,\u0022showMaintenanceExpiryBanner\u0022:false,\u0022renewUrl\u0022:null,\u0022salesUrl\u0022:null}";
+WRM._unparsedData["com.atlassian.plugins.atlassian-plugins-webresource-plugin:context-path.context-path"]="\u0022/confluence\u0022";
+WRM._unparsedData["confluence.macro.metadata.provider:macro-browser-metadata-resources.macro-meta-client-cache-key"]="\u00221795097726090\u0022";
+WRM._unparsedData["com.atlassian.analytics.analytics-client:policy-update-init.policy-update-data-provider"]="false";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.authentication-types"]="{\u0022com.atlassian.applinks.api.auth.types.BasicAuthenticationProvider\u0022:\u0022Basic Access\u0022,\u0022com.atlassian.applinks.api.auth.types.TrustedAppsAuthenticationProvider\u0022:\u0022Trusted Applications\u0022,\u0022com.atlassian.applinks.api.auth.types.CorsAuthenticationProvider\u0022:\u0022CORS\u0022,\u0022com.atlassian.applinks.api.auth.types.OAuthAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuthAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuthWithImpersonationAuthenticationProvider\u0022:\u0022OAuth\u0022,\u0022com.atlassian.applinks.api.auth.types.ThreeLeggedOAuth2AuthenticationProvider\u0022:\u0022OAuth 2.0\u0022,\u0022com.atlassian.applinks.api.auth.types.TwoLeggedOAuth2AuthenticationProvider\u0022:\u0022OAuth 2.0\u0022}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-search-ui-plugin:confluence-search-ui-plugin-resources.i18n-data"]="{\u0022search.ui.recent.link.text\u0022:\u0022View more recently visited\u0022,\u0022search.ui.search.results.empty\u0022:\u0022We couldn\u0027\u0027t find anything matching \u005C\u0022{0}\u005C\u0022.\u0022,\u0022search.ui.filter.clear.selected\u0022:\u0022Clear selected items\u0022,\u0022search.ui.content.name.search.items.panel.load.all.top.items.button.text\u0022:\u0022Show more app results...\u0022,\u0022search.ui.filter.contributor.button.text\u0022:\u0022Contributor\u0022,\u0022search.ui.filter.space.current.label\u0022:\u0022CURRENT\u0022,\u0022search.ui.clear.input.button.text\u0022:\u0022Clear text\u0022,\u0022search.ui.search.results.clear.button\u0022:\u0022clear your filters.\u0022,\u0022help.search.ui.link.title\u0022:\u0022Search tips\u0022,\u0022search.ui.container.close.text\u0022:\u0022Close\u0022,\u0022search.ui.filter.date.month.text\u0022:\u0022The past month\u0022,\u0022search.ui.infinite.scroll.button.text\u0022:\u0022More results\u0022,\u0022search.ui.filter.date.button.text\u0022:\u0022Date\u0022,\u0022search.ui.filter.date.week.text\u0022:\u0022The past week\u0022,\u0022search.ui.result.subtitle.calendar\u0022:\u0022Team calendar\u0022,\u0022search.ui.filter.date.heading\u0022:\u0022Last modified within\u0022,\u0022search.ui.filter.space.input.label\u0022:\u0022Find spaces...\u0022,\u0022search.ui.generic.error\u0022:\u0022Something went wrong. Refresh the page, or contact your admin if this keeps happening.\u0022,\u0022search.ui.recent.spaces\u0022:\u0022Recent Spaces\u0022,\u0022search.ui.result.subtitle.space\u0022:\u0022Space\u0022,\u0022search.ui.filter.space.category.input.label\u0022:\u0022Find space categories...\u0022,\u0022search.ui.filter.space.archive.label\u0022:\u0022Search archived spaces\u0022,\u0022search.ui.filter.label\u0022:\u0022filter\u0022,\u0022search.ui.filter.date.all.text\u0022:\u0022Any time\u0022,\u0022search.ui.filter.date.hour.text\u0022:\u0022The past day\u0022,\u0022search.ui.filters.heading\u0022:\u0022Filter by\u0022,\u0022search.ui.filter.label.input.label\u0022:\u0022Find labels...\u0022,\u0022search.ui.recent.items.anonymous\u0022:\u0022Start exploring. Your search results will appear here.\u0022,\u0022search.ui.input.label\u0022:\u0022Search\u0022,\u0022search.ui.input.aria.label\u0022:\u0022Search query\u0022,\u0022search.ui.search.result\u0022:\u0022{0,choice,1#{0} search result|1\u003c{0} search results}\u0022,\u0022search.ui.filter.label.button.text\u0022:\u0022Label\u0022,\u0022search.ui.container.clear.ariaLabel\u0022:\u0022Clear\u0022,\u0022search.ui.input.alert\u0022:\u0022Hit enter to search\u0022,\u0022search.ui.filter.no.result.text\u0022:\u0022We can\u0027\u0027t find anything matching your search\u0022,\u0022search.ui.result.subtitle.user\u0022:\u0022User profile\u0022,\u0022search.ui.filter.contributor.input.label\u0022:\u0022Find people...\u0022,\u0022search.ui.filter.content.type.button.text\u0022:\u0022Type\u0022,\u0022search.ui.filter.date.year.text\u0022:\u0022The past year\u0022,\u0022search.ui.advanced.search.link.text\u0022:\u0022Advanced search\u0022,\u0022search.ui.filter.space.button.text\u0022:\u0022Space\u0022,\u0022search.ui.search.results.clear.line2\u0022:\u0022Try a different search term or\u0022,\u0022search.ui.filter.space.category.button.text\u0022:\u0022Space category\u0022,\u0022search.ui.search.results.clear.line1\u0022:\u0022We couldn\u0027\u0027t find anything matching your search.\u0022,\u0022search.ui.content.name.search.items.panel.load.all.top.items.admin.button.text\u0022:\u0022Show more settings and app results...\u0022,\u0022search.ui.recent.pages\u0022:\u0022Recently visited\u0022,\u0022search.ui.search.result.anonymous\u0022:\u0022{0,choice,1#{0} search result|1\u003c{0} search results}. Have an account? {1}Log in{2} to expand your search.\u0022,\u0022search.ui.recent.items.empty\u0022:\u0022Start exploring. Pages and spaces you\u0027\u0027ve visited recently will appear here.\u0022,\u0022search.ui.filter.space.init.heading\u0022:\u0022recent spaces\u0022}";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.applinks-types"]="{\u0022crowd\u0022:\u0022Crowd\u0022,\u0022confluence\u0022:\u0022Confluence\u0022,\u0022fecru\u0022:\u0022FishEye / Crucible\u0022,\u0022stash\u0022:\u0022Stash\u0022,\u0022uniconn.backbone\u0022:\u0022Atlassian Cloud\u0022,\u0022jiraMobile\u0022:\u0022Jira DC Mobile Application\u0022,\u0022jira\u0022:\u0022Jira\u0022,\u0022uniconn.cloud-product\u0022:\u0022Cloud Product\u0022,\u0022refapp\u0022:\u0022Reference Application\u0022,\u0022bamboo\u0022:\u0022Bamboo\u0022,\u0022confluenceMobile\u0022:\u0022Confluence DC Mobile Application\u0022,\u0022generic\u0022:\u0022Generic Application\u0022}";
+WRM._unparsedData["com.atlassian.confluence.plugins.synchrony-interop:synchrony-status-banner-loader.synchrony-status"]="false";
+WRM._unparsedData["com.atlassian.applinks.applinks-plugin:applinks-common-exported.applinks-help-paths"]="{\u0022entries\u0022:{\u0022applinks.docs.root\u0022:\u0022https://confluence.atlassian.com/display/APPLINKS-101/\u0022,\u0022applinks.docs.diagnostics.troubleshoot.sslunmatched\u0022:\u0022SSL+and+application+link+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthsignatureinvalid\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthtimestamprefused\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.delete.entity.link\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.docs.adding.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.administration.guide\u0022:\u0022Application+Links+Documentation\u0022,\u0022applinks.docs.oauth.security\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.troubleshoot.application.links\u0022:\u0022Troubleshoot+application+links\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unknownerror\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.trusted.apps\u0022:\u0022Configuring+Trusted+Applications+authentication+for+an+application+link\u0022,\u0022applinks.docs.diagnostics.troubleshoot.authlevelunsupported\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.ssluntrusted\u0022:\u0022SSL+and+application+link+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unknownhost\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.delete.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.adding.project.link\u0022:\u0022Configuring+Project+links+across+Applications\u0022,\u0022applinks.docs.link.applications\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.diagnostics.troubleshoot.oauthproblem\u0022:\u0022OAuth+troubleshooting+guide\u0022,\u0022applinks.docs.diagnostics.troubleshoot.migration\u0022:\u0022Update+application+links+to+use+OAuth\u0022,\u0022applinks.docs.relocate.application.link\u0022:\u0022Link+Atlassian+applications+to+work+together\u0022,\u0022applinks.docs.administering.entity.links\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.uniconn.configuring.link\u0022:\u0022https://confluence.atlassian.com/enterprise/connect-data-center-to-cloud-in-admin-hub-1671463000.html\u0022,\u0022applinks.docs.upgrade.application.link\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.diagnostics.troubleshoot.connectionrefused\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.oauth\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.insufficient.remote.permission\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.configuring.application.link.auth\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.diagnostics\u0022:\u0022Application+links+diagnostics\u0022,\u0022applinks.docs.configured.authentication.types\u0022:\u0022OAuth+security+for+application+links\u0022,\u0022applinks.docs.adding.entity.link\u0022:\u0022Create+links+between+projects\u0022,\u0022applinks.docs.diagnostics.troubleshoot.unexpectedresponse\u0022:\u0022Network+and+connectivity+troubleshooting+guide\u0022,\u0022applinks.docs.configuring.auth.basic\u0022:\u0022Configuring+Basic+HTTP+Authentication+for+an+Application+Link\u0022,\u0022applinks.docs.diagnostics.troubleshoot.authlevelmismatch\u0022:\u0022OAuth+troubleshooting+guide\u0022}}";
+WRM._unparsedData["com.atlassian.confluence.plugins.confluence-feature-discovery-plugin:confluence-feature-discovery-plugin-resources.test-mode"]="false";
+if(window.WRM._dataArrived)window.WRM._dataArrived();</script>
+<link rel="stylesheet" href="/confluence/s/0d623e943c22f8571e717b82aae94154-CDN/-klt66k/9117/u8nj3q/168e675a2b337b02bc9a495b220b47bf/_/download/contextbatch/css/_super/batch.css" data-wrm-key="_super" data-wrm-batch-type="context" media="all">
+<link rel="stylesheet" href="/confluence/s/7d368be2c85a38de6a95af606b7ddedf-CDN/-klt66k/9117/u8nj3q/6dcd84a0ebc3cf22d99120e87d62c596/_/download/contextbatch/css/atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super/batch.css?cefp_collab_enabled=true&amp;cefp_ed_perm=false&amp;cefp_is_admin=false&amp;gatekeeper-ui-v2=true&amp;highlightactions=true&amp;hostenabled=true&amp;table-resizable.breaking-text=false&amp;theme.switcher=true" data-wrm-key="atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super" data-wrm-batch-type="context" media="all">
+<link rel="stylesheet" href="/confluence/s/d41d8cd98f00b204e9800998ecf8427e-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes.css" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes" data-wrm-batch-type="resource" media="all">
+<script src="/confluence/s/a208977d57fbf688cdf1f3fb51cedf73-CDN/-klt66k/9117/u8nj3q/168e675a2b337b02bc9a495b220b47bf/_/download/contextbatch/js/_super/batch.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="_super" data-wrm-batch-type="context" data-initially-rendered></script>
+<script src="/confluence/s/aaa2f030370ea666b56fab6f62375011-CDN/-klt66k/9117/u8nj3q/6dcd84a0ebc3cf22d99120e87d62c596/_/download/contextbatch/js/atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super/batch.js?cefp_collab_enabled=true&amp;cefp_ed_perm=false&amp;cefp_is_admin=false&amp;gatekeeper-ui-v2=true&amp;highlightactions=true&amp;hostenabled=true&amp;i18n-function-namespace-disabled=false&amp;locale=en-US&amp;table-resizable.breaking-text=false&amp;theme.switcher=true" data-wrm-key="atl.confluence.plugins.pagetree-desktop,main,viewcontent,atl.general,page,atl.comments,-_super" data-wrm-batch-type="context" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd/com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.532dee4ffd" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd/com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.0e8e0008dd" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-base-themes" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes/com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-compatibility-themes" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a/com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.vendors--1d1867466a" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a/com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.splitchunk.1d1867466a" data-wrm-batch-type="resource" data-initially-rendered></script>
+<script src="/confluence/s/0d0508de0881f029ac24103e6c5f0d73-CDN/-klt66k/9117/u8nj3q/9.12.16/_/download/batch/com.atlassian.auiplugin:split_aui.page.design-tokens-api/com.atlassian.auiplugin:split_aui.page.design-tokens-api.js?i18n-function-namespace-disabled=false&amp;locale=en-US" data-wrm-key="com.atlassian.auiplugin:split_aui.page.design-tokens-api" data-wrm-batch-type="resource" data-initially-rendered></script>
+
+    
+
+        
+    
+
+        
+        <meta name="ajs-site-title" content="Apache Software Foundation" />
+            
+    
+
+    
+                <link rel="canonical" href="https://cwiki.apache.org/confluence/spaces/KAFKA/pages/103093950/KIP-447+Producer+scalability+for+exactly+once+semantics">
+        <link rel="shortlink" href="https://cwiki.apache.org/confluence/x/vhYlBg">
+    <meta name="wikilink" content="[KAFKA:KIP-447: Producer scalability for exactly once semantics]">
+    <meta name="page-version" content="105">
+    <meta name="ajs-page-version" content="105">
+
+</head>
+
+    
+<body      id="com-atlassian-confluence" class="theme-default  aui-layout aui-theme-default">
+
+        
+            <div id='stp-licenseStatus-banner'></div>
+    <div id="page">
+<div id="full-height-container">
+    <div id="header-precursor">
+        <div class="cell">
+            <p style="text-align:center;font-size:1.2em;font-weight:bolder;background-color:#FFFFC5">DUE TO SPAM, SIGN-UP IS DISABLED. Goto <a href="https://selfserve.apache.org/confluence-account.html">Selfserve wiki signup</a> and request an account.</p>
+                            </div>
+    </div>
+    
+    
+
+
+
+
+
+
+<header id="header" role="banner">
+            <a class="aui-skip-link" href="https://cwiki.apache.org/confluence/login.action?os_destination=%2Fspaces%2FKAFKA%2Fpages%2F103093950%2FKIP-447%2BProducer%2Bscalability%2Bfor%2Bexactly%2Bonce%2Bsemantics" tabindex="1">Log in</a>
+        <nav class="aui-header aui-dropdown2-trigger-group" aria-label="Site"><div class="aui-header-inner"><div class="aui-header-before"><button class=" aui-dropdown2-trigger app-switcher-trigger aui-dropdown2-trigger-arrowless" aria-controls="app-switcher" aria-haspopup="true" role="button" data-aui-trigger href="#app-switcher"><span class="aui-icon aui-icon-small aui-iconfont-appswitcher">Linked Applications</span></button><div id="app-switcher" class="aui-dropdown2 aui-style-default" role="menu" hidden data-is-user-admin="false" data-is-switcher="true"><div class="app-switcher-loading">Loading...</div></div></div><div class="aui-header-primary"><span id="logo" class="aui-header-logo aui-header-logo-confluence"><a href="/confluence/" aria-label="Go to home page"><span class="aui-header-logo-device">Apache Software Foundation</span></a></span><ul class="aui-nav">
+                            <li>
+            
+    
+        
+<a  id="space-directory-link" href="/confluence/spacedirectory/view.action"  class=" aui-nav-imagelink"   title="Spaces">
+            <span>Spaces</span>
+    </a>
+        </li>
+                                <li class="aui-buttons">
+            </li>
+</ul>
+</div><div class="aui-header-secondary"><ul class="aui-nav">
+                        <li>
+        <div id="search-ui" class="aui-quicksearch dont-default-focus header-quicksearch"><button id="quick-search-query-button" aria-label="Search" aria-haspopup= "dialog" ></button><input id="quick-search-query" title="Search query" aria-label="Search query" placeholder="Search" type="text" aria-haspopup= "dialog" /><div id="quick-search-alert" role="alert">Hit enter to search</div><aui-spinner size="small"></aui-spinner></div>
+    </li>
+        <li>
+            
+        <a id="help-menu-link" role="button" class="aui-nav-link aui-dropdown2-trigger aui-dropdown2-trigger-arrowless" href="#" aria-haspopup="true" aria-owns="help-menu-link-content" title="Help">
+        <span class="aui-icon aui-icon-small aui-iconfont-question-filled">Help</span>
+    </a>
+    <nav id="help-menu-link-content" class="aui-dropdown2 aui-style-default" >
+                    <div class="aui-dropdown2-section">
+                                    <strong role="heading" aria-level="2"></strong>
+                                <ul role="menu"
+                     role="menu"                    aria-label="Help"                    id="help-menu-link-pages"                    class="aui-list-truncate section-pages first">
+                                            <li role="presentation">
+        
+            
+<a role="menuitem"  id="confluence-help-link" href="https://docs.atlassian.com/confluence/docs-92/" class="    "      title="Visit the Confluence documentation home"  target="_blank"
+>
+        Online Help
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="keyboard-shortcuts-link" href="/confluence" class="    "      title="View available keyboard shortcuts" >
+        Keyboard Shortcuts
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="feed-builder-link" href="/confluence/configurerssfeed.action" class="    "      title="Create your custom RSS feed." >
+        Feed Builder
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="whats-new-menu-link" href="https://docs.atlassian.com/confluence/docs-92/help.whats.new.iframe.link" class="    "   >
+        What’s new
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="whats-new-menu-link" href="https://confluence.atlassian.com/display/DOC/Confluence+9.2+Release+Notes" class="    "   >
+        What’s new
+</a>
+</li>
+                                            <li role="presentation">
+    
+            
+<a role="menuitem"  id="confluence-about-link" href="/confluence/aboutconfluencepage.action" class="    "      title="Get more information about Confluence" >
+        About Confluence
+</a>
+</li>
+                                    </ul>
+            </div>
+            </nav>
+    
+    </li>
+        <li>
+                
+    
+    </li>
+        <li>
+            
+    </li>
+        <li>
+                                            <li>
+        
+            
+<a role="menuitem"  id="login-link" href="/confluence/login.action?os_destination=%2Fspaces%2FKAFKA%2Fpages%2F103093950%2FKIP-447%2BProducer%2Bscalability%2Bfor%2Bexactly%2Bonce%2Bsemantics" class="   user-item login-link "   >
+        Log in
+</a>
+</li>
+                        
+    </li>
+    </ul>
+</div></div><!-- .aui-header-inner--><aui-header-end></aui-header-end></nav><!-- .aui-header -->
+    <br class="clear">
+</header>
+    
+
+    
+    	<div class="ia-splitter">
+    		<div class="ia-splitter-left">
+    			<div class="ia-fixed-sidebar" role="complementary" aria-label=sidebar>
+                                            
+                            <div class="acs-side-bar ia-scrollable-section"><div class="acs-side-bar-space-info tipsy-enabled" data-configure-tooltip="Edit space details"><a class="space-information-link" href="/confluence/spaces/KAFKA/pages/27821303/Index" title="Apache Kafka"><div class="avatar"><div class="space-logo" data-key="KAFKA" data-name="Apache Kafka" data-entity-type="confluence.space"><div class="avatar-img-container"><div class="avatar-img-wrapper"><img class="avatar-img" src="/confluence/download/attachments/27821302/KAFKA?version=2&amp;modificationDate=1391968911000&amp;api=v2" alt=""></div></div></div></div><div class="space-information-container"><div class="name" title="Apache Kafka">Apache Kafka</div></div></a><button type="button" class="flyout-handle icon aui-icon aui-icon-small aui-iconfont-edit" title="Edit space details" >Edit space details</button></div><div class="acs-side-bar-content"><div class="acs-nav-wrapper"><div class="acs-nav" data-has-create-permission="false" data-quick-links-state="null" data-page-tree-state="null" data-nav-type="pages"><div class="acs-nav-sections"><div class="main-links-section "><ul class="acs-nav-list"><li class="acs-nav-item wiki aui-iconfont-page current-item" aria-current="true" data-collector-key="spacebar-pages"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/collector/pages.action?key=KAFKA" data-collapsed-tooltip="Pages"><span class="aui-icon wiki aui-iconfont-page"></span><span class="acs-nav-item-label">Pages</span></a></li><li class="acs-nav-item blog aui-iconfont-quote" data-collector-key="spacebar-blogs"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/pages/viewrecentblogposts.action?key=KAFKA" data-collapsed-tooltip="Blog"><span class="aui-icon blog aui-iconfont-quote"></span><span class="acs-nav-item-label">Blog</span></a></li></ul></div><div class="quick-links-wrapper"><h2 class="ia-quick-links-header-title">Space shortcuts</h2><button class="aui-button icon aui-icon aui-iconfont-shortcut confluence-sidebar-closed-icon-spaceshortcut sidebar-flyout-button quick-links-section-button tipsy-enabled" aria-label="Space shortcuts" aria-haspopup="dialog"></button><div class="quick-links-section "><ul class="acs-nav-list"><li class="acs-nav-item pinned_page aui-iconfont-page blueprint retrospective"><a class="acs-nav-item-link tipsy-enabled" href="/confluence/spaces/KAFKA/pages/68717313/Retrospectives" data-collapsed-tooltip="null"><span class="aui-icon pinned_page aui-iconfont-page blueprint retrospective"></span><span class="acs-nav-item-label">Retrospectives</span></a></li></ul></div></div></div></div></div><div class="ia-secondary-container tipsy-enabled" data-tree-type="pages"><div class="ia-secondary-header"><h5 class="ia-secondary-header-title pages"><span class="label">Child pages</span></h5></div><div class="ia-secondary-parent-content"><ul class="parent ia-secondary-header-title wiki"><li class="parent-item"><button id="child-pages-button" class="aui-button icon aui-icon aui-iconfont-location sidebar-flyout-button" aria-label="Child pages" aria-haspopup="dialog"></button><a class="parent-item-link" href="/confluence/spaces/KAFKA/pages/50859233/Kafka+Improvement+Proposals" title="Kafka Improvement Proposals"><span class="aui-icon aui-icon-small aui-iconfont-location"></span><span class="label">Kafka Improvement Proposals</span></a></li></ul></div><div class="ia-secondary-current-content"><ul class="ia-secondary-currentPage-title wiki current-item"><li><span class="icon"></span><span class="label">KIP-447: Producer scalability for exactly once semantics</span></li></ul></div><div class="ia-secondary-content"><div class="contextual-nav-child-pages"></div></div></div></div><div class="hidden"><a href="/confluence/collector/pages.action?key=KAFKA" id="space-pages-link"></a><script type="text/x-template" title="logo-config-content"><h2>Space Details</h2><div class="personal-space-logo-hint">Your profile picture is used as the logo for your personal space. <a href="/confluence/users/profile/editmyprofilepicture.action" target="_blank">Change your profile picture</a>.</div></script></div></div><div class="space-tools-section"><div id="space-tools-menu-additional-items" class="hidden"><div data-label="Browse pages" data-class="" data-href="/confluence/pages/reorderpages.action?key=KAFKA">Browse pages</div></div><button id="space-tools-menu-trigger"  class=" aui-dropdown2-trigger aui-button aui-button-subtle tipsy-enabled aui-dropdown2-trigger-arrowless " aria-controls="space-tools-menu" aria-haspopup="true" role="button" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-configure">Configure</span><span class="aui-button-label">Space tools</span><span class="aui-icon "></span></button><div id="space-tools-menu" class="aui-dropdown2 aui-style-default space-tools-dropdown" role="menu" hidden data-aui-alignment="top left"></div><a href="#" role="button" class="expand-collapse-trigger aui-icon aui-icon-small aui-iconfont-chevron-double-left" aria-expanded="true"></a></div>
+                    
+                        			</div>
+    		</div>
+        <!-- \#header -->
+
+            
+    
+        <main role="main" id="main" class=" aui-page-panel clearfix">
+                        <div id="main-header">
+                        
+    <div id="navigation" class="content-navigation view" role="region" aria-label="Page tools">
+                    <ul class="ajs-menu-bar">
+                                            
+        <li class="normal ajs-menu-item">
+        <a id="action-menu-link" class="action aui-dropdown2-trigger-arrowless aui-button aui-button-subtle ajs-menu-title aui-dropdown2-trigger" href="#" aria-haspopup="true" aria-label="More options" aria-owns="action-menu" data-container="#navigation">
+            <span>
+                                    <span class="aui-icon aui-icon-small aui-iconfont-more" aria-label="More options" role="button"></span>
+                                
+            </span>
+        </a>         <div id="action-menu" class="aui-dropdown2 aui-style-default confluence-dropdown2-scrollable"  role="menu" aria-labelledby="action-menu-link" >
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-primary"                          class="section-primary first"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-attachments-link"                href="/confluence/pages/viewpageattachments.action?pageId=103093950"
+                rel="nofollow"
+                class="action-view-attachments"
+                 accessKey="t"                 title="View Attachments"                                                 role="menuitem"                >
+
+                        <span>
+                                A<u>t</u>tachments (3)
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-view-history-link"                href="/confluence/pages/viewpreviousversions.action?pageId=103093950"
+                rel="nofollow"
+                class="action-view-history"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Page History
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-secondary"                          class="section-secondary"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-resolved-comments"                href="/confluence"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Resolved comments
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-page-info-link"                href="/confluence/pages/viewinfo.action?pageId=103093950"
+                rel="nofollow"
+                class="action-view-info"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Page Information
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="view-in-hierarchy-link"                href="/confluence/pages/reorderpages.action?key=KAFKA&amp;openId=103093950#selectedPageInHierarchy"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                View in Hierarchy
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-view-source-link"                href="/confluence/plugins/viewsource/viewpagesrc.action?pageId=103093950"
+                rel="nofollow"
+                class="action-view-source popup-link"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                View Source
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-export-pdf-link"                href="/confluence/spaces/flyingpdf/pdfpageexport.action?pageId=103093950&amp;atl_token=3f45e8a5f7c2bcee040d176d22b635bb08e33572"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Export to PDF
+            </span>        </a>
+    </li>
+                                                <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="action-export-word-link"                href="/confluence/exportword?pageId=103093950"
+                rel="nofollow"
+                class="action-export-word"
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Export to Word
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                            <div class="aui-dropdown2-section">
+                    <ul  id="action-menu-modify"                          class="section-modify"                         role="presentation" >
+                                                    <li
+                    role="presentation"
+            >
+
+    
+        
+    
+                                                                        
+    
+    
+            <a  id="treecopy-action"                href="/confluence/plugins/tree-copy/preparing-copying.action?pageId=103093950"
+                rel="nofollow"
+                class=""
+                                                                                 role="menuitem"                >
+
+                        <span>
+                                Copy Page Tree
+            </span>        </a>
+    </li>
+                                        </ul>
+                </div>
+                    </div>
+    </li>
+            </ul>
+    </div>
+
+            
+            <div id="title-heading" class="pagetitle with-breadcrumbs">
+                
+                                    <div id="breadcrumb-section">
+                        
+    
+    
+    <nav aria-label="Breadcrumbs">
+        <ol id="breadcrumbs">
+                                                            
+                                
+            <li class="first" >
+                                
+                                    <span class=""><a href="/confluence/collector/pages.action?key=KAFKA">Pages</a></span>
+                                                                                                                    
+                                
+            <li>
+                                
+                                    <span class=""><a href="/confluence/spaces/KAFKA/pages/27821303/Index">Index</a></span>
+                                                                                                                    
+                                
+            <li>
+                                
+                                    <span class=""><a href="/confluence/spaces/KAFKA/pages/50859233/Kafka+Improvement+Proposals">Kafka Improvement Proposals</a></span>
+                                                                                                    </ol>
+    </nav>
+
+
+                    </div>
+                
+                
+                
+            <div id="page-metadata-banner"><ul class="banner"><li id="system-content-items" class="noprint"><a href="" aria-label="Unrestricted" data-tooltip="Unrestricted" id="content-metadata-page-restrictions-hidden"  class="hidden"></a><a href="/confluence/pages/viewpageattachments.action?pageId=103093950&amp;metadataLink=true" aria-label="3 attachments" data-tooltip="3 attachments" id="content-metadata-attachments"  class="aui-icon aui-icon-small aui-iconfont-attachment"></a></li><li class="page-metadata-item noprinthas-button"  id="content-metadata-jira-wrapper"><a href=""  id="content-metadata-jira"  class="aui-button aui-button-subtle content-metadata-jira tipsy-disabled hidden"><span>Jira links</span></a></li></ul></div>
+        
+
+                                    <div id="title-text" class="with-breadcrumbs">
+                                    <a href="/confluence/spaces/KAFKA/pages/103093950/KIP-447+Producer+scalability+for+exactly+once+semantics"><h1>KIP-447: Producer scalability for exactly once semantics</h1></a>
+                        </div>
+                            </div>
+        </div><!-- \#main-header -->
+        
+        
+
+        
+    
+
+        
+
+
+
+
+            
+    
+
+                                
+    
+
+    
+    
+        
+    
+    
+                    
+    
+
+    
+
+    
+            
+        
+
+    
+    
+
+    
+            
+        
+
+
+
+    
+<div id="content" class="page view">
+    
+
+
+<div id="action-messages">
+                        </div>
+
+
+
+            <script type="text/x-template" title="searchResultsGrid">
+    <table class="aui">
+        <thead>
+            <tr class="header">
+                <th class="search-result-title">Page Title</th>
+                <th class="search-result-space">Space</th>
+                <th class="search-result-date">Updated</th>
+            </tr>
+        </thead>
+    </table>
+</script>
+<script type="text/x-template" title="searchResultsGridCount">
+    <p class="search-result-count">{0}</p>
+</script>
+<script type="text/x-template" title="searchResultsGridRow">
+    <tr class="search-result">
+        <td class="search-result-title"><a href="{1}" class="content-type-{2}"><span>{0}</span></a></td>
+        <td class="search-result-space"><a class="space" href="/confluence/display/{4}/" title="{3}">{3}</a></td>
+        <td class="search-result-date"><span class="date" title="{6}">{5}</span></td>
+    </tr>
+</script>
+
+        
+    
+            
+
+        
+                            
+    
+
+                    
+
+        
+        <div class="page-metadata">
+    <ul>
+        <li class="page-metadata-modification-info">
+            
+        
+    
+    
+        
+    
+        
+            
+            Created by <span class='author'>     <a href="    /confluence/display/~hachikuji
+"
+            aria-label="created by Jason Gustafson"                       class="url fn"
+                            >Jason Gustafson</a></span>, last updated by <span class='editor'>     <a href="    /confluence/display/~mjsax
+"
+            aria-label="last.updated.by Matthias J. Sax"                       class="url fn"
+                            >Matthias J. Sax</a></span> on <a class='last-modified' aria-label='modified on Mar 04, 2026, select to show changes' title='Show changes' href='/confluence/pages/diffpagesbyversion.action?pageId=103093950&amp;selectedPageVersions=104&amp;selectedPageVersions=105'>Mar 04, 2026</a>
+    
+            <span class="read-time">
+            14 minute read
+        </span>
+            </li>
+    </ul>
+</div>
+        
+                                            
+        <div id="main-content" class="wiki-content">
+                           
+        <p><div class="toc-macro client-side-toc-macro conf-macro output-block" data-headerelements="H1,H2,H3,H4,H5,H6,H7" data-hasbody="false" data-macro-name="toc"></div></p><h1 id="KIP447:Producerscalabilityforexactlyoncesemantics-Status">Status</h1><p><strong>Current state</strong>: Adopted (2.6.0)</p><p><strong>Discussion thread</strong>: <a class="external-link" href="https://sematext.com/opensee/m/Kafka/uyzND1eKHgL1gNK052/threaded" rel="nofollow">here</a><em><br/></em></p><p><strong>JIRA</strong>: <span class="jira-issue conf-macro output-block" data-jira-key="KAFKA-8587" data-client-id="SINGLE_5aa69414-a9e9-3523-82ec-879b028fb15b_103093950_anonymous" data-hasbody="false" data-macro-name="jira">
+                    <a href="https://issues.apache.org/jira/browse/KAFKA-8587" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>KAFKA-8587</a>
+                            -
+            <span class="summary">Getting issue details...</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+                </span><em><br/></em></p><p>Please keep the discussion on the mailing list rather than commenting on the wiki (wiki discussions get unwieldy fast).</p><h1 id="KIP447:Producerscalabilityforexactlyoncesemantics-Motivation">Motivation</h1><p>Exactly once semantics (EOS) provides transactional message processing guarantees. Producers can write to multiple partitions atomically so that either all writes succeed or all writes fail. This can be used in the context of stream processing frameworks, such as Kafka Streams, to ensure exactly once processing between topics.</p><p>In Kafka EOS, we use the concept of a &quot;transactional Id&quot; in order to preserve exactly once processing guarantees across process failures and restarts. Essentially this allows us to guarantee that for a given transactional Id, there can only be one producer instance that is active and permitted to make progress at any time. Zombie producers are fenced by an epoch which is associated with each transactional Id. We can also guarantee that upon initialization, any transactions which were still in progress are completed before we begin processing. This is the point of the <code>initTransactions()</code> API.</p><p>The problem we are trying to solve in this proposal is a semantic mismatch between consumers in a group and transactional producers. In a consumer group, ownership of partitions can transfer between group members through the rebalance protocol. For transactional producers, assignments are assumed to be static. Every transactional id must map to a consistent set of input partitions. To preserve the static partition mapping in a consumer group where assignments are frequently changing, the simplest solution is to create a separate producer for every input partition. This is what Kafka Streams does today.</p><p>This architecture does not scale well as the number of input partitions increases. Every producer come with separate memory buffers, a separate thread, separate network connections. This limits the performance of the producer since we cannot effectively use the output of multiple tasks to improve batching. It also causes unneeded load on brokers since there are more concurrent transactions and more redundant metadata management.</p><p><br/></p><p><strong>It's strongly recommended to read the detailed design <a class="external-link" href="https://docs.google.com/document/d/1nxPHVFCbNWyRbTOxX_bL4DGn9ErF5ZzQmSlUF6XQ2Dw/edit?tab=t.0" rel="nofollow">doc</a> for better understanding the internal changes. This KIP only presents high level ideas.</strong></p><h1 id="KIP447:Producerscalabilityforexactlyoncesemantics-ProposedChanges">Proposed Changes</h1><p>The root of the problem is that transaction coordinators have no knowledge of consumer group semantics. They simply do not understand that partitions can be moved between processes. Let's take a look at a sample exactly-once use case, which is quoted from<a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging" rel="nofollow"> KIP-98</a>: </p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>KafkaTransactionsExample.java</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">public&nbsp;class&nbsp;KafkaTransactionsExample {
+&nbsp;&nbsp;
+&nbsp;&nbsp;public&nbsp;static&nbsp;void&nbsp;main(String args[]) {
+&nbsp;&nbsp;&nbsp;&nbsp;KafkaConsumer&lt;String, String&gt; consumer =&nbsp;new&nbsp;KafkaConsumer&lt;&gt;(consumerConfig);
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;KafkaProducer&lt;String, String&gt; producer =&nbsp;new&nbsp;KafkaProducer&lt;&gt;(producerConfig);
+&nbsp;&nbsp;&nbsp;&nbsp;producer.initTransactions();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;while(true) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ConsumerRecords&lt;String, String&gt; records = consumer.poll(CONSUMER_POLL_TIMEOUT);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(!records.isEmpty()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;producer.beginTransaction();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;	
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;List&lt;ProducerRecord&lt;String, String&gt;&gt; outputRecords = processRecords(records);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;(ProducerRecord&lt;String, String&gt; outputRecord : outputRecords) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;producer.send(outputRecord);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sendOffsetsResult = producer.sendOffsetsToTransaction(getUncommittedOffsets());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;producer.endTransaction();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+&nbsp;&nbsp;&nbsp;&nbsp;}
+&nbsp;&nbsp;}
+}</pre>
+</div></div><p>As one could see, the first thing when a producer starts up is to register its identity through <code>initTransactions</code> API. Transaction coordinator leverages this step in order to fence producers using the same transactional.id and to ensure that previous transactions must complete. In the above template, we call consumer.poll() to get data, and internally for the very first time we start doing so, consumer needs to know the input topic offset. This is done by a FetchOffset call to group coordinator. With transactional processing, there could be offsets that are &quot;pending&quot;, I.E they are part of some ongoing transactions. Upon receiving FetchOffset request, broker will export offset position to the &quot;latest stable offset&quot; (LSO), which is the largest offset that has already been committed when consumer isolation.level is `read_committed`. Since we rely on unique transactional.id to revoke stale transaction, we believe any pending transaction will be aborted when producer calls initTransaction again. During normal use case such as Kafka Streams, we will also explicitly close producer to send out a EndTransaction request to make sure we start from clean state.</p><p><span style="letter-spacing: 0.0px;"> </span></p><p><span class="confluence-embedded-file-wrapper"><img class="confluence-embedded-image" draggable="false" src="/confluence/download/attachments/103093950/image2019-6-26_18-33-11.png?version=1&amp;modificationDate=1561599191000&amp;api=v2" data-image-src="/confluence/download/attachments/103093950/image2019-6-26_18-33-11.png?version=1&amp;modificationDate=1561599191000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="120722483" data-linked-resource-version="1" data-linked-resource-type="attachment" data-linked-resource-default-alias="image2019-6-26_18-33-11.png" data-base-url="https://cwiki.apache.org/confluence" data-linked-resource-content-type="image/png" data-linked-resource-container-id="103093950" data-linked-resource-container-version="105" tabindex="0" alt=""></span></p><p><span>This approach is no longer safe when we allow topic partitions to move around transactional producers, since transactional coordinator doesn't know about partition assignment and producer won't call initTransaction again during its life cycle. Omitting pending offsets and proceed could introduce duplicate processing. The proposed solution is to reject FetchOffset request by sending out a new exception called </span><span>PendingTransactionException</span><span> to new client when there is pending transactional offset commits, so that old transaction will eventually expire due to transaction timeout. After expiration, transaction coordinator will take care of writing abort transaction markers and bump the producer epoch. When client receives </span><span>PendingTransactionException</span><span>, it will back-off and retry getting input offset until all the pending transaction offsets are cleared. This is a trade-off between availability and correctness. The worst case for availability loss is just waiting for transaction timeout when the last generation producer wasn’t shut down gracefully, which should be rare.<br/></span></p><p><span>Below is the new approach we discussed:</span></p><p><br/></p><p><span class="confluence-embedded-file-wrapper"><img class="confluence-embedded-image" draggable="false" src="/confluence/download/attachments/103093950/image2019-6-26_18-33-40.png?version=1&amp;modificationDate=1561599220000&amp;api=v2" data-image-src="/confluence/download/attachments/103093950/image2019-6-26_18-33-40.png?version=1&amp;modificationDate=1561599220000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="120722484" data-linked-resource-version="1" data-linked-resource-type="attachment" data-linked-resource-default-alias="image2019-6-26_18-33-40.png" data-base-url="https://cwiki.apache.org/confluence" data-linked-resource-content-type="image/png" data-linked-resource-container-id="103093950" data-linked-resource-container-version="105" tabindex="0" alt=""></span></p><p><span>Note that the current default transaction.timeout is set to one minute, which is too long for Kafka Streams EOS use cases. Considering the default commit interval was set to only 100 milliseconds, we would doom to hit session timeout if we don't actively commit offsets during that tight window. So we suggest to shrink the transaction timeout to be the same default value as session timeout (10 seconds) on Kafka Streams, to reduce the potential performance loss for offset fetch delay when some instances accidentally crash.</span></p><p><span style="font-size: 24.0px;letter-spacing: -0.01em;">Public Interfaces</span></p><p>The main addition of this KIP is a new variant of the current sendOffsetsToTransaction API which gives us access to the consumer group states, such as generation.id, member.id and group.instance.id, etc.</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">interface Producer {
+   /**
+     * Sends a list of specified offsets to the consumer group coordinator, and also marks
+     * those offsets as part of the current transaction. These offsets will be considered
+     * committed only if the transaction is committed successfully. The committed offset should
+     * be the next message your application will consume, i.e. lastProcessedMessageOffset + 1.
+     * &lt;p&gt;
+     * This method should be used when you need to batch consumed and produced messages
+     * together, typically in a consume-transform-produce pattern. Thus, the specified
+     * {@code consumerGroupId} should be the same as config parameter {@code group.id} of the used
+     * {@link KafkaConsumer consumer}. Note, that the consumer should have {@code enable.auto.commit=false}
+     * and should also not commit offsets manually (via {@link KafkaConsumer#commitSync(Map) sync} or
+     * {@link KafkaConsumer#commitAsync(Map, OffsetCommitCallback) async} commits).
+     *
+     * This API won't deprecate the existing {@link KafkaProducer#sendOffsetsToTransaction(Map, String) sendOffsets} API as standalone
+     * mode EOS applications are still relying on it. If the broker doesn't support the new underlying transactional API, the caller will crash.
+	 *
+     * @throws IllegalStateException if no transactional.id has been configured or no transaction has been started
+     * @throws ProducerFencedException fatal error indicating another producer with the same transactional.id is active
+     * @throws org.apache.kafka.common.errors.UnsupportedVersionException fatal error indicating the broker
+     *         does not support transactions (i.e. if its version is lower than 0.11.0.0)
+     * @throws org.apache.kafka.common.errors.UnsupportedForMessageFormatException  fatal error indicating the message
+     *         format used for the offsets topic on the broker does not support transactions
+     * @throws org.apache.kafka.common.errors.AuthorizationException fatal error indicating that the configured
+     *         transactional.id is not authorized. See the exception for more details
+     * @throws org.apache.kafka.common.errors.CommitFailedException if the commit failed and cannot be retried
+     *         (e.g. if the consumer has been kicked out of the group). Users should handle this by aborting the transaction.
+  &nbsp; &nbsp;* @throws org.apache.kafka.common.errors.FencedInstanceIdException if the passed in consumer metadata has a fenced group.instance.id
+     * @throws KafkaException if the producer has encountered a previous fatal or abortable error, or for any
+     *         other unexpected error
+     */ 
+   void sendOffsetsToTransaction(Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets, ConsumerGroupMetadata consumerGroupMetadata) throws ProducerFencedException, FencedInstanceIdException; // NEW
+}</pre>
+</div></div><h3 id="KIP447:Producerscalabilityforexactlyoncesemantics-Shrinktransactional.timeout">Shrink transactional.timeout</h3><p>We shall set `transaction.timout.ms` default to 10000 ms (10 seconds) on Kafka Streams. For non-stream users, we highly recommend you to do the same if you want to use the new semantics.</p><h3 id="KIP447:Producerscalabilityforexactlyoncesemantics-Shrinkaborttimeouttransactionschedulerinterval">Shrink abort timeout transaction scheduler interval</h3><p>We shall set `<span style="color:var(--ds-text,#172b4d);">transaction.abort.timed.out.transaction.cleanup.interval.ms</span><span style="color:var(--ds-text,#172b4d);">`</span> default to 10000 ms (10 seconds) on broker side (previously one minute). This config controls the scheduled interval for purging expired transactions, which we need to tune more frequently to timeout zombie transactions.</p><h3 id="KIP447:Producerscalabilityforexactlyoncesemantics-OffsetFetchRequest">Offset Fetch Request </h3><p>We will add a new error code for consumer to wait for pending transaction clearance. In order to be able to return corresponding exceptions for old/new clients, we shall also bump the OffsetFetch protocol version.</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">PENDING_TRANSACTION(85, &quot;There are pending transactions for the offset topic that need to be cleared&quot;, PendingTransactionException::new),</pre>
+</div></div><p>In the meantime, this offset fetch back-off should be only applied to EOS use cases, not general offset fetch use case such as admin client access. We shall also define a flag within offset fetch request so that we only trigger back-off logic when the request is involved in EOS, I.E on isolation level read_committed.</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">OffsetFetchRequest =&gt; Partitions GroupId WaitTransaction
+  Partitions          =&gt; List&lt;TopicPartition&gt;
+  GroupId             =&gt; String
+  WaitTransaction     =&gt; Boolean // NEW</pre>
+</div></div><p class="auto-cursor-target">The PendingTransactionException could also be surfaced to all the public APIs in Consumer:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>KafkaConsumer.java</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">    /**
+     * Get the offset of the &lt;i&gt;next record&lt;/i&gt; that will be fetched (if a record with that offset exists).
+     * This method may issue a remote call to the server if there is no current position for the given partition.
+     * &lt;p&gt;
+     * This call will block until either the position could be determined or an unrecoverable error is
+     * encountered (in which case it is thrown to the caller).
+     *
+     * @param partition The partition to get the position for
+     * @param timeout   The maximum duration of the method
+     *
+     * @return The current position of the consumer (that is, the offset of the next record to be fetched)
+     * @throws IllegalArgumentException if the provided TopicPartition is not assigned to this consumer
+     * @throws org.apache.kafka.clients.consumer.InvalidOffsetException if no offset is currently defined for
+     *             the partition
+     * @throws org.apache.kafka.common.errors.WakeupException if {@link #wakeup()} is called before or while this
+     *             function is called
+     * @throws org.apache.kafka.common.errors.InterruptException if the calling thread is interrupted before or while
+     *             this function is called
+     * @throws org.apache.kafka.common.errors.TimeoutException if time spent blocking exceeds the {@code timeout}
+     * @throws org.apache.kafka.common.errors.AuthenticationException if authentication fails. See the exception for more details
+     * @throws org.apache.kafka.common.errors.AuthorizationException if not authorized to the topic or to the
+     *             configured groupId. See the exception for more details
++    * @throws org.apache.kafka.common.errors.PendingTransactionException if there are other pending transactional commits
+     * @throws org.apache.kafka.common.KafkaException for any other unrecoverable errors
+     */
+    long position(TopicPartition partition, Duration timeout);
+
+    /**
+     * Get the last committed offset for the given partition (whether the commit happened by this process or
+     * another). This offset will be used as the position for the consumer in the event of a failure.
+     * &lt;p&gt;
+     * This call will block to do a remote call to get the latest committed offsets from the server.
+     *
+     * @param partition The partition to check
+     * @param timeout   The maximum duration of the method
+     *
+     * @return The last committed offset and metadata or null if there was no prior commit
+     * @throws org.apache.kafka.common.errors.WakeupException if {@link #wakeup()} is called before or while this
+     *             function is called
+     * @throws org.apache.kafka.common.errors.InterruptException if the calling thread is interrupted before or while
+     *             this function is called
+     * @throws org.apache.kafka.common.errors.AuthenticationException if authentication fails. See the exception for more details
+     * @throws org.apache.kafka.common.errors.AuthorizationException if not authorized to the topic or to the
+     *             configured groupId. See the exception for more details
++    * @throws org.apache.kafka.common.errors.PendingTransactionException if there are other pending transactional commits
+     * @throws org.apache.kafka.common.KafkaException for any other unrecoverable errors
+     * @throws org.apache.kafka.common.errors.TimeoutException if time spent blocking exceeds the {@code timeout}
+     */
+    OffsetAndMetadata committed(TopicPartition partition, final Duration timeout);
+
+    /**
+     * Fetch data for the topics or partitions specified using one of the subscribe/assign APIs. It is an error to not have
+     * subscribed to any topics or partitions before polling for data.
+     * &lt;p&gt;
+     * On each poll, consumer will try to use the last consumed offset as the starting offset and fetch sequentially. The last
+     * consumed offset can be manually set through {@link #seek(TopicPartition, long)} or automatically set as the last committed
+     * offset for the subscribed list of partitions
+     *
+     * &lt;p&gt;
+     * This method returns immediately if there are records available. Otherwise, it will await the passed timeout.
+     * If the timeout expires, an empty record set will be returned. Note that this method may block beyond the
+     * timeout in order to execute custom {@link ConsumerRebalanceListener} callbacks.
+     *
+     *
+     * @param timeout The maximum time to block (must not be greater than {@link Long#MAX_VALUE} milliseconds)
+     *
+     * @return map of topic to records since the last fetch for the subscribed list of topics and partitions
+     *
+     * @throws org.apache.kafka.clients.consumer.InvalidOffsetException if the offset for a partition or set of
+     *             partitions is undefined or out of range and no offset reset policy has been configured
+     * @throws org.apache.kafka.common.errors.WakeupException if {@link #wakeup()} is called before or while this
+     *             function is called
+     * @throws org.apache.kafka.common.errors.InterruptException if the calling thread is interrupted before or while
+     *             this function is called
+     * @throws org.apache.kafka.common.errors.AuthenticationException if authentication fails. See the exception for more details
+     * @throws org.apache.kafka.common.errors.AuthorizationException if caller lacks Read access to any of the subscribed
+     *             topics or to the configured groupId. See the exception for more details
+     * @throws org.apache.kafka.common.KafkaException for any other unrecoverable errors (e.g. invalid groupId or
+     *             session timeout, errors deserializing key/value pairs, your rebalance callback thrown exceptions,
+     *             or any new error cases in future versions)
+     * @throws java.lang.IllegalArgumentException if the timeout value is negative
+     * @throws java.lang.IllegalStateException if the consumer is not subscribed to any topics or manually assigned any
+     *             partitions to consume from
+     * @throws java.lang.ArithmeticException if the timeout is greater than {@link Long#MAX_VALUE} milliseconds.
+     * @throws org.apache.kafka.common.errors.InvalidTopicException if the current subscription contains any invalid
+     *             topic (per {@link org.apache.kafka.common.internals.Topic#validate(String)})
+     * @throws org.apache.kafka.common.errors.FencedInstanceIdException if this consumer instance gets fenced by broker.
++    * @throws org.apache.kafka.common.errors.PendingTransactionException if there are other pending transactional commits
+     */
+    @Override
+    public ConsumerRecords&lt;K, V&gt; poll(final Duration timeout) {
+        return poll(time.timer(timeout), true);
+    }</pre>
+</div></div><h3 id="KIP447:Producerscalabilityforexactlyoncesemantics-FenceZombie">Fence Zombie</h3><p>A zombie process may invoke InitProducerId after falling out of the consumer group. In order to distinguish zombie requests, we need to leverage group coordinator to fence out of sync client.</p><p>To help get access to consumer state for txn producer, consumer will expose a new API for some of its internal states as an opaque struct. This is already done by <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Kafka+Consumer+Incremental+Rebalance+Protocol#KIP-429:KafkaConsumerIncrementalRebalanceProtocol-CompatibilityandUpgradePath" rel="nofollow">KIP-429</a>, and we just showcase the some high level structure here for convenience.</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">ConsumerGroupMetadata {
+  public String groupId();
+ 
+  public int generationId();
+ 
+  public String memberId();
+ 
+  public Optional&lt;String&gt; groupInstanceId();
+}</pre>
+</div></div><p>As we see, the metadata exposed contains member.id, group.instance.id and generation.id, which are essentially the identifiers we use in the normal offset commit protocol. To be able to keep track of the latest metadata information, we will add a top-level API to consumer:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Consumer.java</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">ConsumerGroupMetadata groupMetadata();</pre>
+</div></div><p>So that EOS users could get refreshed group metadata as needed.</p><p><br/></p><p>To pass the information to broker, member.id, group.instance.id and generation.id field shall be added to `TxnOffsetCommitRequest`,  which makes txn offset commit fencing consistent with normal offset fencing. </p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">TxnOffsetCommitRequest =&gt; TransactionalId GroupId ProducerId ProducerEpoch Offsets GenerationId
+  TransactionalId     =&gt; String
+  GroupId             =&gt; String
+  ProducerId  		  =&gt; int64		
+  ProducerEpoch       =&gt; int16
+  Offsets  	          =&gt; Map&lt;TopicPartition, CommittedOffset&gt;
+  GenerationId        =&gt; int32, default -1 // NEW
+  MemberId			  =&gt; nullable String // NEW
+  GroupInstanceId 	  =&gt; nullable String // NEW</pre>
+</div></div><p>If one of the field is not matching correctly on server side, the client will be fenced immediately. An edge case is defined as:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">1. Client A tries to commit offsets for topic partition P1, but haven't got the chance to do txn offset commit before a long GC.
+2. Client A gets out of sync and becomes a zombie due to session timeout, group rebalanced. 
+3. Another client B was assigned with P1.
+4. Client B doesn't see pending offsets because A hasn't committed anything, so it will proceed with potentially `pending` input data
+5. Client A was back online, and continue trying to do txn commit. Here if we have generation.id, we will catch it!</pre>
+</div></div><p><br/></p><p>And here is a recommended non-EOS usage example:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">  KafkaConsumer consumer = new&nbsp;KafkaConsumer&lt;&gt;(consumerConfig);
+  // Recommend a smaller txn timeout, for example 10 seconds.
+  producerConfig.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, 10000);
+  KafkaProducer producer = new KafkaProducer(producerConfig);
+
+  producer.initTransactions();	
+  while (true) {
+    // Read some records from the consumer and collect the offsets to commit
+    ConsumerRecords consumed = consumer.poll(Duration.ofMillis(5000)); // This will be the fencing point if there are pending offsets for the first time.
+    Map&lt;TopicPartition, OffsetAndMetadata&gt; consumedOffsets = offsets(consumed);
+
+    // Do some processing and build the records we want to produce
+    List&lt;ProducerRecord&gt; processed = process(consumed);
+
+    // Write the records and commit offsets under a single transaction
+    producer.beginTransaction();
+    for (ProducerRecord record : processed)
+      producer.send(record);
+
+	// Pass the entire consumer group metadata
+    producer.sendOffsetsToTransaction(consumedOffsets, consumer.groupMetadata());
+
+    producer.commitTransaction();
+  }</pre>
+</div></div><p><span>Some key observations are:</span></p><ol><li><span>User must be utilizing both consumer and producer as a complete EOS application,</span></li><li><span>User needs to store transactional offsets inside Kafka group coordinator, not in any other external system for the sake of fencing,</span></li><li>Producer needs to call <span style="letter-spacing: 0.0px;">sendOffsetsToTransaction(offsets, groupMetadata) to be able to fence properly.</span></li></ol><p>For Kafka Streams that needs to be backward compatible to older broker versions, we add a new config value for config parameter PROCESSING_GUARANTEE that we call &quot;exaclty_once<code>_beta&quot;</code>. Hence, users with new broker versions can opt-in the new feature (ie, using a single producer per thread for EOS instead of a producer per task).</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">public class StreamsConfig {
+
+    public static final String EXACTLY_ONCE_BETA = &quot;exactly_once_beta&quot;;
+
+}</pre>
+</div></div><p>Additionally, we <em>remove</em> the task-level metrics &quot;commit-latency-max&quot; and &quot;commit-latency-avg&quot; because the current committing of tasks that consists of multiple steps (like flushing, committing offsets/transactions, writing checkpoint files) is not done on a per-task level any longer, but the different steps are split out into individual phased over all tasks and committing offsets and transactions is unified into one step for all tasks at once. Because those metics cannot be collected in a useful way any longer, we cannot deprecate the metrics and remove in a future release, but need to remove them directly without a deprecation period.</p><h1 id="KIP447:Producerscalabilityforexactlyoncesemantics-Compatibility,Deprecation,andMigrationPlan"><span style="font-size: 24.0px;letter-spacing: -0.01em;">Compatibility, Deprecation, and Migration Plan</span></h1><p>Given the new fetch offset fencing mechanism, to opt-into the new producer per thread model, first this new fencing mechanism must be enabled, before the existing producer side fencing can be disabled.</p><p><span>Following the above principle, two rounds of rolling bounced for all Kafka Streams instances are required as follows:</span></p><ol><li><span>Broker must be upgraded to 2.5 first</span></li><li><span>Upgrade the stream application binary and keep </span><span>the PROCESSING_GUARATNEE setting at &quot;exactly_once&quot;. Do the first rolling bounce, and make sure the group is stable with every instance on 2.6 binary.</span></li><li><span>Upgrade the PROCESSING_GUARANTEE setting to &quot;exaclty_once_beta&quot; and do a second rolling bounce to starts using new thread producer for EOS.</span></li></ol><p><span>The reason for doing two rolling bounces is because the old (ie, 2.5) transactional producer doesn’t have access to consumer generation, so group coordinator doesn’t have an effective way to fence old zombies. By doing first rolling bounce, the task producer will opt-in accessing the consumer state and send TxnOffsetCommitRequest with generation. With this foundational change, it is save to execute step 3.</span></p><p><span>***Note that the above recommended upgrade path is for users who need consistency guarantee. For users who don't worry about consistency, step 2 &amp; 3 could be combined into a single rolling bounce with Kafka client library upgrade. The application should resume work without problem.</span></p><p>Of course, enabling producer per thread is optional, and thus, uses can also just stay with the &quot;exctly_once&quot; configuration (or with &quot;at_least_once&quot; if exactly-once semantics are not used to begin with). For both cases, it is not required to upgrade the brokers to 2.5, and a single rolling bounce upgrade of the Kafka Streams applications is sufficient.</p><p>Note: It is also possible to switch back from &quot;exactly_once_beta&quot; to &quot;exactly_once&quot; with a single round of rolling bounces.</p><p>A downgrade from 2.6 &quot;exaclty_once_beta&quot; to 2.5 (that only supports &quot;exaclty_once&quot;) requires two rolling bounced (i.e., follow the upgrade path in reverse order).</p><h2 id="KIP447:Producerscalabilityforexactlyoncesemantics-Non-streamEOSUpgrade"><span>Non-stream EOS  Upgrade</span></h2><p>As for non-streams users, they would require following steps:</p><ol><li>Same as stream, upgrade the broker version to 2.5</li><li>Change `sendOffsetsToTransaction` to the new version. Note the service would crash if the detected broker version through txn offset commit protocol is lower than 2.5.</li><li>Rolling bounce the application</li></ol><p>Since we couldn't predict all the implementation cases, this upgrade guide is not guaranteed to be safe for online operation, and there would be a risk of state inconsistency/data loss.</p><h2 id="KIP447:Producerscalabilityforexactlyoncesemantics-WorkingwithOlderBrokers"><span>Working with Older Brokers</span></h2><p>As stated in the upgrade path, if the broker version is too old, we shall not enable thread producer even running with Kafka Streams 2.6. If you enable &quot;exaclty_once_beta&quot; against pre 2.5 brokers, Kafka Streams will raise an error.</p><h1 id="KIP447:Producerscalabilityforexactlyoncesemantics-RejectedAlternatives">Rejected Alternatives</h1><ul><li>We could use admin client to fetch the inter.broker.protocol on start to choose which type of producer they want to use. <span style="color:var(--ds-text,#172b4d);">This approach however is harder than we expected, because brokers maybe on the different versions and if we need user to handle the tricky behavior during upgrade, it would actually be unfavorable. So a hard-coded config is a better option we have at hand.</span></li><li><span style="color:var(--ds-text,#172b4d);">We have considered to leverage transaction coordinator to remember the assignment info for each transactional producer, however this means we are copying the state data into 2 separate locations and could go out of sync easily. We choose to still use group coordinator to do the generation and partition fencing in this case.</span></li><li><span style="color:var(--ds-text,#172b4d);">We once decided to use a transactional.group.id config to replace the transactional.id, and consolidate all the transaction states for an application under one transactional coordinator. This use case is no longer needed once we rely on group coordinator to do the fencing, and we could re-implement it any time in the future with new upgrade procedure safely.</span></li></ul><p><br/></p>
+
+                
+        
+    
+        </div>
+
+                        
+    
+
+
+
+<div id="labels-section" class="pageSection group">
+    <div class="labels-section-content content-column" entityid="103093950" entitytype="page">
+	<div class="labels-content">
+		
+    <ul class="label-list label-list-right ">
+            <li class="no-labels-message">
+            No labels
+        </li>
+            </ul>
+
+    </div>
+</div>
+</div>
+        
+		
+            
+
+
+
+
+            
+        
+
+
+
+
+
+
+
+
+                        
+    
+<div id="comments-section" class="pageSection group">
+                <div class="section-header">
+            <h2 id="comments-section-title" class="section-title">
+                                    3 Comments
+                            </h2>
+        </div>
+    
+    
+
+            <ol class="comment-threads top-level" id="page-comments">
+                    <li id="comment-thread-110693218" class="comment-thread">
+        <div class="comment  " id="comment-110693218">
+        <p class="comment-user-logo">
+            <span class="aui-avatar aui-avatar-medium">
+                <span class="aui-avatar-inner">
+                    <img class="userLogo logo anonymous" src="/confluence/s/-t328ch/9117/u8nj3q/_/images/icons/profilepics/anonymous.svg"
+               alt="User icon: guozhang" title="guozhang">                </span>
+            </span>
+        </p>
+        <div class="comment-header">
+            <h4 class="author">    <a href="    /confluence/display/~guozhang
+"
+            aria-label=""                       class="url fn"
+                            >Guozhang Wang</a></h4>
+            <!-- this section is used by initCommentPermalinkButton and used for comment.-->
+            <!-- the parallel template for quickcomment is defined here: confluence-plugins/confluence-editor-plugins/confluence-quick-edit/src/main/resources/soy/comments.soy -->
+            <span class="comment-header-metadata">
+                <span class="comment-date" title="Apr 08, 2019 16:01">Apr 08, 2019</span>
+                <button class="aui-button aui-button-subtle aui-button-compact comment-permalink" type="button"
+                        data-href="/spaces/KAFKA/pages/103093950/KIP-447+Producer+scalability+for+exactly+once+semantics?focusedCommentId=110693218#comment-110693218" aria-label="Copy link to comment" title="Copy link to comment"
+                        id="comment-permalink-110693218">
+                    <span class="aui-icon aui-icon-small aui-iconfont-link" aria-hidden="true"></span>
+                    <span class="aui-icon aui-icon-small aui-iconfont-approve" role="img" aria-label="Copied!" />
+                </button>
+            </span>
+        </div>
+        <div class="comment-body">
+            <div class="comment-content wiki-content">
+                <p>QQ: does the upgrade of the FindCoordinator API means <span style="color:var(--ds-text,#172b4d);">we would not support producers migrating from the old API to the new APIs, since their coordinator will be different then?</span></p>
+            </div>
+            <div class="comment-actions">
+                                                <ul class="comment-actions-secondary">
+            </ul>
+                                    <ul class="comment-actions-primary">
+            </ul>
+                </div>
+        </div>
+    </div>
+
+    
+    </li>
+                    <li id="comment-thread-113709888" class="comment-thread">
+        <div class="comment  " id="comment-113709888">
+        <p class="comment-user-logo">
+            <span class="aui-avatar aui-avatar-medium">
+                <span class="aui-avatar-inner">
+                    <img class="userLogo logo anonymous" src="/confluence/s/-t328ch/9117/u8nj3q/_/images/icons/profilepics/anonymous.svg"
+               alt="User icon: bchen225242" title="bchen225242">                </span>
+            </span>
+        </p>
+        <div class="comment-header">
+            <h4 class="author">    <a href="    /confluence/display/~bchen225242
+"
+            aria-label=""                       class="url fn"
+                            >Boyang Chen</a></h4>
+            <!-- this section is used by initCommentPermalinkButton and used for comment.-->
+            <!-- the parallel template for quickcomment is defined here: confluence-plugins/confluence-editor-plugins/confluence-quick-edit/src/main/resources/soy/comments.soy -->
+            <span class="comment-header-metadata">
+                <span class="comment-date" title="May 07, 2019 06:31">May 07, 2019</span>
+                <button class="aui-button aui-button-subtle aui-button-compact comment-permalink" type="button"
+                        data-href="/spaces/KAFKA/pages/103093950/KIP-447+Producer+scalability+for+exactly+once+semantics?focusedCommentId=113709888#comment-113709888" aria-label="Copy link to comment" title="Copy link to comment"
+                        id="comment-permalink-113709888">
+                    <span class="aui-icon aui-icon-small aui-iconfont-link" aria-hidden="true"></span>
+                    <span class="aui-icon aui-icon-small aui-iconfont-approve" role="img" aria-label="Copied!" />
+                </button>
+            </span>
+        </div>
+        <div class="comment-body">
+            <div class="comment-content wiki-content">
+                <p><a class="confluence-userlink user-mention" data-username="guozhang" href="/confluence/display/~guozhang" data-linked-resource-id="27848752" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://cwiki.apache.org/confluence">Guozhang Wang</a> By migrating, do you mean consolidating the old transaction log into new transaction log? Since we don't have the topic partition ownership info in old transaction log, this seems not easy to achieve without manual process.</p>
+            </div>
+            <div class="comment-actions">
+                                                <ul class="comment-actions-secondary">
+            </ul>
+                                    <ul class="comment-actions-primary">
+            </ul>
+                </div>
+        </div>
+    </div>
+
+    
+    </li>
+                    <li id="comment-thread-113711207" class="comment-thread">
+        <div class="comment  " id="comment-113711207">
+        <p class="comment-user-logo">
+            <span class="aui-avatar aui-avatar-medium">
+                <span class="aui-avatar-inner">
+                    <img class="userLogo logo anonymous" src="/confluence/s/-t328ch/9117/u8nj3q/_/images/icons/profilepics/anonymous.svg"
+               alt="User icon: bchen225242" title="bchen225242">                </span>
+            </span>
+        </p>
+        <div class="comment-header">
+            <h4 class="author">    <a href="    /confluence/display/~bchen225242
+"
+            aria-label=""                       class="url fn"
+                            >Boyang Chen</a></h4>
+            <!-- this section is used by initCommentPermalinkButton and used for comment.-->
+            <!-- the parallel template for quickcomment is defined here: confluence-plugins/confluence-editor-plugins/confluence-quick-edit/src/main/resources/soy/comments.soy -->
+            <span class="comment-header-metadata">
+                <span class="comment-date" title="May 07, 2019 16:57">May 07, 2019</span>
+                <button class="aui-button aui-button-subtle aui-button-compact comment-permalink" type="button"
+                        data-href="/spaces/KAFKA/pages/103093950/KIP-447+Producer+scalability+for+exactly+once+semantics?focusedCommentId=113711207#comment-113711207" aria-label="Copy link to comment" title="Copy link to comment"
+                        id="comment-permalink-113711207">
+                    <span class="aui-icon aui-icon-small aui-iconfont-link" aria-hidden="true"></span>
+                    <span class="aui-icon aui-icon-small aui-iconfont-approve" role="img" aria-label="Copied!" />
+                </button>
+            </span>
+        </div>
+        <div class="comment-body">
+            <div class="comment-content wiki-content">
+                <p>Also we will be handling transaction requests with one single coordinator, shall we pick the same broker for group coordinator or a different one? Will this new transaction coordinator become a hotspot if we redirect all the transaction requests/log pending to it?</p>
+            </div>
+            <div class="comment-actions">
+                                                <ul class="comment-actions-secondary">
+            </ul>
+                                    <ul class="comment-actions-primary">
+            </ul>
+                </div>
+        </div>
+    </div>
+
+    
+    </li>
+            </ol>
+
+
+</div>
+        
+
+
+                
+    
+            
+</div>
+
+    
+
+    
+
+
+
+
+    
+    
+
+    
+    
+    
+    
+
+
+    
+<div id="space-tools-web-items" class="hidden">
+                <div data-label="Overview" data-href="/confluence/spaces/viewspacesummary.action?key=KAFKA">Overview</div>
+            <div data-label="Content Tools" data-href="/confluence/pages/reorderpages.action?key=KAFKA">Content Tools</div>
+    </div>
+        
+
+
+
+
+        <div id="sidebar-container">
+                                                                </div><!-- \#sidebar-container -->
+
+            </main><!-- \#main -->
+            
+    
+    
+        
+            
+            
+
+<div id="footer" role="contentinfo">
+    <section class="footer-body">
+
+                                                            <p class="license license-opensource">
+                    Powered by a free <b>Atlassian Confluence Open Source Project License</b> granted to Apache Software Foundation. <a href="https://www.atlassian.com/software/views/opensource-community-additional-license-offer">Evaluate Confluence today</a>.<br>
+                </p>
+                    
+        
+
+        <ul id="poweredby">
+            <li class="noprint">Powered by <a href="https://www.atlassian.com/software/confluence" class="hover-footer-link" rel="nofollow">Atlassian Confluence</a> <span id='footer-build-information'>9.2.28</span></li>
+            <li class="print-only">Printed by Atlassian Confluence 9.2.28</li>
+            <li class="noprint"><a href="https://support.atlassian.com/confluence-server/" class="hover-footer-link" rel="nofollow">Report a bug</a></li>
+            <li class="noprint"><a href="https://www.atlassian.com/company" class="hover-footer-link" rel="nofollow">Atlassian News</a></li>
+        </ul>
+
+        
+
+        <div id="footer-logo"><a href="https://www.atlassian.com/" rel="nofollow">Atlassian</a></div>
+
+                    
+        
+    </section>
+</div>
+
+    
+</div>
+
+</div><!-- \#full-height-container -->
+</div><!-- \#page -->
+
+    <span style="display:none;" id="confluence-server-performance">{"serverDuration": 106, "requestCorrelationId": "4d63e959f166c7bf"}</span>
+</body>
+</html>
+    

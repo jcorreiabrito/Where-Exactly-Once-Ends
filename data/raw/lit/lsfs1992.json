@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/146941.146943",
+  "crossref_fetched_utc": "2026-11-24T12:05:41Z",
+  "crossref_title": "The design and implementation of a log-structured file system",
+  "crossref_container": "ACM Transactions on Computer Systems",
+  "crossref_year": 1992,
+  "crossref_authors": "Rosenblum, Mendel; Ousterhout, John K.",
+  "unpaywall_fetched_utc": "2026-11-24T12:07:34Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "https://dl.acm.org/doi/pdf/10.1145/146941.146943",
+  "oa_landing": "https://dl.acm.org/doi/pdf/10.1145/146941.146943",
+  "openalex_fetched_utc": "2026-11-24T12:16:10Z",
+  "openalex_title": "The design and implementation of a log-structured file system",
+  "openalex_oa_pdf": "https://dl.acm.org/doi/pdf/10.1145/146941.146943",
+  "oa_fetch_utc": "2026-11-24T12:21:33Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

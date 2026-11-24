@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/214451.214456",
+  "crossref_fetched_utc": "2026-11-24T12:03:36Z",
+  "crossref_title": "Distributed snapshots",
+  "crossref_container": "ACM Transactions on Computer Systems",
+  "crossref_year": 1985,
+  "crossref_authors": "Chandy, K. Mani; Lamport, Leslie",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:34Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "https://dl.acm.org/doi/pdf/10.1145/214451.214456",
+  "oa_landing": "https://dl.acm.org/doi/pdf/10.1145/214451.214456",
+  "openalex_fetched_utc": "2026-11-24T12:15:11Z",
+  "openalex_title": "Distributed snapshots: determining global states of distributed systems",
+  "openalex_oa_pdf": "https://dl.acm.org/doi/pdf/10.1145/214451.214456",
+  "oa_fetch_utc": "2026-11-24T12:21:00Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

@@ -1,0 +1,18 @@
+[
+  {"key": "kung1981", "terms": ["validat", "serializ", "backup"]},
+  {"key": "reliablemsg2015", "terms": ["reliab", "guarantee", "transaction", "outbox", "exactly"]},
+  {"key": "basiri2016", "terms": ["discipline", "experiment", "hypothesis", "steady state"]},
+  {"key": "theodolite2021", "terms": ["open-loop", "closed-loop", "workload", "coordinated"]},
+  {"key": "georges2007", "terms": ["confidence interval", "steady state", "warm-up", "bootstrap"]},
+  {"key": "tenes", "terms": ["omit"]},
+  {"key": "kip98", "terms": ["exactly once semantic", "atomic", "transactional messaging", "read_committed"]},
+  {"key": "kafka-design", "terms": ["external", "side effect", "exactly-once", "delivery semantics"]},
+  {"key": "hdrhistogram", "terms": ["coordinated omission", "response time", "percentile", "histogram"]},
+  {"key": "toxiproxy", "terms": ["proxy", "simulate", "network", "toxic"]},
+  {"key": "stripe-idempotency", "terms": ["idempotency key", "same", "retry", "duplicate", "only once"]},
+  {"key": "debezium-outbox", "terms": ["at least once", "exactly-once", "duplicat", "idempot", "outbox pattern"]},
+  {"key": "aws-idempotency", "terms": ["idempotent", "exactly once", "retry", "duplicate"]},
+  {"key": "demsar2006", "terms": ["nemenyi", "friedman", "post-hoc", "critical difference"]},
+  {"key": "pg-isolation", "terms": ["serialization", "read committed", "isolation"]},
+  {"key": "kafka-streams", "terms": ["processing.guarantee", "exactly_once", "idempotent"]}
+]

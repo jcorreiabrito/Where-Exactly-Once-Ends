@@ -1,0 +1,6 @@
+Sitemap: https://biblio.ugent.be/siteindex.xml
+User-agent: *
+Disallow: /publication/export
+Disallow: /user
+Disallow: /auth
+Disallow: /orcid

@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/223784.223785",
+  "crossref_fetched_utc": "2026-11-24T12:04:00Z",
+  "crossref_title": "A critique of ANSI SQL isolation levels",
+  "crossref_container": "Proceedings of the 1995 ACM SIGMOD international conference on Management of data  - SIGMOD '95",
+  "crossref_year": 1995,
+  "crossref_authors": "Berenson, Hal; Bernstein, Phil; Gray, Jim; Melton, Jim; O'Neil, Elizabeth; O'Neil, Patrick",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:51Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "https://dl.acm.org/doi/pdf/10.1145/568271.223785",
+  "oa_landing": "https://dl.acm.org/doi/pdf/10.1145/568271.223785",
+  "openalex_fetched_utc": "2026-11-24T12:15:27Z",
+  "openalex_title": "A critique of ANSI SQL isolation levels",
+  "openalex_oa_pdf": "https://dl.acm.org/doi/pdf/10.1145/568271.223785",
+  "oa_fetch_utc": "2026-11-24T12:21:06Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

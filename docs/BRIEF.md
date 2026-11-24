@@ -1,6 +1,6 @@
 # PROJECT BRIEF — Authoritative operating contract (for all agents)
 
-Working dir: `C:\Users\jvtri\OneDrive\Documentos\Projetos\where-exctaly-ones-ends`
+Working dir: repository root (local absolute path deliberately omitted from committed files).
 Venue: RITA — Revista de Informática Teórica e Aplicada (UFRGS, Brazil). Research Article, 12–25 pp.
 Working title: **Where Exactly-Once Ends: Preserving Double-Entry Ledger Invariants When Apache Kafka Pipelines Write to External Stores**
 
@@ -92,7 +92,8 @@ seed must reproduce the same run. Raw per-run JSON/CSV kept under `results/raw/`
 (compressed if large) so figures can be regenerated from committed data.
 
 ## 9. Machine reality (verified 2026-11-24, do not re-litigate)
-- Windows 11, 12 logical CPUs, 16 GB RAM, ~14 GB free disk. OneDrive-backed working dir.
+- Windows 11, 12 logical CPUs, 16 GB RAM, ~14 GB free disk. Workspace is cloud-synced, so runtime
+  data and toolchain live on a local non-synced scratch path (see `tools/bootstrap-toolchain.ps1`).
 - NO Docker, NO admin rights, WSL2 cannot boot (virtualization disabled), no `gh`, no `mvn`.
 - Java 22 (`java`/`javac` 22.0.1); MiKTeX 25.12 with pdflatex/bibtex/biber; `latexmk` UNUSABLE.
 - Python 3.12 + pip (install scipy/matplotlib as needed); bundled DSH Python has numpy/pandas.

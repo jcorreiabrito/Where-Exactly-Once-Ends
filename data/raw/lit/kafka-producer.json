@@ -1,0 +1,11 @@
+{
+  "url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/configuration/producer_configs.md",
+  "final_url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/configuration/producer_configs.md",
+  "fetched_utc": "2026-11-24T12:22:21Z",
+  "http_status": 404,
+  "content_type": "text/plain",
+  "cache": "data/raw/lit/kafka-producer.html",
+  "source_kind": "doc",
+  "sha256": "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed",
+  "bytes": 14
+}

@@ -1,0 +1,14 @@
+[
+  {"slug": "event-sourcing-slr", "q": "event sourcing architecture systematic mapping study"},
+  {"slug": "outbox2", "q": "transactional outbox reliable messaging database transaction event publication"},
+  {"slug": "inbox-pattern", "q": "inbox pattern message deduplication consumer database"},
+  {"slug": "idempotency-study", "q": "idempotent request retry deduplication key distributed systems evaluation"},
+  {"slug": "eos-benchmark", "q": "end-to-end exactly once processing benchmark Kafka database"},
+  {"slug": "continuous-audit", "q": "continuous auditing systematic literature review"},
+  {"slug": "immutable-ledger", "q": "append-only ledger immutable audit trail database design"},
+  {"slug": "kafka-prod", "q": "Apache Kafka production experience reliability messaging linkedin"},
+  {"slug": "spanner2", "q": "Spanner Google globally distributed database transactions externally consistent"},
+  {"slug": "fault-injection-survey", "q": "fault injection testing distributed systems survey chaos"},
+  {"slug": "open-closed", "q": "open versus closed system performance modeling cautionary tale"},
+  {"slug": "percentile", "q": "estimating tail percentiles performance measurement streaming histogram"}
+]

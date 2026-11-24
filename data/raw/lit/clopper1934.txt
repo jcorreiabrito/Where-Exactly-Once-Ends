@@ -1,0 +1,1 @@
+{"version":"6.9","hitCount":0,"request":{"queryString":"TITLE:\"The use of confidence or fiducial limits illustrated in the case of the binomial\"","resultType":"core","cursorMark":"*","pageSize":25,"sort":"","synonym":false},"resultList":{"result":[]}}

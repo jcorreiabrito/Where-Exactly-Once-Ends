@@ -1,0 +1,76 @@
+﻿
+## kung1981 [openalex-abstract] terms=['validat', 'serializ', 'backup']
+   [1] The methods used are “optimistic” in the sense that they rely mainly on transaction backup as a control mechanism, “hoping” that conflicts between transactions will not occur.
+
+## reliablemsg2015 [openalex-abstract] terms=['reliab', 'guarantee', 'transaction', 'outbox', 'exactly']
+   [1] Most broker systems focus on functional decoupling, and on the fast and reliable delivery of events towards event consumers.
+   [1] In this way we can achieve a higher level of SOA loose coupling, higher reliability and higher maintainability of the enterprise infrastructure.
+
+## basiri2016 [pdf] terms=['discipline', 'experiment', 'hypothesis', 'steady state']
+   [3] Try to disprove the hypothesis by looking for a difference in steady state between the control group and the experimental group.
+   [3] Automate experiments to run continuously Build a hypothesis around steady state behavior At Netflix, we're using Chaos Engineering to ensure that the system still works properly under a variety of different conditions.
+   [2] Build a hypothesis around steady state behavior 2.
+
+## theodolite2021 [pdf] terms=['open-loop', 'closed-loop', 'workload', 'coordinated']
+   [1] This workload dimension applies to all use cases.
+   [1] Scalability Metric: Required Number of Instances per Workload.
+   [1] We present a list of diﬀerent workload dimensions in Section 5.
+
+## georges2007 [pdf] terms=['confidence interval', 'steady state', 'warm-up', 'bootstrap']
+   (NO MATCH) sample: Statistically Rigorous Java Performance Evaluation
+Andy Georges Dries Buytaert Lieven Eeckhout
+Department of Electronics and Information Systems, Ghent University, Belgium
+{ageorges,dbuytaer,leeckhou}@elis.ugent.be
+Abstract
+Java performance
+
+## tenes :: NO TEXT CACHED
+
+## kip98 [html] terms=['exactly once semantic', 'atomic', 'transactional messaging', 'read_committed']
+   [1] This is used by the consumer in READ_COMMITTED mode to know where aborted transactions begin.
+   [1] This lets consumers in READ_COMMITTED know whether a transaction marker is expected for a given message set.
+   [1] For this, one needs stronger transactional guarantees , ie. the ability to write to several TopicPartitions atomically .
+
+## kafka-design [text] terms=['external', 'side effect', 'exactly-once', 'delivery semantics']
+   [2] Many systems claim to provide "exactly-once" delivery semantics, but it is important to read the fine print, because sometimes these claims are misleading (i.e. they don't translate to the case where consumers or producers can fail, cases where there are multiple consumer processes, or cases where d
+   [1] There are three key aspects to exactly-once processing using the producer and consumer, which match how Kafka Streams works.
+   [1] When writing to an external system, the limitation is in the need to coordinate the consumer's position with what is actually stored as output.
+
+## hdrhistogram [html] terms=['coordinated omission', 'response time', 'percentile', 'histogram']
+   [2] The same histogram, corrected with the knowledge of an expectedIntervalBetweenValueSamples of 10msec will correctly represent the response time distribution.
+   [2] A common use example of HdrHistogram would be to record response times in units of microseconds across a dynamic range stretching from 1 usec to over an hour, with a good enough resolution to support later performing post-recording analysis on the collected data.
+   [2] Analysis can include computing, examining, and reporting of distribution by percentiles, linear or logarithmic value buckets, mean and standard deviation, or by any other means that can be easily added by using the various iteration techniques supported by the Histogram.
+
+## toxiproxy [text] terms=['proxy', 'simulate', 'network', 'toxic']
+   [2] Each toxic has its own parameters to change how it affects the proxy links.
+   [2] For documentation on implementing custom toxics, see [CREATING_TOXICS.md](./CREATING_TOXICS.md) #### latency Add a delay to all data going through the proxy.
+   [2] Attributes: - `latency`: time in milliseconds - `jitter`: time in milliseconds #### down Bringing a service down is not technically a toxic in the implementation of Toxiproxy.
+
+## stripe-idempotency [html] terms=['idempotency key', 'same', 'retry', 'duplicate', 'only once']
+   [2] A client generates an idempotency key, which is a unique key that the server uses to recognize subsequent retries of the same request.
+   [1] Idempotency keys are up to 255 characters long.
+   [1] For API v1, all POST requests accept idempotency keys.
+
+## debezium-outbox [html] terms=['at least once', 'exactly-once', 'duplicat', 'idempot', 'outbox pattern']
+   [1] You can use this ID, for example, to remove duplicate messages.
+   [1] For an example that you can run, see the outbox pattern demo , which is in the Debezium examples repository.
+   [1] Basic configuration To configure a Debezium connector to support the outbox pattern, configure the outbox.EventRouter SMT.
+
+## aws-idempotency [html] terms=['idempotent', 'exactly once', 'retry', 'duplicate']
+   [2] Reducing client complexity Reducing client complexity with idempotent API design To allow callers to retry these kinds of operations we need to make them idempotent.
+   [2] The following diagram shows a sample request/response flow that uses a unique client request identifier in an idempotent retry scenario: In this example, a customer requests the creation of a resource that presents a unique client request identifier.
+   [2] Building on that article, in this article we explore how AWS leverages idempotent behavior to deliver the benefits of automated retry policies to our customers while still honoring the “at most once” commitment inherent in the API contracts of some operations.
+
+## demsar2006 [html] terms=['nemenyi', 'friedman', 'post-hoc', 'critical difference']
+   [2] Based on that, we recommend a set of simple, yet safe and robust non-parametric tests for statistical comparisons of classifiers: the Wilcoxon signed ranks test for comparison of two classifiers and the Friedman test with the corresponding post-hoc tests for comparison of more classifiers over multi
+   [1] Results of the latter can also be neatly presented with the newly introduced CD (critical difference) diagrams. [abs] [ pdf ][ bib ] © JMLR 2006.
+
+## pg-isolation [html] terms=['serialization', 'read committed', 'isolation']
+   [2] Read Committed Isolation Level # Read Committed is the default isolation level in PostgreSQL .
+   [2] The partial transaction isolation provided by Read Committed mode is adequate for many applications, and this mode is fast and simple to use; however, it is not sufficient for all cases.
+   [2] The Serializable isolation level is implemented using a technique known in academic database literature as Serializable Snapshot Isolation, which builds on Snapshot Isolation by adding checks for serialization anomalies.
+
+## kafka-streams [text] terms=['processing.guarantee', 'exactly_once', 'idempotent']
+   [1] Possible values are `"at_least_once"` (default) and `"exactly_once_v2"` (for EOS version 2).
+   [1] Can be either `"at_least_once"` or `"exactly_once_v2"` (for EOS version 2, requires broker version 2.5+).
+   [1] Deprecated config options are `"exactly_once"` (for EOS alpha), and `"exactly_once_beta"` (for EOS version 2).

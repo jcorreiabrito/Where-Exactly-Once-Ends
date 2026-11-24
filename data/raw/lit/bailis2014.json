@@ -1,0 +1,20 @@
+{
+  "crossref_doi": "10.14778/2735508.2735509",
+  "crossref_fetched_utc": "2026-11-24T12:04:01Z",
+  "crossref_title": "Coordination avoidance in database systems",
+  "crossref_container": "Proceedings of the VLDB Endowment",
+  "crossref_year": 2014,
+  "crossref_authors": "Bailis, Peter; Fekete, Alan; Franklin, Michael J.; Ghodsi, Ali; Hellerstein, Joseph M.; Stoica, Ion",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:52Z",
+  "is_oa": true,
+  "oa_status": "green",
+  "oa_pdf_url": "https://arxiv.org/pdf/1402.2237",
+  "oa_landing": "https://arxiv.org/pdf/1402.2237",
+  "openalex_fetched_utc": "2026-11-24T12:15:28Z",
+  "openalex_title": "Coordination avoidance in database systems",
+  "openalex_oa_pdf": "https://arxiv.org/pdf/1402.2237",
+  "oa_fetch_utc": "2026-11-24T12:21:07Z",
+  "oa_http_status": 200,
+  "oa_content_type": "",
+  "oa_cache": "data/raw/lit/bailis2014.pdf"
+}

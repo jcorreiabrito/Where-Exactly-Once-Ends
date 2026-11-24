@@ -1,0 +1,6 @@
+﻿queries 2 hits 16
+[('lit/_discovery\\_queries.txt', 0, 0), ('lit/_discovery\\_queries2.txt', 0, 0), ('lit/_discovery\\_queries3.txt', 0, 0), ('lit/_discovery\\_queries4.txt', 2, 16)]
+Counter({'query': 87, 'crossref': 69, 'openalex': 63, 'get-oa': 60, 'unpaywall': 58, 's2': 57, 'get': 48, 'robots': 34})
+first query 2026-11-24T12:00:52Z last 2026-11-24T12:27:04Z
+gets 108 ok 43
+robots 34

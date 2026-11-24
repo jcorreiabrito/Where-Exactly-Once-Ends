@@ -1,0 +1,11 @@
+{
+  "url": "https://www.postgresql.org/docs/current/sql-insert.html",
+  "final_url": "https://www.postgresql.org/docs/current/sql-insert.html",
+  "fetched_utc": "2026-11-24T12:19:18Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/pg-onconflict.html",
+  "source_kind": "doc",
+  "sha256": "039a00ebc8f00764be57728e5c145baaa396d06307fb3d253a07ad34c7b6766f",
+  "bytes": 51351
+}

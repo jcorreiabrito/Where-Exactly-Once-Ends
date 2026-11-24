@@ -1,0 +1,13 @@
+{
+  "crossref_doi": "10.1145/2675743.2776774",
+  "crossref_fetched_utc": "2026-11-24T12:03:49Z",
+  "crossref_title": "The pipeflow approach",
+  "crossref_container": "Proceedings of the 9th ACM International Conference on Distributed Event-Based Systems",
+  "crossref_year": 2015,
+  "crossref_authors": "Saleh, Omran; Sattler, Kai-Uwe",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:46Z",
+  "is_oa": false,
+  "oa_status": "closed",
+  "openalex_fetched_utc": "2026-11-24T12:15:23Z",
+  "openalex_title": "The pipeflow approach: write once, run in different stream-processing engines"
+}

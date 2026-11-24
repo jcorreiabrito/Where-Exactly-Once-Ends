@@ -1,0 +1,11 @@
+{
+  "url": "https://www.postgresql.org/docs/current/transaction-iso.html",
+  "final_url": "https://www.postgresql.org/docs/current/transaction-iso.html",
+  "fetched_utc": "2026-11-24T12:19:16Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/pg-isolation.html",
+  "source_kind": "doc",
+  "sha256": "aef102c425a4f8e5774e02812430f453ea0a09157ed0c1f5275ee5da6a45a9c8",
+  "bytes": 48283
+}

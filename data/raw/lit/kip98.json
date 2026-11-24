@@ -1,0 +1,11 @@
+{
+  "url": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging",
+  "final_url": "https://cwiki.apache.org/confluence/spaces/KAFKA/pages/66854913/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging",
+  "fetched_utc": "2026-11-24T12:18:52Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/kip98.html",
+  "source_kind": "kip",
+  "sha256": "4cfb9450d8315cfa1025acfa1f397fe77f7a21e274398771127ded0c4263c5cf",
+  "bytes": 160756
+}

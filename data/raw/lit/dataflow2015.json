@@ -1,0 +1,13 @@
+{
+  "crossref_doi": "10.14778/2824032.2824076",
+  "crossref_fetched_utc": "2026-11-24T12:03:41Z",
+  "crossref_title": "The dataflow model",
+  "crossref_container": "Proceedings of the VLDB Endowment",
+  "crossref_year": 2015,
+  "crossref_authors": "Akidau, Tyler; Bradshaw, Robert; Chambers, Craig; Chernyak, Slava; Fernández-Moctezuma, Rafael J.; Lax, Reuven; McVeety, Sam; Mills, Daniel; Perry, Frances; Schmidt, Eric; Whittle, Sam",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:40Z",
+  "is_oa": false,
+  "oa_status": "closed",
+  "openalex_fetched_utc": "2026-11-24T12:15:16Z",
+  "openalex_title": "The dataflow model: a practical approach to balancing correctness, latency, and cost in massive-scale, unbounded, out-of-order data processing"
+}

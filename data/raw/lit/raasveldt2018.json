@@ -1,0 +1,20 @@
+{
+  "crossref_doi": "10.1145/3209950.3209955",
+  "crossref_fetched_utc": "2026-11-24T12:04:11Z",
+  "crossref_title": "Fair Benchmarking Considered Difficult",
+  "crossref_container": "Proceedings of the Workshop on Testing Database Systems",
+  "crossref_year": 2018,
+  "crossref_authors": "Raasveldt, Mark; Holanda, Pedro; Gubner, Tim; Mühleisen, Hannes",
+  "unpaywall_fetched_utc": "2026-11-24T12:07:13Z",
+  "is_oa": true,
+  "oa_status": "green",
+  "oa_pdf_url": "https://ir.cwi.nl/pub/27862/27862.pdf",
+  "oa_landing": "https://ir.cwi.nl/pub/27862/27862.pdf",
+  "openalex_fetched_utc": "2026-11-24T12:15:49Z",
+  "openalex_title": "Fair Benchmarking Considered Difficult: Common Pitfalls In Database Performance Testing",
+  "openalex_oa_pdf": "https://ir.cwi.nl/pub/27862/27862.pdf",
+  "oa_fetch_utc": "2026-11-24T12:21:28Z",
+  "oa_http_status": 200,
+  "oa_content_type": "application/pdf",
+  "oa_cache": "data/raw/lit/raasveldt2018.pdf"
+}

@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/2517349.2522737",
+  "crossref_fetched_utc": "2026-11-24T12:03:39Z",
+  "crossref_title": "Discretized streams",
+  "crossref_container": "Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles",
+  "crossref_year": 2013,
+  "crossref_authors": "Zaharia, Matei; Das, Tathagata; Li, Haoyuan; Hunter, Timothy; Shenker, Scott; Stoica, Ion",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:37Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "http://dl.acm.org/ft_gateway.cfm?id=2522737&type=pdf",
+  "oa_landing": "http://dl.acm.org/ft_gateway.cfm?id=2522737&type=pdf",
+  "openalex_fetched_utc": "2026-11-24T12:15:14Z",
+  "openalex_title": "Discretized streams: fault-tolerant streaming computation at scale",
+  "openalex_oa_pdf": "http://dl.acm.org/ft_gateway.cfm?id=2522737&type=pdf",
+  "oa_fetch_utc": "2026-11-24T12:21:01Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

@@ -1,0 +1,11 @@
+{
+  "url": "https://raw.githubusercontent.com/Shopify/toxiproxy/master/README.md",
+  "final_url": "https://raw.githubusercontent.com/Shopify/toxiproxy/master/README.md",
+  "fetched_utc": "2026-11-24T12:19:20Z",
+  "http_status": 200,
+  "content_type": "text/plain",
+  "cache": "data/raw/lit/toxiproxy.txt",
+  "source_kind": "readme",
+  "sha256": "4ee08a9142911241f2be70944896a1d09a81f96ea55eb9d66f3e9ec8e81a89b2",
+  "bytes": 19933
+}

@@ -1,0 +1,16 @@
+﻿
+## kafka-design [text] terms=['external system', 'coordinate']
+   [2] When writing to an external system, the limitation is in the need to coordinate the consumer's position with what is actually stored as output.
+
+## kip98 [html] terms=['exactly-once delivery', 'transactional guarantees', 'atomic write']
+   [1] Note that the transactional guarantees mentioned here are from the point of view of the producer.
+   [1] For this, one needs stronger transactional guarantees , ie. the ability to write to several TopicPartitions atomically .
+   [1] As such, adding transactional guarantees to Kafka --a streaming platform-- makes it much more useful not just for stream processing, but a variety of other applications.
+
+## debezium-outbox [html] terms=['exactly', 'at least once', 'duplicate']
+   [1] You can use this ID, for example, to remove duplicate messages.
+
+## theodolite2021 [pdf] terms=['scalability', 'benchmark', 'measurement']
+   [3] Nevertheless, our proposed scalability metrics and measurement methods can be applied to all benchmarks.
+   [3] Metrics and Measurement Methods In Section 3.3, we argue that for benchmarking scalability, it is necessary to determine how resource demand increases with increasing workload.
+   [2] Keywords: Stream Processing, Microservices, Benchmarking, Scalability 1.

@@ -1,0 +1,61 @@
+﻿
+######## millwheel2013 [openalex-abstract]
+MillWheel is a framework for building low-latency data-processing applications that is widely used at Google. Users specify a directed computation graph and application code for individual nodes, and the system manages persistent state and the continuous flow of records, all within the envelope of the framework's fault-tolerance guarantees. This paper describes MillWheel's programming model as well as its implementation. The case study of a continuous anomaly detector in use at Google serves to motivate how many of MillWheel's features are used. MillWheel's programming model provides a notion of logical time, making it simple to write time-based aggregations. MillWheel was designed from the outset with fault tolerance and scalability in mind. In practice, we find that MillWheel's unique combination of scalability, fault tolerance, and a versatile programming model lends itself to a wide variety of problems at Google.
+
+######## naiad2013 [openalex-abstract]
+Naiad is a distributed system for executing data parallel, cyclic dataflow programs. It offers the high throughput of batch processors, the low latency of stream processors, and the ability to perform iterative and incremental computations. Although existing systems offer some of these features, applications that require all three have relied on multiple platforms, at the expense of efficiency, maintainability, and simplicity. Naiad resolves the complexities of combining these features in one framework. A new computational model, timely dataflow, underlies Naiad and captures opportunities for parallelism across a wide class of algorithms. This model enriches dataflow computation with timestamps that represent logical points in the computation and provide the basis for an efficient, lightweight coordination mechanism. We show that many powerful high-level programming models can be built on Naiad's low-level primitives, enabling such diverse tasks as streaming data analysis, iterative machine learning, and interactive graph mining. Naiad outperforms specialized systems in their target application domains, and its unique features enable the development of new high-performance applications.
+
+######## pipeflow2015 [openalex-abstract]
+Recently, some distributed stream computing platforms, such as Storm and Spark Streaming, have been developed for processing massive data streams. However, these platforms lack support for higher-level declarative languages and provide only programming interfaces. Moreover, the users should be well versed of the syntax and programming constructs of each language in these platforms. In this paper, we are going to demonstrate our PipeFlow system. In the PipeFlow system, the user can write a stream-processing script (i.e., query) using a higher-level dataflow language. This script can be translated into different stream-processing programs that run in the corresponding engines. In this case, the user is only willing to know a single language, thus, he/she can write one stream-processing script and expects to execute this script on different engines.
+
+######## txncommit2006 [pdf]
+arXiv:cs/0408036v1  [cs.DC]  14 Aug 2004
+Consensus on Transaction Commit
+Jim Gray and Leslie Lamport
+Microsoft Research
+1 January 2004
+revised 19 April 2004
+MSR-TR-2003-96
+Abstract
+The distributed transaction commit problem requires reaching agreement
+on whether a transaction is committed or aborted. The classic Two-Phase
+Commit protocol blocks if the coordinator fails. Fault-tolerant consensus
+algorithms also reach agreement, but do not block whenever any majority
+of the processes are working. The Paxos Commit algorithm runs a Paxos
+consensus algorithm on the commit/abort decision of each participant to
+obtain a transaction commit protocol that uses 2F + 1 coordinators and
+makes progress if at least F + 1 of them are working. Paxos Commit has
+the same stable-storage write delay, and can be implemented to have the
+same message delay in the fault-free case, as Two-Phase Commit, but it
+uses more messages. The classic Two-Phase Commit algorithm is obtained
+as the special F = 0 case of the Paxos Commit algorithm.
+Contents
+1 Introduction 1
+2 Transaction Commit 2
+3 Two-Phase Commit 4
+3.1 The Protocol . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+3.2 The Cost of Two-Phase Commit . . . . . . . . . . . . . . . . 6
+3.3 The Problem with Two-Phase Commit . . . . . . . . . . . . . 6
+4 Paxos Commit 7
+4.1 The Paxos Consensus Algorithm . . . . . . . . . . . . . . . . 7
+4.2 The Paxos Commit Algorithm . . . . . . . . . . . . . . . . . 10
+4.3 The Cost of Paxos Commit . . . . . . . . . . . . . . . . . . . 12
+5 Paxos versus Two-Phase Commit 14
+6 Transaction Creation and Registration 16
+6.1 Creation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+6.2 Registration . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+7 Conclusion 18
+A The TLA+ Speciﬁcations 21
+A.
+
+######## helland2012 [openalex-abstract]
+Messages may be retried. Idempotence means that's OK.
+
+######## aries1992 [openalex-abstract]
+DB2 TM , IMS, and Tandem TM systems. ARIES is applicable not only to database management systems but also to persistent object-oriented languages, recoverable file systems and transaction-based operating systems. ARIES has been implemented, to varying degrees, in IBM's OS/2 TM Extended Edition Database Manager, DB2, Workstation Data Save Facility/VM, Starburst and QuickSilver, and in the University of Wisconsin's EXODUS and Gamma database machine.
+
+######## arcuri2012 [openalex-abstract]
+Randomized algorithms are widely used to address many types of software engineering problems, especially in the area of software verification and validation with a strong emphasis on test automation. However, randomized algorithms are affected by chance and so require the use of appropriate statistical tests to be properly analysed in a sound manner. This paper features a systematic review regarding recent publications in 2009 and 2010 showing that, overall, empirical analyses involving randomized algorithms in software engineering tend to not properly account for the random nature of these algorithms. Many of the novel techniques presented clearly appear promising, but the lack of soundness in their empirical evaluations casts unfortunate doubts on their actual usefulness. In software engineering, although there are guidelines on how to carry out empirical analyses involving human subjects, those guidelines are not directly and fully applicable to randomized algorithms. Furthermore, many of the textbooks on statistical analysis are written from the viewpoints of social and natural sciences, which present different challenges from randomized algorithms. To address the questionable overall quality of the empirical analyses reported in the systematic review, this paper provides guidelines on how to carry out and properly analyse randomized algorithms applied to solve software engineering tasks, with a particular focus on software testing, which is by far the most frequent application area of randomized algorithms within software engineering. Copyright © 2012 John Wiley & Sons, Ltd.
+
+######## chandy1985 [openalex-abstract]
+This paper presents an algorithm by which a process in a distributed system determines a global state of the system during a computation. Many problems in distributed systems can be cast in terms of the problem of detecting global states. For instance, the global state detection algorithm helps to solve an important class of problems: stable property detection. A stable property is one that persists: once a stable property becomes true it remains true thereafter. Examples of stable properties are “computation has terminated,” “ the system is deadlocked” and “all tokens in a token ring have disappeared.” The stable property detection problem is that of devising algorithms to detect a given stable property. Global state detection can also be used for checkpointing.

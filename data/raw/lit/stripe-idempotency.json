@@ -1,0 +1,11 @@
+{
+  "url": "https://docs.stripe.com/api/idempotent_requests",
+  "final_url": "https://docs.stripe.com/api/idempotent_requests",
+  "fetched_utc": "2026-11-24T12:19:31Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "cache": "data/raw/lit/stripe-idempotency.html",
+  "source_kind": "doc",
+  "sha256": "0e68bb461f6d3f89ea7034d0666f2d05fc0710e5369c136c09b93cc07d328d8b",
+  "bytes": 1412925
+}

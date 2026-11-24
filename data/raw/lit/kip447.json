@@ -1,0 +1,11 @@
+{
+  "url": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-447%3A+Producer+scalability+for+exactly+once+semantics",
+  "final_url": "https://cwiki.apache.org/confluence/spaces/KAFKA/pages/103093950/KIP-447+Producer+scalability+for+exactly+once+semantics",
+  "fetched_utc": "2026-11-24T12:18:54Z",
+  "http_status": 200,
+  "content_type": "text/html",
+  "source_kind": "kip",
+  "sha256": "510aedced320418c63691e6c0bd28407f75cb15caed9cc50ad0816cd1b173fe9",
+  "bytes": 96384,
+  "cache": "data/raw/lit/kip447.html"
+}

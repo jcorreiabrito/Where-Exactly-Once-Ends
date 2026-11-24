@@ -1,0 +1,19 @@
+{
+  "crossref_doi": "10.1145/2517349.2522738",
+  "crossref_fetched_utc": "2026-11-24T12:03:40Z",
+  "crossref_title": "Naiad",
+  "crossref_container": "Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles",
+  "crossref_year": 2013,
+  "crossref_authors": "Murray, Derek G.; McSherry, Frank; Isaacs, Rebecca; Isard, Michael; Barham, Paul; Abadi, Martín",
+  "unpaywall_fetched_utc": "2026-11-24T12:06:38Z",
+  "is_oa": true,
+  "oa_status": "bronze",
+  "oa_pdf_url": "http://dl.acm.org/ft_gateway.cfm?id=2522738&type=pdf",
+  "oa_landing": "http://dl.acm.org/ft_gateway.cfm?id=2522738&type=pdf",
+  "openalex_fetched_utc": "2026-11-24T12:15:15Z",
+  "openalex_title": "Naiad: a timely dataflow system",
+  "openalex_oa_pdf": "http://dl.acm.org/ft_gateway.cfm?id=2522738&type=pdf",
+  "oa_fetch_utc": "2026-11-24T12:21:02Z",
+  "oa_http_status": 403,
+  "oa_content_type": "text/html"
+}

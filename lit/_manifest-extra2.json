@@ -1,0 +1,12 @@
+[
+  {"key": "cpa2024", "kind": "landing", "url": "https://doi.org/10.1016/j.cpa.2024.102702"},
+  {"key": "expose2021", "kind": "landing", "url": "https://doi.org/10.1007/978-3-030-84924-5_2"},
+  {"key": "repro2024", "kind": "landing", "url": "https://doi.org/10.1016/j.cosrev.2024.100655"},
+  {"key": "saga2022", "kind": "landing", "url": "https://www.mdpi.com/2076-3417/12/12/6242"},
+  {"key": "triple2019", "kind": "landing", "url": "https://doi.org/10.1111/acfi.12556"},
+  {"key": "triple2021", "kind": "landing", "url": "https://doi.org/10.1016/j.bcra.2021.100037"},
+  {"key": "micro2026", "kind": "landing", "url": "https://doi.org/10.1007/s00607-026-01701-5"},
+  {"key": "kafka-design", "kind": "doc", "url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/design/design.md"},
+  {"key": "kafka-producer", "kind": "doc", "url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/configuration/producer_configs.md"},
+  {"key": "kafka-streams", "kind": "doc", "url": "https://raw.githubusercontent.com/apache/kafka/trunk/docs/streams/developer-guide/config-streams.md"}
+]
