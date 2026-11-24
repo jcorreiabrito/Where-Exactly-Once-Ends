@@ -42,13 +42,13 @@
   },
   "attribution": [],
   "source_integrity_detail": {
-    "gt_file": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\gt_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+    "gt_file": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\gt_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
     "gt_sha256_file": "ec5c4e1e6476df067dec605cfef02d2a6bcbb75c61055e1c49f8215d4feaabab",
     "gt_sha256_regenerated": "ec5c4e1e6476df067dec605cfef02d2a6bcbb75c61055e1c49f8215d4feaabab",
     "gt_lines_regenerated": 2000,
     "gt_digest_match": true,
-    "source_dump": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\source_dump_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
-    "produced_manifest": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\produced_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+    "source_dump": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\source_dump_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+    "produced_manifest": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\produced_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
     "source_records": 1000,
     "source_offsets_contiguous": true,
     "source_partitions_observed": 3,
@@ -88,32 +88,32 @@
   "warnings": [],
   "inputs": {
     "gt": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\gt_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\gt_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
       "sha256": "ec5c4e1e6476df067dec605cfef02d2a6bcbb75c61055e1c49f8215d4feaabab",
       "bytes": 310716
     },
     "source_dump": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\source_dump_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\source_dump_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
       "sha256": "222b442a3568156a3834d0cbe433e6511bb04185e8fc7492077b9e3d24169182",
       "bytes": 156670
     },
     "produced_manifest": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\produced_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\produced_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
       "sha256": "2f210b774b0377f194110c0ce89a3fc9ea43ff93d996a9cda13470a4ef2c6c9a",
       "bytes": 132670
     },
     "sink_dump": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\sink_dump_pilot-m1-kafka-f6-1k-p3-r02.csv",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\sink_dump_pilot-m1-kafka-f6-1k-p3-r02.csv",
       "sha256": "1b39d1ddfda9431619319408e3b4d3828a81087465c4e99a1920c5b5ac71c02c",
       "bytes": 129826
     },
     "publication_dump": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\publication_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\publication_pilot-m1-kafka-f6-1k-p3-r02.ndjson",
       "sha256": "c2615cdcad6919d7a8edae7e0260b8268d8dc16dacda33d7ca36986f6a6fddc6",
       "bytes": 473276
     },
     "attestation": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\attestation_pilot-m1-kafka-f6-1k-p3-r02.json",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m1-kafka-f6-1k-p3-r02\\attestation_pilot-m1-kafka-f6-1k-p3-r02.json",
       "sha256": "d9123ada39c4b540fb2059703af6055ea859ffa1afa2696bd5d436a323d9c5ab",
       "bytes": 189
     }

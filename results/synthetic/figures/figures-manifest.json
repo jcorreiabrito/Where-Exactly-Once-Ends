@@ -8,20 +8,20 @@
   },
   "figures": {
     "fig-correctness.pdf": {
-      "figure": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\synthetic\\figures\\fig-correctness.pdf",
+      "figure": "<repo>\\results\\synthetic\\figures\\fig-correctness.pdf",
       "n_mechanisms": 5,
       "n_faults": 3
     },
     "fig-latency-ecdf.pdf": {
-      "figure": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\synthetic\\figures\\fig-latency-ecdf.pdf",
+      "figure": "<repo>\\results\\synthetic\\figures\\fig-latency-ecdf.pdf",
       "n_mechanisms": 5
     },
     "fig-cost-coverage.pdf": {
-      "figure": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\synthetic\\figures\\fig-cost-coverage.pdf",
+      "figure": "<repo>\\results\\synthetic\\figures\\fig-cost-coverage.pdf",
       "n_mechanisms": 5
     },
     "fig-throughput.pdf": {
-      "figure": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\synthetic\\figures\\fig-throughput.pdf",
+      "figure": "<repo>\\results\\synthetic\\figures\\fig-throughput.pdf",
       "n_mechanisms": 5,
       "n_blocks": 4
     }

@@ -45,9 +45,17 @@ re-approval of the projected budget before P3.
   B 4,020, C 1,800 = 7,866 planned / 7,851 executable (+20 validation)`; run order generated and
   constraint-checked; seeds recorded; G5 derivation erratum (R5) resolved with independently
   verified normative vectors (`docs/derive-vectors.csv`).
+- **S5 early red-team review (pre-Stage-A): verdict BLOCK** — 9 critical, 19 major, 6 minor findings
+  (`docs/redteam-oracle.md`). Implementation/pre-registration defects (not research-design defects):
+  oracle live-dump `time` import, receipt protocol, Stage-A fault wiring/tokens, quiescence, gates
+  tautology, unsatisfiable H1–H5 decision rules, censoring/denominators, F6 semantics, performance
+  pipeline. Fix pass running: S4 (implementation), S2 (prereg amendment A2 for author approval),
+  S3 (artifact-side: real fsync, failpoint coverage, interface hand-off). S5 will re-review after
+  fixes; re-freeze only then.
 - Manuscript: all 10 sections drafted and integrated (`sections/`); builds clean apart from the
-  analysis artefacts still being generated; currently 32 pp and must be compressed to ≤25 in P6/P7.
-- S2: method-heavy sections delivered (system, mechanisms, formal, method).
+  analysis artefacts still being generated; ~33 pp and must be compressed to ≤25 in P6/P7.
+- S2: method-heavy sections delivered (system, mechanisms, formal, method). S6 compliance audit
+  started (page budget + checklist + AI/venue rules).
 
 ## Activity log
 - 2026-11-24: recon; foundation; template recovery; toolchain bootstrap; substrate validation.

@@ -42,13 +42,13 @@
   },
   "attribution": [],
   "source_integrity_detail": {
-    "gt_file": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\gt_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+    "gt_file": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\gt_pilot-m4m3-f4a-1k-p3-r02.ndjson",
     "gt_sha256_file": "0b1c90983dab0aee68cb72ae1b0f7820c9239c6e5023544d346723e73a2f2160",
     "gt_sha256_regenerated": "0b1c90983dab0aee68cb72ae1b0f7820c9239c6e5023544d346723e73a2f2160",
     "gt_lines_regenerated": 2000,
     "gt_digest_match": true,
-    "source_dump": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\source_dump_pilot-m4m3-f4a-1k-p3-r02.ndjson",
-    "produced_manifest": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\produced_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+    "source_dump": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\source_dump_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+    "produced_manifest": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\produced_pilot-m4m3-f4a-1k-p3-r02.ndjson",
     "source_records": 1000,
     "source_offsets_contiguous": true,
     "source_partitions_observed": 3,
@@ -88,32 +88,32 @@
   "warnings": [],
   "inputs": {
     "gt": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\gt_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\gt_pilot-m4m3-f4a-1k-p3-r02.ndjson",
       "sha256": "0b1c90983dab0aee68cb72ae1b0f7820c9239c6e5023544d346723e73a2f2160",
       "bytes": 310700
     },
     "source_dump": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\source_dump_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\source_dump_pilot-m4m3-f4a-1k-p3-r02.ndjson",
       "sha256": "824d70c81dbd9728f4b1f0d78c431e576d7ca0786c3766c06458209e476d9f61",
       "bytes": 156670
     },
     "produced_manifest": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\produced_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\produced_pilot-m4m3-f4a-1k-p3-r02.ndjson",
       "sha256": "f2d5e2cae087b161c0874074d8f4623e3d53bfce4a6fefa3524070ef16dfcaa6",
       "bytes": 132670
     },
     "sink_dump": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\sink_dump_pilot-m4m3-f4a-1k-p3-r02.csv",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\sink_dump_pilot-m4m3-f4a-1k-p3-r02.csv",
       "sha256": "aad44159b9baae25b4ea02ce531652d6def7beec510e774fa621b2c29c315aab",
       "bytes": 129810
     },
     "publication_dump": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\publication_pilot-m4m3-f4a-1k-p3-r02.ndjson",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\publication_pilot-m4m3-f4a-1k-p3-r02.ndjson",
       "sha256": "4aabf75b77c0a7f7ece5cbb69cb828dbb99d6a1fd7c0d25ce11d918c685cd52d",
       "bytes": 473260
     },
     "attestation": {
-      "path": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\attestation_pilot-m4m3-f4a-1k-p3-r02.json",
+      "path": "<repo>\\results\\dryrun\\fixtures\\pilot-m4m3-f4a-1k-p3-r02\\attestation_pilot-m4m3-f4a-1k-p3-r02.json",
       "sha256": "d9123ada39c4b540fb2059703af6055ea859ffa1afa2696bd5d436a323d9c5ab",
       "bytes": 189
     }

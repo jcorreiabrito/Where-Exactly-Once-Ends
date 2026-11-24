@@ -1317,7 +1317,7 @@
       "run_c-m4-f0-10k-p3-r00.json": "40b65540a3e7c387cc54e6cff40432169f789c5d77c2286fa4fc841e5959a635",
       "run_c-m4-f0-10k-p6-r00.json": "52a2e5cbab4448474802dc24ea4cc051190fc4d35d769865d8d687980aad0976"
     },
-    "freeze_file": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\docs\\prereg-freeze.json",
+    "freeze_file": "<repo>\\docs\\prereg-freeze.json",
     "freeze_sha256": "26686eba877b18947e5dcff1f5b09a0897f59740fba9db93e3699f2c5b7d5d93"
   },
   "analysis_script_sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5"

@@ -30,7 +30,7 @@
     "powershell": null,
     "python": "3.12.4",
     "python_executable": "C:\\Program Files\\Python312\\python.exe",
-    "pinned_toolchain": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\tools\\TOOLCHAIN-VERSIONS.txt",
+    "pinned_toolchain": "<repo>\\tools\\TOOLCHAIN-VERSIONS.txt",
     "sha256": {
       "jdk21.zip": "bbebea1469996b276683c9299c227b294f85c847039c82633218186a4ad4fbf2",
       "apache-maven-3.9.9-bin.zip": "4ec3f26fb1a692473aea0235c300bd20f0f9fe741947c82c1234cefd76ac3a3c",

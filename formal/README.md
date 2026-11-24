@@ -51,18 +51,54 @@ The table states what the model **was expected** to demonstrate before checking,
 
 `I1Balance` is expected to hold in every configuration: the model inserts both legs of an event together, which mirrors the one-record-one-entry design (`docs/method.md` §1.4). Its role is regression protection for the model itself, not a paper claim.
 
+## Scope of the machine-checked claim
+
+The checked claim is deliberately narrow. The model is a **bounded safety model** at
+`N = 3`, `BatchSize = 2`, single partition, for **eight mechanism abstractions**. It checks
+`I1Balance`, `I3Unique`, and `I4CompleteWhenDone` (a *state* invariant: "if `done` then every event
+appears once"), plus `TypeOK`. The four booleans abstract real mechanism components as follows:
+`DoDedup` = a sink-side idempotency claim (unique index or inbox); `DoAtomic` = ledger effect and
+progress in one atomic commit (DB transaction for M4/M2-family); `DoTxn` = publication-stream
+records and progress in one atomic commit (Kafka transaction); `DoEarly` = the degraded-variant
+probe in which progress may commit before the effect is durable.
+
+**Not modelled (and therefore not part of the checked claim):**
+- the two-writer zombie/rebalance exposure (crash points C6/C7): requires a fencing epoch and a
+  second writer; it remains a pen-and-paper argument and an experimental result (K6), **not** a TLC
+  result;
+- the append-only mutation invariant I2: the ledger state is a multiplicity function with no
+  mutation action; I2 is tested experimentally by the oracle's mutation classes only;
+- liveness under fair recovery (A1 §3): there is no fairness assumption and no temporal property;
+  `I4CompleteWhenDone` is safety at termination;
+- publication-stream exactly-once invariants: `StreamCompleteWhenDone` is defined but is **not** in
+  any `.cfg`, so it is not a TLC-checked property (the stream half of M1x remains an argument);
+- partial-batch durability and weakened durability (C11/C12): excluded by assumption (§5.2);
+- `StrictProgressBound` is a derived consequence of the model's construction, not independent
+  evidence: it cannot fail in any enumeration, so it is reported only as a sanity property of the
+  model, never as a paper claim.
+
+The paper must state exactly this scope next to any TLC sentence: a machine-checked **bounded
+witness** of the duplicate (W1) and loss (W2) windows for the abstract transition systems, not an
+unbounded proof and not a verification of the deployment.
+
 ## What is deliberately not modelled
 
-- Multi-partition scheduling and rebalances (crash points C6/C7 are argued in `docs/method.md` §5.1–5.2, not modelled here; a zombie writer would require modelling two writers and a fencing epoch — a natural P2 extension if FO-6 is adopted).
-- The relay/outbox publication path of M2 (trace X7); M2 is modelled by its dedup + atomic-ledger half, which is what its ledger invariants depend on.
-- Partial-batch durability (C12) and weakened durability (C11): excluded by construction/assumption in `docs/method.md` §5.2.
+- Multi-partition scheduling and rebalances (C6/C7); a zombie writer would need two writers and a
+  fencing epoch — out of scope for the bounded model (see scope paragraph above).
+- The relay/outbox publication path of M2 (trace X7); M2 is modelled by its dedup + atomic-ledger
+  half, which is what its ledger invariants depend on.
+- Partial-batch durability (C12) and weakened durability (C11): excluded by construction/assumption
+  in `docs/method.md` §5.2.
 - Latency, throughput and time: this is a safety model; performance claims rest on the experiment.
 
 ## How this maps to the paper
 
-- `docs/method.md` §3 (EOS boundary and the two windows) — the model's `AtomicCommit`/`TxnCommit`/`ProgressCommit` actions are the transition-level statement of Lemma 1.
-- `docs/method.md` §6.1 P2/P3/P8/P9 — invariant statements checked here.
-- `docs/method.md` §6.7 FO-6 — the author's decision on whether to adopt this as appendix material; if adopted, the checked bounds are reported.
+- `docs/method.md` §3 (EOS boundary and the two windows) — the model's `AtomicCommit`/`TxnCommit`/
+  `ProgressCommit` actions are the transition-level statement of Lemma 1.
+- `docs/method.md` §6.1 P2/P3/P8/P9 — only those parts within the scope above are machine-checked.
+- `docs/method.md` §6.7 FO-6 — the author's decision on appendix material; if adopted, the paper
+  reports the bounds, the TLC version and the scope limitation above, and does **not** claim C7/I2/
+  liveness/stream verification.
 
 ## Reproducing the check
 
@@ -75,9 +111,10 @@ The script vendors nothing at run time: it expects `tla2tools.jar` at
 `tools/TOOLCHAIN-VERSIONS.txt`), runs the eight `formal/cfg/*.cfg` configurations with
 `-metadir` on local scratch (never inside the cloud-synced workspace), writes
 `formal/tlc-results/<config>.txt`, regenerates `tlc-summary.json`, and exits non-zero if any
-configuration deviates from its pre-registered expectation. Distinct states found: 20, 18, 8, 8, 8,
-8, 21, 21 for configurations 01–08. For the four configurations that exhibit an expected violation,
-TLC stops at the first counterexample, so the explored-state count varies slightly with worker
-scheduling (e.g. `06-txn-only`: 36–39); the checked property is the violated invariant, not the
-count. If any row contradicts the expectation, open a `results/DEVIATIONS.md` entry
+configuration deviates from its pre-registered expectation. The authoritative per-configuration
+distinct-state counts and match flags are in `formal/tlc-results/tlc-summary.json`; do not hard-code
+them here (for the four configurations that exhibit an expected violation, TLC stops at the first
+counterexample, so the explored-state count varies with worker scheduling, e.g. `06-txn-only` shows
+36–39 across runs; the checked property is the violated invariant, not the count). If any row
+contradicts the expectation, open a `results/DEVIATIONS.md` entry
 and revise the model or proposition — never edit the expectation to match the output.
