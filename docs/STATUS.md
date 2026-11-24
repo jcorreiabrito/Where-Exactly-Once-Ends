@@ -14,10 +14,13 @@ approval and the P2 hard stop. It is not part of the paper.
 | Oracle mutation testing (G3) | 1,800/1,800 defects detected and correctly attributed (18/18 classes), clean + input-integrity controls pass — SYNTHETIC corpus | `results/harness/g3-mutation.json` |
 | Gate falsifiability (G1–G8 negative controls) | 8/8 gates fail as required | `results/harness/gate-negative-controls.json` |
 | S3 live acceptance | 4/4 passed | `results/harness/acceptance/acceptance-result.json` |
-| **Live end-to-end evidence** | **fault-free run valid, source_integrity=true, 2,000/2,000 postings, 0 duplicates, 0 losses** | `results/raw/run-records/run_pilot-m2-f0-1k-p3-r00.json` |
-| **App-owned fault attestation (K3)** | **valid, 1 app fired + 1 restored, M0 reproduces 44 duplicate postings (I3 violation) and 0 losses** | `results/raw/run-records/run_pilot-valid-g1k3-r22.json` |
-| **S4-owned fault attestation (K2)** | **valid, one phase-verified S4 fire inside the load window, 2,000/2,000, no duplicates/losses** | `results/raw/run-records/run_a-m3-k2-1k-p3-r02.json` |
-| Consolidated live evidence | `passed=true` (all 12 checks) | `results/harness/live-smoke-evidence.json` |
+- **Live end-to-end evidence (Windows substrate, archived):** fault-free run valid,
+  source_integrity=true, 2,000/2,000 postings, 0 duplicates, 0 losses —
+  `results/windows-pilot/run-records/run_pilot-m2-f0-1k-p3-r00.json`; app-owned K3 attested with 44
+  predicted duplicate postings (`run_pilot-valid-g1k3-r22.json`); S4-owned K2 attested
+  (`results/windows-pilot/evidence-only/run_a-m3-k2-1k-p3-r02.json`); consolidated evidence
+  `results/windows-pilot/live-smoke-evidence.json` `passed=true`. The Linux campaign regenerates its
+  own live evidence/freeze; Windows outputs are archived (M17) and excluded from analysis.
 | Post-P1 platform deviations | disclosed normatively | `docs/prereg-amendment-A3.md`, `results/DEVIATIONS.md` §6 |
 | CI | **green** at `09e08c7` (4/4 jobs) | GitHub Actions run #17 |
 
@@ -39,8 +42,11 @@ approval and the P2 hard stop. It is not part of the paper.
   M7 54-run calibration block added as a separate accounting block (confirmatory counts untouched:
   7,506/7,488 + 26); injector fixes: F1/F3/F5 now marker-driven, F4b threshold scaled to effect-
   transaction geometry. Harness tests: **86/86 green**.
-- **Paper:** S6 is executing the 33 pp → ≤25 pp compression (no results fabricated; Results stays
-  placeholder-only until the Linux campaign produces data).
+- **Paper:** S6 completed the 33 pp → **24 pp** compression (≤25 pp target met) with 0 undefined
+  references/citations and no fabricated data: §7 carries a `Data status` paragraph and 19 `PENDING`
+  markers; result insertion on the Linux host is estimated at +1.5–2.5 pp, with reserve cuts recorded
+  in `submission/CHECKLIST.md` (K2/K6) to stay ≤25 pp. Submission checklist/VENUE-RULES updated;
+  anonymized review PDF pending results insertion.
 - The Windows stack is stopped; no experiment process is running.
 
 ## 3. Remaining path to submission (all specified in the runbook)

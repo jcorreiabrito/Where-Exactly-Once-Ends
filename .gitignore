@@ -67,3 +67,6 @@ main.txt
 
 # raw run dumps are reproducible from frozen seeds; they carry host paths and stay local
 results/raw/artifacts/
+
+# archived Windows raw dumps stay local (host paths, reproducible); scrubbed records are committed
+results/windows-pilot/artifacts/

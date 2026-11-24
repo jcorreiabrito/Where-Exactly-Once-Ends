@@ -1,105 +1,94 @@
-% Section 9 — Threats to Validity (draft; final wording after results)
+% Section 9 — Threats to Validity (compressed; all five subsections retained)
 \section{Threats to Validity}
 \label{sec:threats}
 
 \subsection{Internal validity}
 \label{sec:threats-internal}
 
-\paragraph{Harness defects.} A broken harness can manufacture the result the author expects. We
-therefore make the negative control (M0 under a crash point that must duplicate) and the positive
-controls (M1-kafka and M4+M3 under fault-free runs, which must not) \emph{hard gates}: if either
-control fails, the campaign halts and no measurement is analysed. The oracle is mutation-tested
-before any experiment: synthetic defects (dropped row, duplicated row, flipped leg sign, altered
-amount, spurious row) must be detected with 100\,\% sensitivity and attributed to the correct
-invariant. The checker shares no code with the pipeline and recomputes ground truth from the
-specification, so a bug in the service cannot propagate into its own scoring.
+\paragraph{Harness defects.} A broken harness can manufacture the expected result. The negative
+control (M0 under a crash point that must duplicate) and the positive controls (M1-kafka and M4+M3
+under fault-free runs, which must not) are \emph{hard gates}: if either fails, the campaign
+halts. The oracle is mutation-tested before any experiment (dropped, duplicated, sign-flipped,
+altered and spurious postings must be detected with 100\,\% sensitivity and attributed to the
+correct invariant), and it shares no code with the pipeline, so a bug in the service cannot
+propagate into its own scoring.
 
-\paragraph{Faults that did not fire.} A fault-injection run is evidence only if the fault actually
-occurred. Every injector appends a timestamped receipt to \path{results/faults.log} when it fires
-and when it is restored; runs without a complete receipt pair are excluded and counted, and the
-exclusion rate is reported per cell. This converts ``the fault fired rarely'' from a hidden threat
-into a measured quantity.
+\paragraph{Faults that did not fire.} A fault-injection run is evidence only if the fault
+actually occurred. Every injector appends a timestamped receipt to \path{results/faults.log} when
+it fires and when it is restored; runs without a complete receipt pair are excluded and counted,
+and the exclusion rate is reported per cell --- turning ``the fault fired rarely'' from a hidden
+threat into a measured quantity.
 
-\paragraph{Configuration bias.} Mechanisms differ in their natural configuration choices, and a
-comparison that tunes one mechanism more carefully than another is unfair. We pin every
-non-intrinsic parameter identically (consumer, producer, JDBC, JVM, broker, database settings),
-allow only mechanism-intrinsic differences (deduplication index, outbox tables, progress table,
-transactional producer), hash the effective configuration per run, and fail the campaign if the
-shared hash differs between mechanisms. Mechanism implementations live in one code base and share
-the poll/commit skeleton.
+\paragraph{Configuration bias.} A comparison that tunes one mechanism more carefully than
+another is unfair. We pin every non-intrinsic parameter identically (consumer, producer, JDBC,
+JVM, broker, database), allow only mechanism-intrinsic differences (index, outbox tables,
+progress table, transactional producer), hash the effective configuration per run, and fail the
+campaign if the shared hash differs. Mechanism implementations share one poll/commit skeleton.
 
 \paragraph{Order drift.} Long campaigns drift: thermal state, page cache, background tasks and
-disk fragmentation all change over hours. Runs are randomised and interleaved across mechanisms
-rather than blocked by mechanism, paired seeds are used within a cell, the full stack is restarted
-at a fixed cadence, and run order is recorded so that drift can be tested as a covariate.
+disk fragmentation change over hours. Runs are randomised and interleaved across mechanisms,
+paired seeds are used within a cell, the full stack is restarted at a fixed cadence, and run
+order is recorded so drift can be tested as a covariate.
 
 \subsection{Construct validity}
 \label{sec:threats-construct}
 
 \paragraph{A simplified ledger.} We model one currency, balanced two-leg entries, append-only
 postings and no reversals or claim adjustments. Real ledgers have multi-leg entries across
-currencies, corrections and reconciliation states. These add failure surface but do not change the
-atomicity question we study: an external posting either matches a consumed event exactly once or
-it does not. The oracle deliberately tests the simple invariant set (I1--I4) because these are the
-properties a ledger must never violate, and they can be checked exactly.
+currencies, corrections and reconciliation states; these add failure surface but do not change
+the atomicity question we study: an external posting either matches a consumed event exactly once
+or it does not. The oracle deliberately tests the simple invariant set (I1--I4) because these are
+the properties a ledger must never violate, and they can be checked exactly.
 
 \paragraph{The oracle versus accounting practice.} Our oracle measures the invariants we defined,
-not the full correctness of an accounting system. A pipeline can pass our checks while still
+not the full correctness of an accounting system: a pipeline can pass our checks while still
 being wrong about business rules (e.g.\ a mis-classified account). We therefore report the
 invariant-level result and do not claim end-to-end accounting correctness. Conversely, the oracle
 can only detect what it is pointed at: an effect not represented in the expected posting set
-cannot be scored. The mutation-testing gate is the mitigation and is reported with the experiment.
+cannot be scored. The mutation-testing gate is the mitigation and is reported with the
+experiment.
 
 \paragraph{Synthetic load.} Events are generated deterministically from a seed with a fixed size
-distribution and a balanced entry structure. Real traffic has hot keys, large entries, bursts and
-cross-record dependencies. Our design intentionally removes these so that correctness outcomes are
-attributable to the mechanism rather than to workload variance; the performance numbers are
-therefore lower bounds on the overhead differences, not absolute production capacities.
+distribution; real traffic has hot keys, bursts and cross-record dependencies. Removing these
+makes outcomes attributable to the mechanism rather than workload variance, so performance
+numbers lower-bound overhead differences rather than production capacities.
 
 \subsection{External validity}
 \label{sec:threats-external}
 
 \paragraph{Single host, native processes.} The reported experiments run on one Windows host as
 native processes: three Kafka KRaft brokers, one PostgreSQL cluster and Toxiproxy. There is no
-container isolation, no multi-AZ placement and no real machine failure; a broker crash is a process
-kill. Process kills and TCP cuts are real faults at the OS level, but they do not reproduce rack
-power loss, fsync loss on a virtualised disk, or coordinated failures. The direction of the bias
-is toward \emph{understating} the failure surface: a single host has no network partitions between
-Kafka replicas, so replicated durability assumptions are never tested by the environment itself.
-All conclusions are therefore about the modelled mechanism semantics, whose failure windows are
-explicitly enumerated, and not about a specific cloud deployment.
+container isolation, no multi-AZ placement and no real machine failure; a broker crash is a
+process kill, and process kills and TCP cuts do not reproduce rack power loss or fsync loss on a
+virtualised disk. The bias is toward \emph{understating} the failure surface: a single host has
+no partitions between Kafka replicas, so replicated durability is never tested by the environment
+itself. Conclusions are therefore about the modelled mechanism semantics, not a specific cloud
+deployment.
 
 \paragraph{Version specificity.} Results are tied to the pinned versions in
-\code{tools/TOOLCHAIN-VERSIONS.txt} (Kafka 3.7.2, PostgreSQL 16.11, JDK 21). Kafka's transaction
-protocol has been stable since KIP-98/KIP-447, but default settings (rebalance protocol, producer
-batching) change between minor releases. The artifact pins versions and records digests so the
-experiment can be repeated exactly; claims are stated at the semantic level so that they survive
-version upgrades, while measured overheads are reported with their configuration.
+\code{tools/TOOLCHAIN-VERSIONS.txt} (Kafka 3.7.2, PostgreSQL 16.11, JDK 21). The transaction
+protocol has been stable since KIP-98/KIP-447, but defaults (rebalance protocol, producer
+batching) change between releases; the artifact pins versions and digests, claims are stated at
+the semantic level, and measured overheads are reported with their configuration.
 
 \subsection{Conclusion validity}
 \label{sec:threats-conclusion}
 
-Correctness outcomes are mostly-zero counts, and ``zero observed'' is never ``proved''. We report
-the proportion of violating runs with Clopper--Pearson 95\,\% confidence intervals and, for
-zero-event cells, the rule-of-three upper bound, so the reader can see how much evidence a zero
-carries. Performance comparisons use pre-registered non-parametric tests (Friedman with Nemenyi
-post-hoc), paired tests where the design is paired, Holm correction within each family, and
-Cliff's delta with confidence intervals; analyses not in the pre-registration are labelled
-exploratory. Multiple endpoints (correctness, throughput, latency, recovery time) could inflate
-false positives; we fix the families and corrections before looking at the data. The effective
-sample size is bounded by the wall-clock budget; the staged design and the cut ladder are recorded
-in \code{results/DEVIATIONS.md} so that the reader knows exactly which cells were executed and
-which were reduced.
+Correctness outcomes are mostly-zero counts, and ``zero observed'' is never ``proved'': we
+report Clopper--Pearson 95\,\% intervals and, for zero-event cells, the rule-of-three upper
+bound, so the reader sees how much evidence a zero carries. Performance comparisons use
+pre-registered non-parametric tests (Friedman with Nemenyi post-hoc), paired tests where the
+design is paired, Holm correction within each family, and Cliff's delta with intervals; analyses
+not in the pre-registration are labelled exploratory, and the families are fixed before looking
+at the data. The effective sample size is bounded by the wall-clock budget; the staged design and
+cut ladder are recorded in \code{results/DEVIATIONS.md}.
 
 \subsection{Reproducibility}
 \label{sec:threats-repro}
 
-Every quantitative claim traces to a run record produced by a logged command with UTC timestamp,
-git commit, host and seeds (\code{results/RUNLOG.md}), and every table and figure is regenerated
-by scripts from committed raw data. Ground-truth files are regenerated deterministically from the
-master seed and verified against the pre-send digest; configurations are hashed; analyses are
-frozen before the confirmatory stage. The container-based reproduction path is provided for CI,
-and the native-process path used for the reported runs is scripted and version-pinned. What cannot
-be reproduced bit-for-bit is timing on a different host: we therefore report distributions and
-paired comparisons rather than absolute single numbers, and the threats section states the host
-configuration.
+Every quantitative claim traces to a run record with UTC timestamp, git commit, host and seeds
+(\code{results/RUNLOG.md}), and every table and figure is regenerated from committed data. Ground
+truth is regenerated deterministically and verified against the pre-send digest, configurations
+are hashed, and analyses are frozen before the confirmatory stage. Container-based reproduction is
+provided for CI and the native path is scripted and pinned; cross-host timing is not reproducible
+bit-for-bit, so we report distributions and paired comparisons.

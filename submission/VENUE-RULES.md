@@ -108,3 +108,36 @@ identical in both versions (they contain no identifying information).
 - No page charges (diamond OA, S6) — no financial disclosure needed.
 - No ethics approval required for this study (no human/animal subjects); the S2 checklist item is
   answered "not applicable".
+
+### 7.2 Compliance deltas after the P2 page-compression execution (2026-11-24, late afternoon)
+
+The P2 author approvals were recorded on 2026-11-24 and the campaign moved to the approved
+Linux/container host; the empirical results are **not yet available** (the Windows campaign was
+paused after measured infeasibility, and no Stage A/B/C data exists — none may be invented). The
+manuscript was therefore compressed to the venue length limit with the results section kept as
+clearly marked placeholders. This section records the deltas against the rules and the measured
+state; **no venue rule changed** (re-verification of S1/S2/S3 of 2026-11-24 in §7.1 stands, and S4
+is still HTTP 404).
+
+| Delta | Before | After | Rule / source |
+|---|---|---|---|
+| Page count | 33 pp (build 2026-11-24 10:11, exit 1, 6 undefined refs) | **24 pp** (build 2026-11-24 ~17:50, `BUILD OK`, exit 0, **0 undefined references/citations**) | S1 suggested 12–25 pp; S2 "length within page limits" |
+| Overfull/underfull boxes | 43 overfull hbox (incl. 81.8 pt column collision), 57 underfull hbox | **1 overfull hbox** (≤2 pt), 0 overfull vbox; 26 underfull hbox + 7 underfull vbox (cosmetic) | S1/S2 figure/table legibility |
+| Results content | Pre-filled narrative with placeholder macros | Honest `Data status` paragraph; all result tables/figures marked **PENDING**; hypothesis verdicts `pending`; no numbers, no past-tense measured claims. TLC numbers remain artifact-matched (`tlc-summary.json`, 12:51:13Z) | BRIEF §2 integrity; S2 results checklist |
+| References printed | 63 | **59** (4 non-essential gray citations removed from the narrative — Toxiproxy, HdrHistogram, AWS-idempotency, Kafka-Streams; entries retained in `refs.bib` so `verify-refs.py` still passes 228 checks). Requested 63→~52 by gray-only removal is not safely reachable: only 14 gray refs exist and most are load-bearing | S1/S2 references + BRIEF §2 |
+| AI declaration | Overclaiming wording | Corrected: AI used only for editing/formatting/translation/boilerplate/search logistics; did not design the study, derive model/proofs, decide analyses or interpret results; data figures script-generated, conceptual diagrams in LaTeX/TikZ; no AI data/results | S3 §1–§4 (`iaguidelines`) |
+| COI / ethics | Absent | `Conflict of Interest` and `Ethics Statement` sections added before the AI declaration (financial-sector employment disclosed generically, no employer systems/data; no human/animal subjects → approval not required) | S2 ethics checklist |
+| Reference list defects | 14 internal audit notes printed; 4 garbled corporate authors; two-digit label collision | Fixed (notes removed from printed bib; corporate authors braced; label width 0.95 cm); reference verification PASS | S1 references example; S2 formatting |
+| Layout | — | Float/caption/display spacing tightened; 5 tables → prose and 2 more → prose; 5→3 algorithms; wide matrices footnotesize/scriptsize; bibliography footnotesize; 4→2 result figure placeholders; section headings tightened | S1/S2 formatting (body remains 12 pt single-spaced) |
+
+**Length trajectory (must be re-checked).** The 24 pp figure uses compact non-floated PENDING
+blocks. Inserting the frozen result tables/figures is estimated at **+1.5–2.5 pp → projected
+25.5–26.5 pp**, i.e. the 25-pp ceiling can be missed at insertion. Documented reserve cuts are
+listed in `submission/CHECKLIST.md` (item K2) and `docs/compliance-report.md` §a; the page count
+must be re-measured and the record updated after results insertion. The abstract/Resumo are also
+still placeholders (`PLACEHOLDER ABSTRACT`, `RESUMO PROVISÓRIO`) and must be finalised ≤200 words.
+
+**Double-blind submission (N1) remains pending by design.** The anonymized review PDF is not yet
+produced; per the lead it will be generated after results insertion, together with the
+author-identified copy/package (see §7.1 N1 and `CHECKLIST.md` item A5/I4).
+

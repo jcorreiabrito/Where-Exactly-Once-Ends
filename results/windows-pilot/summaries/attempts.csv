@@ -1,0 +1,6 @@
+utc,run_id,attempt,status,record,reason
+2026-11-24T19:21:19.227Z,,1,valid,results/raw/run-records/run_pilot-m1xm3-f4a-1k-p3-r02.json,
+2026-11-24T19:23:09.134Z,,1,invalid,results/raw/run-records/run_pilot-m4-f3-1k-p3-r01.json,fault_receipts_invalid
+2026-11-24T19:23:09.134Z,,2,invalid,results/raw/run-records/run_pilot-m4-f3-1k-p3-r01.json,fault_receipts_invalid
+2026-11-24T19:23:09.134Z,,3,invalid,results/raw/run-records/run_pilot-m4-f3-1k-p3-r01.json,fault_receipts_invalid
+2026-11-24T19:23:47.499Z,,1,valid,results/raw/run-records/run_pilot-m4m3-f0-1k-p3-r00.json,

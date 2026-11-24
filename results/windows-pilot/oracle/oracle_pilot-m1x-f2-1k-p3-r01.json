@@ -1,0 +1,139 @@
+{
+  "schema": "wxeo.oracle.v1",
+  "run_id": "pilot-m1x-f2-1k-p3-r01",
+  "mechanism": "M1x",
+  "sink_kind": "db",
+  "generated_at_utc": "2026-11-24T19:17:56.956Z",
+  "counts": {
+    "produced": 1000,
+    "consumed_estimate": 1000,
+    "expected_postings": 2000,
+    "observed_postings": 2000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "structurally_malformed_entries": 0,
+    "imbalanced_sum_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0,
+    "ledger_entries_total": 1000
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "v5": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 1000,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0,
+    "pub_mutated_records": 0,
+    "pub_unknown_records": 0,
+    "notes": null
+  },
+  "attestation": {
+    "present": true,
+    "can_update": false,
+    "can_delete": false,
+    "posting_triggers": 1,
+    "failed": false,
+    "note": "queried as the application role (artifact/README \u00a78.9)",
+    "source": "artifact:SchemaTool --mode=verify",
+    "app_role": "wxeo_app",
+    "posting_rows": 2000
+  },
+  "attribution": [],
+  "source_integrity_detail": {
+    "gt_file": "<home>\\AppData\\Local\\eos-runtime\\runs\\pilot-m1x-f2-1k-p3-r01\\attempt1\\gt_pilot-m1x-f2-1k-p3-r01.ndjson",
+    "gt_sha256_file": "97ca96a8c3fbf5179a404546ccd89c0ee84e783445a08fc1676d8dc5bc68c0e4",
+    "gt_sha256_regenerated": "97ca96a8c3fbf5179a404546ccd89c0ee84e783445a08fc1676d8dc5bc68c0e4",
+    "gt_lines_regenerated": 2000,
+    "gt_digest_match": true,
+    "source_dump": "<home>\\AppData\\Local\\eos-runtime\\runs\\pilot-m1x-f2-1k-p3-r01\\attempt1\\source_dump_pilot-m1x-f2-1k-p3-r01.ndjson",
+    "produced_manifest": "<home>\\AppData\\Local\\eos-runtime\\runs\\pilot-m1x-f2-1k-p3-r01\\attempt1\\produced_pilot-m1x-f2-1k-p3-r01.ndjson",
+    "source_records": 1000,
+    "source_offsets_contiguous": true,
+    "source_partitions_observed": 3,
+    "source_partitions_expected": 3,
+    "source_partitions_exact": true,
+    "source_event_multiset_matches_manifest": true,
+    "source_event_multiset_matches_derivation": true,
+    "source_dump_digest": "97ca96a8c3fbf5179a404546ccd89c0ee84e783445a08fc1676d8dc5bc68c0e4",
+    "source_dump_digest_match": true,
+    "partition_derivation_mismatches": 0,
+    "value_sha256_checked": true,
+    "value_sha256_mismatches": 0,
+    "malformed_source_lines": 0,
+    "malformed_manifest_lines": 0,
+    "errors": [],
+    "source_integrity": true
+  },
+  "diagnostics": {
+    "dup_key_samples": [],
+    "lost_key_samples": [],
+    "mutated_key_samples": [],
+    "imbalanced_eid_samples": [],
+    "structural_eid_samples": [],
+    "spurious_key_samples": [],
+    "lost_entry_samples": [],
+    "pub_dup_eid_samples": [],
+    "pub_lost_eid_samples": [],
+    "pub_mutated_samples": [],
+    "pub_divergence_eid_samples": [],
+    "observed_malformed_rows": 0,
+    "dup_entry_events": 0,
+    "complete_entries": 1000,
+    "publication_shard_stats": {
+      "records": 1000,
+      "parse_errors": 0,
+      "error_samples": []
+    }
+  },
+  "verdict_rule": "violating_run = v1|v2|v3|v4|v5; v1=imbalanced_entries>0 (I1a structural or I1b signed-sum); v2=(mutated_postings>0 or append-only attestation fails); v3=dup_postings>0; v4=lost_postings>0; v5=spurious_postings>0 (fabricated/fabricated-balanced postings). The I1a/I1b split and v5 are recorded for the author-approved P2 amendment A2; analysis reads violations.violating_run verbatim and never recomputes it. Recorded interpretation per docs/P2-RULINGS.md and results/DEVIATIONS.md.",
+  "warnings": [],
+  "inputs": {
+    "gt": {
+      "path": "<scratch>/gt_pilot-m1x-f2-1k-p3-r01.ndjson",
+      "sha256": "97ca96a8c3fbf5179a404546ccd89c0ee84e783445a08fc1676d8dc5bc68c0e4",
+      "bytes": 310634
+    },
+    "source_dump": {
+      "path": "<scratch>/source_dump_pilot-m1x-f2-1k-p3-r01.ndjson",
+      "sha256": "9c45383bdeb63ff15eca8b4cc008714ec2d276be0684e313efa7b4523a0f1e30",
+      "bytes": 156670
+    },
+    "produced_manifest": {
+      "path": "<scratch>/produced_pilot-m1x-f2-1k-p3-r01.ndjson",
+      "sha256": "b243736e852aa74bae632a626c4475a91fdad9aa50874ff3d4b3517da689d827",
+      "bytes": 159670
+    },
+    "sink_dump": {
+      "path": "<scratch>/sink_dump_pilot-m1x-f2-1k-p3-r01.csv",
+      "sha256": "d3e28141ccd71f3f4f2393f08ea506aa6b1aceffe90c95865568ff350011c0c5",
+      "bytes": 129744
+    },
+    "publication_dump": {
+      "path": "<scratch>/publication_pilot-m1x-f2-1k-p3-r01.ndjson",
+      "sha256": "d6f1d649afcae79432bf126f82aae1edc662730a629a46edf13a165797e6d2a1",
+      "bytes": 417315
+    },
+    "attestation": {
+      "path": "<scratch>/attestation_pilot-m1x-f2-1k-p3-r01.json",
+      "sha256": "e02b76458104cc6dae359231bfbb2db718532d15385e9c77ee3cdd78a1c49877",
+      "bytes": 506
+    }
+  },
+  "oracle": {
+    "gt_sha256": "97ca96a8c3fbf5179a404546ccd89c0ee84e783445a08fc1676d8dc5bc68c0e4",
+    "expected_sha256": "97ca96a8c3fbf5179a404546ccd89c0ee84e783445a08fc1676d8dc5bc68c0e4",
+    "source_integrity": true,
+    "oracle_script_sha256": "189ff543c5f678ae6c59907372b6b028c73e0cbff6f99c49b6388d0128a59901",
+    "result_sha256": "09b56de3655a622053947e2f787279515f5f98f8380e9c9e65d0cde86e020f87"
+  }
+}

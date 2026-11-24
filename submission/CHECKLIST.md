@@ -1,166 +1,166 @@
 # RITA SUBMISSION PREPARATION CHECKLIST — "Where Exactly-Once Ends"
 
-**Manuscript:** *Where Exactly-Once Ends: Preserving Double-Entry Ledger Invariants When Apache Kafka Pipelines Write to External Stores* (single author: João Brito, UFABC, correiadebrito.joao@gmail.com)
-**Article type:** Research Article · **Venue:** RITA — Revista de Informática Teórica e Aplicada (UFRGS), diamond OA, Scopus-indexed
-**Audited artifact:** `main.pdf` built 2026-11-24 10:11:54 (America/São Paulo) from git `030a4d5` (branch `main`) + working-tree edits to `sections/{mechanisms,method,system}.tex`
-**Audit date:** 2026-11-24 (America/Sao_Paulo) · Auditor: S6 compliance editor · **This is the AUDIT + PLAN pass called for in P7; a final pass is required after the analysis tables/figures land.**
-**Live-rules re-verification:** all three binding sources re-fetched 2026-11-24 (see `docs/compliance-report.md` §f). No rule drift found; `submission/VENUE-RULES.md` needs no amendment.
+**Manuscript:** *Where Exactly-Once Ends: Preserving Double-Entry Ledger Invariants When Apache Kafka Pipelines Write to External Stores*
+**Venue:** RITA (UFRGS), Research Article · **Status: P2-AUTHOR-APPROVED • POST-COMPRESSION BUILD (data pending)**
+**Audited artifact (this pass):** `main.pdf` built 2026-11-24 ~17:50 America/Sao_Paulo from working tree (HEAD `b444bf5` + this pass's manuscript edits) · **Build:** `powershell -ExecutionPolicy Bypass -File build.ps1 -Main main.tex -Clean` → `BUILD OK (24 pages, 423610 bytes)`, exit 0, **0 undefined references/citations**.
+**Prior audit:** 2026-11-24 morning (33 pp; `docs/compliance-report.md` records the full audit and the compression plan executed here). Rules record: `submission/VENUE-RULES.md` (re-verified 2026-11-24, no drift).
+**Status legend:** PASS = verified on the current build; FAIL = written rule violated now; PENDING = cannot be final until the frozen campaign's results are inserted / author or venue action.
 
-**Status legend** — **PASS** verified against the current artifact; **FAIL** a written rule is violated now and needs a fix; **PENDING** not judicable yet (results artifacts, venue action, or author action outstanding); **N/A** genuinely not applicable (reason given).
-
-**Measured right now:** 33 pages (build log and `pdfinfo`), abstract placeholder 103 words, 6 unresolved table references (render "??"), 63/63 bibliography entries cited and URL-bearing, 38 overfull hboxes (15 wider than 5 pt). Projected final length **≈36 pp** (33 + 2.5–3.5 pp of pending CONTRACTS §11 artifacts) against a 25-pp ceiling → **FAIL**; the actionable compression plan is in `docs/compliance-report.md` §a.
+**Current measured numbers:** **24 pp** (target ≤25 met; build log + `pdfinfo`; footer `p.X/24`), **1 overfull hbox / 0 overfull vbox / 26 underfull hbox / 7 underfull vbox** (underfulls cosmetic), **59 bibliography entries printed** (63 in `refs.bib`, all cited-in-print; 4 non-essential gray citations removed from the narrative only — entries retained so the verified-base gate still passes), abstract placeholder 111 words, 6 result-artifact **PENDING** blocks (4 tables + 2 figures) + decision-table placeholder, all clearly marked.
 
 ---
 
-## A. Submission mechanics and package
+## A. Submission mechanics
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| A1 | Originality: work is original and not under consideration elsewhere (S2 checklist) | PENDING | No signed originality/cover-letter statement anywhere in repo; no evidence either way. | Author signs cover letter (A13) and ticks the SEER declaration; keep `CITATION.cff`/README claims consistent. |
-| A2 | Not under consideration elsewhere (S2) | PENDING | Same as A1; single-venue submission policy is an author statement. | Author attestation in cover letter. |
-| A3 | Initial submission is a PDF formatted in LaTeX (S1 "General submission instructions"; S2 "File Format") | PASS | `main.pdf`: Producer `MiKTeX pdfTeX-1.40.28`, Creator `LaTeX with hyperref`; `main.tex` build documented in `build.ps1` header. | Keep the final PDF built by `build.ps1` after all tables land; do not re-export through another tool. |
-| A4 | Final version supplies LaTeX source (S1/S2) | PASS | `main.tex`, `SelfArx.cls`, `refs.bib`, `sections/*.tex` (10 files), `results/analysis/*` inputs all in tree; source is the exact source of the built PDF. | Bundle the source for the venue at final acceptance (see A5). |
-| A5 | Submission package assembled under `submission/` (BRIEF §7: PDF, LaTeX source, cover letter, checklist) | FAIL | `submission/` contains only `VENUE-RULES.md`; no PDF, no source copy, no cover letter. | Copy final `main.pdf` + source tarball + cover letter into `submission/`; record SHA-256 of the uploaded PDF here. |
-| A6 | Build is green with the documented command (BRIEF §9; `build.ps1`) | FAIL | `powershell -ExecutionPolicy Bypass -File build.ps1 -Main main.tex -Clean` → **exit 1**, `BUILD PROBLEMS: There were undefined references` (6 sites: `tab:validation`, `tab:correctness` ×2, `tab:performance`, `tab:counts`, `tab:decision`; PDF renders six "??"). PDF still produced: `Output written on main.pdf (33 pages, 467048 bytes)`. | Re-run after `results/analysis/tables/t1–t4` and `t6` land; `build.ps1` must exit 0 before upload. |
-| A7 | SEER submission metadata entered (authors, affiliations, emails, title, abstract, keywords, section) (S2 "Author Information") | PENDING | SEER submission not created (author action; no account evidence). | Enter exactly the manuscript metadata; keep title identical to PDF; paste abstract ≤200 words. |
-| A8 | Final release tag `v1.0-submission` (BRIEF §7) | PENDING | `git tag` is empty. | Tag after final build + guard-secrets pass. |
-| A9 | Page-count reporting | PENDING | Current measured count: **33** (`main.log`: "Output written on main.pdf (33 pages, 467048 bytes)"; `pdfinfo` Pages: 33; footer pattern "p.{n}/33" — page 1 is `\thispagestyle{empty}`, first printed footer p.2/33). Final count will change (see H1). | Replace with the measured final count in this row and in the cover letter; verify footer "p.N/N" matches. |
-| A10 | Confidentiality/secret scan passes before push/submission (BRIEF §3: `tools/guard-secrets.ps1`, ABORT on any hit) | PASS | Mid-audit run (2026-11-24 ≈10:24) **failed**: `SECRET/CONFIDENTIALITY SCAN: 7 HIT(S)`, exit 1 — hits in `docs/redteam-oracle.md` lines 1365–1368 (personal Windows absolute paths) and line 1186 (AWS-account-id false positive). The team sanitized the file during the audit; **re-run at 2026-11-24 10:30:39 −03:00: `SECRET/CONFIDENTIALITY SCAN: CLEAN (212 text files scanned)`, exit 0**; independent check: 0 personal-path hits across all `git ls-files`. | None now — but this gate is mandatory before **every** push and at upload; keep `docs/redteam-oracle.md` free of absolute paths and re-run the scanner on the final tree. |
-| A11 | No employer-confidential content in repo/paper/metadata (BRIEF §3 firewall) | PASS (PDF) | `pdftotext main.pdf` scan for personal-path/user-name probes, absolute-path patterns and the repository handle: only the required author block hits (p.1). No employer/product names. | Re-scan the final PDF and metadata at upload. |
-| A12 | Plagiarism-free (S2 "Plagiarism: Free of plagiarism") | PENDING | No similarity report exists in repo; all prose is original drafting with attributed citations (see E1–E4). | Run a similarity check (e.g., iThenticate/Turnitin as available) and record result date; archive the report locally. |
-| A13 | Cover letter (BRIEF §7 deliverable; not required by S1/S2) | PENDING | No cover letter file. | Draft: article type, ≤3 sentence contribution, originality/not-under-review statement, COI, AI-declaration pointer, page count, suggested reviewers if venue asks. |
+| A1 | Originality / not under consideration elsewhere (S2) | PENDING | No signed cover-letter statement yet. | Author signs cover letter (A13); SEER declaration. |
+| A2 | Not under consideration elsewhere | PENDING | Author statement needed. | Cover letter. |
+| A3 | Initial submission PDF formatted in LaTeX (S1/S2) | PASS | `main.pdf` Producer `MiKTeX pdfTeX-1.40.28`; built by `build.ps1`. | Keep this build path. |
+| A4 | LaTeX source available at final version (S1/S2) | PASS | `main.tex`, `SelfArx.cls`, `refs.bib`, `sections/*.tex` complete and are the PDF's source. | Bundle for acceptance. |
+| A5 | Submission package under `submission/` (BRIEF §7) | FAIL | `submission/` contains `VENUE-RULES.md` + this checklist; no PDF/source/cover letter yet (anonymized review PDF deliberately deferred until results insertion, per lead). | Copy final PDF + source + cover letter after the results pass; per VENUE-RULES §7.1 N1 also build `main-anonymized.pdf` for double-blind review. |
+| A6 | Build green with documented command (BRIEF §9) | PASS | 2026-11-24 ~17:50: `build.ps1 … -Clean` → `BUILD OK (24 pages)`, exit 0; repeated passes stable; **0 undefined refs**, 0 undefined citations. | Re-run at final. |
+| A7 | SEER submission metadata complete (S2 author info) | PENDING | Submission not created. | Enter names/affiliation/e-mail/title/abstract/keywords; keep title identical to PDF. |
+| A8 | Release tag `v1.0-submission` (BRIEF §7) | PENDING | No tags. | Tag after final gate + guard-secrets pass. |
+| A9 | Page-count reporting | PENDING | Current measured: **24** (`main.log`: `Output written on main.pdf (24 pages, 423610 bytes)`; `pdfinfo` Pages 24; footer p.X/24). Will change when frozen result tables/figures are inserted (see K2). | Record final measured count here + cover letter after results pass. |
+| A10 | Confidentiality/secret scan passes (BRIEF §3) | PASS | `tools/guard-secrets.ps1` → `SECRET/CONFIDENTIALITY SCAN: CLEAN (368 text files scanned)`, exit 0 (after the morning's `docs/redteam-oracle.md` sanitization; re-run at submission). | Re-run before every push/upload. |
+| A11 | No employer-confidential content in paper/metadata (BRIEF §3) | PASS | `pdftotext` scan clean (only the required author block); COI statement names only "the financial sector", no employer/internals. | Re-scan final PDF. |
+| A12 | Plagiarism-free (S2) | PENDING | No similarity report; prose original with attributed citations. | Run similarity check before upload. |
+| A13 | Cover letter (BRIEF §7) | PENDING | None. | Draft with article type, contribution, originality, COI, AI declaration pointer, page count. |
 
-## B. Required structure and sequence (S1 "Sequence of topics"; S2 "Content")
+## B. Required structure (S1 sequence; S2 content)
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| B1 | Sequence: Title → authors (affiliations/emails in footnote) → abstract+keywords → text → acknowledgments → references (S1) | PASS | PDF p.1: title (EN+PT), author; abstract/keywords/resumo/palavras-chave block; affiliation+email block; §1 starts p.1; `Acknowledgements` p.29 left column; `Declaration…` p.29; `References` heading p.29 right column. | None. |
-| B2 | Title concise, informative, reflects content (S2) | PASS | `main.tex:102-103`; 16-word descriptive title; matches `CITATION.cff:3` and README. | None. |
-| B3 | Author names with affiliations and emails in a footnote (S1/S2) | PASS | PDF p.1: `João Brito^{1,*}`; `¹ Universidade Federal do ABC (UFABC), Santo André, SP, Brazil`; `*Corresponding author: correiadebrito.joao@gmail.com` — rendered by the official template's `\affiliation` footnote mechanism (footnotesize block under the abstract box), which is the RITA class's intended equivalent of a footnote (`SelfArx.cls:202-240`). | Keep; do not move into a floating footnote (breaks template layout). |
-| B4 | Abstract (≤200 words) and Keywords block placed before text | PASS | PDF p.1; `main.tex:126-128` (abstract + resumo), `main.tex:115-117` (keywords/palavras-chave). | See C7 for content; count is compliant. |
-| B5 | Text includes figures and tables (S1) | PENDING | Structure present (16 table, 5 figure, 5 algorithm environments), but 4 result figures are placeholders (`Figure pending analysis`) and 6 tables are not yet generated. | Insert generated `t1–t6` and `fig-*.pdf`; verify every float is cited. |
-| B6 | Acknowledgments (if applicable) before References (S1) | PASS | `main.tex:157-160`; PDF p.29; contains no-funding sentence + tool thanks. | Optional: rename heading to US spelling "Acknowledgments" (see D4/R7). |
-| B7 | References section last (S1) | PASS | `main.tex:173-178`; PDF p.29–33. | None. |
-| B8 | Mandatory section titled exactly `Declaration of AI-Assisted Use in Writing`, immediately before References (S3) | PASS | `main.tex:162` exact string; PDF p.29 heading directly precedes `References` in document order; no other section between. | None. |
+| B1 | Title → authors (affiliations/emails in footnote) → abstract+keywords → text → acknowledgments → references | PASS | PDF p.1 title block; sections §1–§10; `Acknowledgments`, `Conflict of Interest`, `Ethics Statement`, `Declaration of AI-Assisted Use in Writing` then `References` (pp. 22–24). | Keep order after results insertion. |
+| B2 | Title concise/informative | PASS | `main.tex` title (16 words); matches `CITATION.cff`. | — |
+| B3 | Author names with affiliations and emails in a footnote | PASS | p.1: João Brito¹·*; UFABC, Santo André, SP, Brazil; `*Corresponding author: correiadebrito.joao@gmail.com` via the official template's affiliation/footnote mechanism. | — |
+| B4 | Abstract ≤200 words + keywords before text | PASS (count) / see C7 | abstract placeholder 111 words (≤200); 6 EN + 6 PT keywords. | Final abstract ≤200 with results/conclusion. |
+| B5 | Text includes figures/tables | PENDING | Structures present; all result tables/figures are clearly marked `PENDING` placeholders (no fabricated content). | Insert generated artifacts from the frozen pipeline. |
+| B6 | Acknowledgments before references | PASS | `main.tex`; no-funding statement. | — |
+| B7 | References last | PASS | PDF pp. 22–24. | — |
+| B8 | Mandatory section titled exactly `Declaration of AI-Assisted Use in Writing`, immediately before References | PASS | `main.tex`; PDF p.23; order verified. | Keep exact title/position. |
 
-## C. Written formatting rules (S2 checklist; S1 figures/tables/references)
+## C. Written formatting rules (S2; S1 figures/tables/references)
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| C1 | Single-spaced (S2) | PASS | `article` base class, no `setspace`/`\linespread` in `main.tex`; `size12.clo` v1.4n loaded (`main.log`) sets 12 pt on 14.5 pt baseline, i.e. single spacing. | None. |
-| C2 | 12-point font (S2) | PASS (body) | `\documentclass[fleqn,12pt]{SelfArx}` (`main.tex:8`) → `size12.clo` (main.log); body/rendered text 12 pt. Tables/captions/affiliations/refs are set in `\small`/`\footnotesize` (normal typographic practice, not body text). | Keep body at 12 pt. If the editor reads C2 literally for tables/refs, do not shrink the bibliography further than `\small` (see compliance-report §a risk). |
-| C3 | Italics instead of underlining (except URLs) (S2) | PASS | `grep \\underline main.tex sections/*.tex` → 0 hits; emphasis via `\emph`/`\textit`. | None. |
-| C4 | Figures and tables placed within the text, near their citation; not floated to end (S1/S2) | FAIL (2 uncited) / PENDING (real floats) | Placement uses `[t]` inside sections (good), but `tab:closure` (`sections/formal.tex:47-68`) and `fig:correctness` (`sections/results.tex:48-57`) are never cited in the text — an orphan float. 4 figure environments are placeholders. | Cite both labels in prose or delete/merge; regenerate the 4 result figures. |
-| C5 | Figures and tables numbered consecutively (S1) | PASS | PDF: `Table 1.` … `Table 16.` and `Figure 1.` … `Figure 5.`, no gaps/duplicates. | None. |
-| C6 | Figure/table titles in the caption, not inside the image (S1) | PASS | All captions are LaTeX `\caption{...}`; `fig:eos` TikZ has only in-diagram axis labels; pending-image boxes say "Figure pending analysis" inside the placeholder (will disappear with the real figure). | Keep captions self-contained after replacement; do not rasterize a title into the image. |
-| C7 | Abstract presents objectives, methodology, results, conclusions and is ≤200 words (S1 ≤200; S2 content) | FAIL (content) / PASS (count) | `main.tex:126` is `PLACEHOLDER ABSTRACT (to be replaced after results)`, 103 words (96 excluding the placeholder label) — within 200 but has no results/conclusions. Same for `\Resumo` (102 words, `RESUMO PROVISÓRIO`). | Write final abstract ≤200 words with one sentence each of objective/method/results/conclusion; mirror in Resumo; re-count (e.g., `pandoc`/`wc -w` on the source string). |
-| C8 | Keywords relevant and represent main topics (S2) | PASS | 6 EN keywords (`main.tex:115`) and 6 PT equivalents (`main.tex:117`); terms match the paper's mechanisms/faults. | Keep in sync if title changes. |
-| C9 | Title/heading metadata reflected in PDF header/footer | PASS | Running head `Where Exactly-Once Ends` (`\ShortTitle`); footer `R. Inform. Teór. Apl. (Online) • Porto Alegre • V. XX • N. X • p.X/33 • 2026` (template `SelfArx.cls:80`). | Final count will update "p.X/N" automatically via `lastpage`. |
+| C1 | Single-spaced | PASS | `article` 12 pt/14.5 pt baseline (`size12.clo`); no `setspace`/`\linespread`. | — |
+| C2 | 12-point font | PASS (body) | `\documentclass[12pt]{SelfArx}` → `size12.clo`; body text 12 pt. Tables `\footnotesize`/`\scriptsize` (wide result/assumption matrices) and bibliography `\footnotesize` are deliberate space measures; body stays 12 pt. | If the editor reads C2 literally, the documented fallback is in K2/K6 (restore 12 pt refs at +0.8–1 pp, compensate with reserve cuts). |
+| C3 | Italics instead of underlining | PASS | no `\underline` in sources. | — |
+| C4 | Figures/tables in text near citation | PASS | every remaining float and every PENDING block is cited; dangling/unreferenced-float audit → 0. | Re-audit after insertion. |
+| C5 | Numbered consecutively | PASS | Tables/figures use LaTeX counters; `captionof` blocks continue the same sequence. | Re-check after insertion. |
+| C6 | Titles in captions, not images | PASS | all titles are `\caption`/`\captionof`. | — |
+| C7 | Abstract presents objectives, methodology, results, conclusions | FAIL | `PLACEHOLDER ABSTRACT (to be replaced after results)`; no results yet (campaign in progress; none may be invented). | Final ≤200-word abstract after the frozen analysis; mirror in Resumo. |
+| C8 | Keywords relevant | PASS | 6 EN + 6 PT, consistent with mechanisms/faults. | — |
+| C9 | Header/footer metadata | PASS | running head + footer p.X/24; `pdfinfo` title/author/keywords set (accented author fixed). | — |
 
-## D. Formatting defects observed in the current build
+## D. Formatting defects (was 43 overfull hboxes; now clean-up state)
 
-| ID | Requirement | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| D1 | No unresolved cross-references in the PDF (`build.ps1` gate) | FAIL | 6 `LaTeX Warning: Reference 'tab:…' undefined` in `main.log`; six literal `??` in the PDF (p.23–26). | Regenerate tables; rebuild until `build.ps1` reports `BUILD OK`. |
-| D2 | Text must not overflow the column/page | FAIL | 38 `Overfull \hbox` in total (15 wider than 5 pt) + 1 `Overfull \vbox`. Worst: **81.80 pt** `sections/threats.tex:17-22` — the unbreakable `\code{results/faults.log}` crosses the gutter on PDF p.27 and visibly overlaps the opposite column (see `docs/compliance-report.md` §b, screenshot). Next: 20.19 pt `related.tex:80-89`, 19.45 pt `related.tex:53-62`, 17.72 pt `related.tex:124-132`, 14.80 pt `results.tex:24-38`, 14.15 pt `threats.tex:97-154`, 12.39 pt `threats.tex:31-35`, 12.25 pt `related.tex:7` (subsection heading overflow). | Break the path token (`results/\allowbreak faults.log` or `\path{...}` with `url`), rewrite the 20 pt lines, widen the heading or shorten it, then rebuild and require 0 overfull >2 pt. |
-| D3 | Reference labels typeset legibly | FAIL | `main.tex:175` sets `\renewcommand\@biblabel[1]{{\parbox{0.7cm}{[#1]}}}`; two-digit labels exceed 0.7 cm: PDF shows `[10]AKIDAU`, `[21]GARCIA-MOLINA`, `[46]PROJECT, H.` — label collides with author (visible on p.30). | Widen to ≥0.95 cm or use `\hspace*{0.15em}` after the label; rebuild and inspect a 2-digit page. |
-| D4 | Free of grammar/spelling errors (S2) | FAIL | Confirmed typos: `progress-atomicy` (`sections/conclusion.tex:25`), `re-redelivery` (`sections/conclusion.tex:18`); singular/plural mismatch `the authors expect` in a single-author paper (`sections/threats.tex:8`); heading UK spelling `Acknowledgements` vs S1's `Acknowledgments`. Placeholder text also remains (D5). | Fix the four items during the final proofread; add the plural fix ("the author expects"). |
-| D5 | No draft markers/placeholders in the submitted PDF | FAIL | PDF contains: `PLACEHOLDER ABSTRACT…` (p.1), `RESUMO PROVISÓRIO…` (p.1), `Figure pending analysis` ×4 (p.24–25), hypothesis verdicts `pending` ×5 (Table 16, p.24), `\ResTotalValidRuns{--}`-style `--` values in §7.1, and template placeholders `Vol. XX`, `1-XX`, `XXXX`, `dd/mm/yyyy` (p.1). Template placeholders are venue-assigned; the others are draft markers. | Remove all internal draft markers after results; leave the template DOI/date/volume placeholders exactly as the official template does (verified against `paper-template/template/template.pdf`), or fill them if the venue supplies values. |
-| D6 | Bilingual title/Resumo accurate (template requirement; translation declared under S3 allowed uses) | PENDING | `main.tex:105,128`, p.1. PT title reads "…Preservando Invariantes de **Razão de Dupla Entrada**…": "razão" is a false friend (livro-razão = ledger; double-entry = *partidas dobradas*); "Armazenamentos Externos" is a calque. | Author reviews the PT block (mandatory human review, S3 §2): consider "Invariantes do Livro-Razão em Partidas Dobradas … Escrevem em Bases de Dados Externas". Keep EN/PT terminology consistent with the Resumo ("livro-razão" already used there). |
-| D7 | Internal consistency of mechanism/configuration counts | FAIL | Abstract (`main.tex:126`) says "**five** mechanisms … and three combinations"; §1 RQ2 (`introduction.tex:59`) says "**five** mechanisms and three combinations" but then lists six labels (M0, M1-kafka, M1x, M2, M3, M4); §3 says "**six** mechanisms and three combinations" (`mechanisms.tex:16`); §6 and §10 say "**nine** configurations" (`method.tex:21`, `conclusion.tex:13`); the executed set is 9. | Harmonise: "six mechanism variants (M0, M1-kafka, M1x, M2, M3, M4) — five mechanism designs, with Kafka EOS instantiated for two sinks — and three combinations, nine configurations in total." Apply in abstract, §1, §3. |
+| D1 | No unresolved cross-references | PASS | `main.log`: 0 `undefined`; 0 `Reference undefined`; 0 `Citation undefined`; `bibtex` clean. | Re-run build gate. |
+| D2 | Text must not overflow columns/pages | PASS | final log: **1 overfull hbox** (≤2 pt), 0 overfull vbox, 26 underfull hbox + 7 underfull vbox (cosmetic glue warnings only, no text overlap). Morning build had 43 overfull incl. an 81.8 pt collision; fixed with `\emergencystretch`, path-breaking, rewritten lines and tighter floats. | Keep 0 overfull >2 pt at final. |
+| D3 | Reference labels legible (two-digit labels) | PASS | `main.tex` `\@biblabel` widened to 0.95 cm; PDF reference pages show `[59]` with spacing. | — |
+| D4 | Grammar/spelling | PASS | typo scan clean (`progress-atomicy`, `re-redelivery`, `the authors expect` fixed; US `Acknowledgments`). | Full proofread after results. |
+| D5 | No draft markers in the submitted PDF | PENDING | Intermediate build intentionally contains clearly marked placeholders (`PLACEHOLDER ABSTRACT`, `RESUMO PROVISÓRIO`, 6 × `PENDING` result blocks + `pending` verdicts, template DOI/date placeholders). Results are honestly marked as not yet generated; no numbers fabricated. | Remove all internal placeholders only when the frozen artifacts are inserted; template DOI/date/volume placeholders remain venue-assigned. |
+| D6 | Bilingual title/Resumo accurate | PASS | PT title now "…Preservando Invariantes de Partidas Dobradas…" (idiomatic); Resumo mirrored (`partidas dobradas`, `livro-razão`). | Author final review (S3 unchanged). |
+| D7 | Mechanism-count consistency | PASS | abstract/intro now "six mechanism variants (five mechanism designs) … three combinations"; §4 "six mechanisms and three combinations"; §6 "nine configurations"; §7/§8 reconcile. | — |
 
-## E. References (S1 "References"; S2 URL rule)
+## E. References (S1/S2; verified base)
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| E1 | References numbered and cited in brackets (S1) | PASS (numbering) | `abntex2cite` numeric (`main.tex:29-30`); PDF citations render `[1, 2]`, `[3, 7]`, …; reference list `[1]…[63]`. | None (fix label spacing, D3). |
-| E2 | URLs included for all references whenever available (S2) | PASS | `main.bbl`: 63/63 `\bibitem`s contain a URL; 63 × "Disponível em" in the bbl; 49 peer entries carry DOI URLs, 14 gray entries carry source URLs (`refs/verified.csv`). | Keep at final; re-run `python tools/verify-refs.py` after any bib edit. |
-| E3 | Complete reference list; no uncited/undefined entries | PASS | 63 `refs.bib` entries = 63 `\bibitem` = 63 distinct cited keys (`main.aux`); no `Citation undefined` in `main.log`; `bibtex` exit 0, 0 warnings (`main.blg`). | None. |
-| E4 | Reference base internally consistent and DOI-verified (BRIEF §2; project gate) | PASS | `python tools/verify-refs.py` → 63 verified entries; 49 peer (Crossref-verified DOI); 14 gray (22.2%); 228 checks; `RESULT: PASS`. DOI set difference bib vs `refs/verified.csv`: 0. `refs/refs.bib` and root `refs.bib` are byte-identical (SHA-256 `8659F88D…F034A`). | Re-run at final (offline mode used here; the P1 record used `--live`). |
-| E5 | Published reference list contains bibliographic data only (S2 "References: Complete and formatted according to journal guidelines") | FAIL | 14 `\bibitem`s print internal audit notes: e.g. `[1] … Primary technical artifact, retrieved and cached.`, `[2] … Primary technical documentation; cached copy of official docs source.`, `[55] DEMSAR … Peer-reviewed, no publisher DOI; cached JMLR page.` (fields `note = {…}` in `refs.bib`) — visible on PDF p.29–33. | Remove `note` fields from the *publication* bibliography (move provenance to `refs/verified.csv`/`refs/RETRIEVALS.md`); rebuild, verify 0 occurrences of "cached"/"Primary" in the PDF reference section. |
-| E6 | Corporate/institutional authors rendered correctly (S2 examples; template ABNT style) | FAIL | Garbled at TeX level: `\abntrefinfo{project)}{PROJECT)}{2017}` → `[1] PROJECT), A. S. F. A. K.` (same for `kip447`, `kip429`), `[46] PROJECT, H. HdrHistogram`; inverted/acronym forms for `pg-*` ("GROUP, P. G. D.") and `kafka-design` ("FOUNDATION, A. S."). Cause: parentheses/lower-case in `author = {Apache Software Foundation (Apache Kafka project)}` and `HdrHistogram project`. | Use braced corporate authors: `author = {{Apache Software Foundation}}`, `author = {{HdrHistogram project}}`, `author = {{PostgreSQL Global Development Group}}`, etc.; rebuild and inspect the 13 corporate entries. |
-| E7 | Reference style follows the template's examples (S1) | FAIL (inherited) | Numbered bracket style correct, but D3/E5/E6 defects make the list non-conformant as printed. | Fix D3/E5/E6; optionally note that "Disponível em:" is the template/ABNT convention (the journal's official template ships the same `abntex2` style), not a defect. |
-| E8 | All works used to support claims are present (completeness) | PASS | Every `\cite` resolves; all 63 entries have a `supports_claim` row in `refs/verified.csv` with retrieval date. | If the compression plan trims references (§a R1), only remove entries not used to support a claim — never remove citations that carry a factual statement. |
+| E1 | Numbered and cited in brackets | PASS | `abntex2cite` numeric; PDF `[1]…[59]`; all 59 printed entries cited. | — |
+| E2 | URLs for all references | PASS | `main.bbl`: 59/59 `\bibitem`s contain URLs/DOIs; 49 peer entries have DOI URLs. | Re-run `verify-refs.py` after any bib edit. |
+| E3 | Complete list; no uncited/undefined entries | PASS | printed list 59, all cited; 0 undefined citations; `bibtex` exit 0. | — |
+| E4 | Verified base consistent (BRIEF §2 gate) | PASS | `python tools/verify-refs.py` → 63 verified entries; 49 peer (Crossref-verified DOI); 14 gray (22.2%); 228 checks; RESULT PASS (bib/verified.csv unchanged). | Re-run final. |
+| E5 | No internal audit notes printed | PASS | morning defect fixed (lead removed `note` fields): bbl audit-note hits = **0**; 14 braced corporate authors render correctly (`Apache Software Foundation`, `PostgreSQL Global Development Group`), garbled forms = 0. | — |
+| E6 | Corporate authors rendered correctly | PASS | bbl check: 0 `PROJECT)`/`PROJECT, H.` forms; braced corporate authors (14 refs). | — |
+| E7 | Follows template examples | PASS | ABNT numeric, "Disponível em:" venue-style, template class. | — |
+| E8 | Claim-bearing references retained | PASS | Compression removed **4 non-essential gray citations from the narrative** (Toxiproxy, HdrHistogram, AWS-idempotency, Kafka-Streams — all cited only supportively), leaving 59 printed. Entries remain in `refs.bib`/`refs/refs.bib` so the 228-check gate is intact. The requested "63→~52 by removing only non-essential gray refs" is **not reachable safely**: only 14 gray refs exist and most are load-bearing (KIP-98/447/429, Kafka design docs, PG isolation/ON CONFLICT/PREPARE, Debezium outbox, Demsar), so further reduction would remove DOI-verified peer sources or weaken claims — deliberately not done. | Lead decision if fewer refs are required. |
 
 ## F. AI policy (S3 — binding)
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| F1 | AI cannot be credited/listed as author (S3 §1) | PASS | Single human author only (`main.tex:111`); no AI in author list, per BRIEF §2/§11. | None. |
-| F2 | Mandatory section titled exactly "Declaration of AI-Assisted Use in Writing" (S3 §3) | PASS | `main.tex:162` exact; PDF p.29. | None. |
-| F3 | Declaration positioned immediately before References (S3 §3) | PASS | Document order: Acknowledgments → Declaration → `\bibliography` (`main.tex:157-178`); PDF p.29. | Keep this order after any back-matter edits (COI/ethics statements must go *before* the declaration). |
-| F4 | AI use limited to formatting/editing/translation/readability, not replacing analytical work (S3 §2) | FAIL (wording) | Declaration says AI assisted "**drafting** and editing prose, … generating **boilerplate experiment and analysis code**, and assisting with **literature retrieval**". "Drafting" and "analysis code" go beyond the enumerated presentation uses; the policy also requires the analytical work to remain the author's, which the declaration never says. | Reword to the factual minimum: "editing, rephrasing and formatting prose; translating the title/abstract into Portuguese; generating boilerplate build/harness/plotting code; assisting with literature-search logistics. AI did **not** design the study, derive the formal model/proofs, decide the analyses, or interpret results; all analytical content and decisions are the author's." See compliance-report §c for a full replacement draft. |
-| F5 | Declaration accurate, no over/underclaim (S3 §1–§4; BRIEF §2) | FAIL | Two factual overclaims: (i) "every figure is generated by a deterministic script from committed run records" — false: `fig:eos` is a hand-authored TikZ diagram (`sections/system.tex:298-324`), not a data figure; (ii) "The author opened and verified every cited reference" — `refs/RETRIEVALS.md`/`verified.csv` show 49 peer entries verified via Crossref + publisher abstract (several ACM DL full texts not retrievable), so the accurate claim is bibliographic record + supporting statement verified against retrieved abstract/metadata. Also missing: explicit "AI did not perform the analysis/proofs" and the images/graphs restriction statement. | Replace with the audited wording in compliance-report §c; keep the true parts (no AI data/results, author responsibility, AI not an author). |
-| F6 | AI not used to generate/alter/fabricate primary research data (S3 §4) | PASS | All numbers come from executed experiments (when they land) / TLC checks; `results/` is the only numeric source; no synthetic data in manuscript. (Also see J4 for the TLC traceability defect.) | Keep; after results land, spot-check 3 random numbers against run records before upload. |
-| F7 | No generative-AI creation/alteration of scientific images or result charts (S3 §4) | PASS | Result figures will be produced by `tools/make-figures.py` from committed CSVs (CONTRACTS §11); the only current figure is a conceptual TikZ schematic, not a results image. | Keep figure generation script-only; do not hand-edit generated PDFs; declare the schematic as author/AI-assisted LaTeX drawing if it was AI-drafted. |
-| F8 | Authors assume full responsibility incl. hallucination/plagiarism/bias (S3 §1) | PASS | Declaration sentence: "assumes full responsibility for the content, including any error, omission or bias" (`main.tex:168-170`). | Keep verbatim after rewording the rest. |
-| F9 | Mandatory meticulous human review of AI-generated/translated content (S3 §2) | PASS (declared) | "The author directed, reviewed and verified all such output" (`main.tex:165-166`). | Add explicit "and reviewed the AI-assisted content before submission"; author must actually perform the PT translation review (D6). |
+| F1 | AI cannot be author | PASS | single human author. | — |
+| F2 | Mandatory section exact title | PASS | `main.tex`: `\section*{Declaration of AI-Assisted Use in Writing}`. | — |
+| F3 | Immediately before References | PASS | document order: Acknowledgments → COI → Ethics → Declaration → References. | Keep COI/ethics before the declaration. |
+| F4 | AI limited to formatting/editing/translation/readability; not replace analytical work | PASS | declaration now states AI assisted with editing/formatting/translation/boilerplate code/search logistics and that AI did **not** design the study, derive the model/proofs, decide analyses, or interpret results; all analytical content is the author's. | — |
+| F5 | Declaration accurate (no over/underclaim) | PASS | fixes applied: figures split into "data figures produced by deterministic scripts" vs "conceptual diagrams authored in LaTeX/TikZ"; reference claim softened to bibliographic record + supporting statement verified against source/abstract; no data/results generated by AI; AI not an author. | Author re-confirms after results insertion ("verified every number against the artifacts" must be true). |
+| F6 | No AI-generated/alterated primary data (S3 §4) | PASS | all numbers from experiments/archived TLC check; no synthetic data in manuscript; results placeholders contain no numbers. | Spot-check final numbers. |
+| F7 | No generative-AI result images (S3 §4) | PASS | data figures will be generated by `tools/make-figures.py`; the only current figure is a TikZ conceptual diagram (declared). | Keep script-only generation. |
+| F8 | Author full responsibility incl. hallucination/plagiarism/bias | PASS | declaration retains the responsibility clause verbatim. | — |
+| F9 | Mandatory human review of AI-assisted content | PASS | "directed and reviewed all AI-assisted output before submission"; author reviewed PT title/abstract. | — |
 
-## G. Ethics, conflict of interest, funding (S2 "Ethics" checklist)
+## G. Ethics, COI, funding (S2)
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| G1 | Conflict of interest declared (S2) | FAIL | No COI statement in `main.tex` or `sections/*`; only "received no specific funding" (`main.tex:158`). | Add a `Declarations`/`Conflict of Interest` paragraph before the AI declaration: "The author declares no conflict of interest." (or disclose). Also tick the SEER COI item. |
-| G2 | Ethical approval obtained/declared (S2) | FAIL (missing statement) | No ethics statement; study has no human/animal subjects, so the correct answer is N/A — but the venue's checklist still requires the declaration. | Add: "Ethical approval: not applicable — this study involved no human participants or animal subjects." Place before the AI declaration. |
-| G3 | Funding disclosure (S2/S1 acknowledgments) | PASS | "This work received no specific funding." (`main.tex:158`); no APC (diamond OA, About page). | Keep. |
-| G4 | Data/artifact availability (not required by S1/S2; recommended for reproducibility) | PENDING | Paper says "the artifact published alongside it" but gives no repository pointer (`pdftotext` body contains no URL except the template DOI placeholder). A public repo exists (README/CITATION.cff). | Decide with the venue/blinding constraint: if double-blind review is in force (see I4), omit the URL in the reviewed PDF and point to it after acceptance; otherwise add a one-line availability statement. |
+| G1 | Conflict of interest declared | PASS | `\section*{Conflict of Interest}` on p.23: employment in financial sector disclosed generically, no employer/systems/information involved, no competing interests, no funding. | Keep (no employer-identifying details). |
+| G2 | Ethical approval/statement | PASS | `\section*{Ethics Statement}`: no human participants/personal data/animal subjects; approval not required; synthetic data only. | — |
+| G3 | Funding disclosure | PASS | "This work received no specific funding." | — |
+| G4 | Data/artifact availability | PENDING | paper says artifact published alongside; no URL (double-blind). | Add availability statement or URL after acceptance (per VENUE-RULES §7.1 N1). |
 
-## H. Length and page-count reporting
+## H. Length and page count
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| H1 | Length 12–25 pages for a Research Article (S1 "suggested length"; S2 checklist "Length: within the journal's page limits") | FAIL | Measured **33 pp** now; next build must add CONTRACTS §11 artifacts (+2.5–3.5 pp) → projected **35.5–36.5 pp**. 6 pp of the current document is table space (measured ablation). Full analysis + quantified plan: `docs/compliance-report.md` §a. | Execute the plan (base −9.6 pp + reserve −2.25 pp = −11.89 pp → projected 24.1 pp), then rebuild and re-measure; record the final number here. Honest caveat: without the reserve cuts the floor is ≈26.4 pp. |
-| H2 | Page count reported at submission | PENDING | Current 33 (see A9). | Report the final measured count in this checklist, the cover letter and SEER metadata. |
+| H1 | Length 12–25 pp (S1 suggested; S2 page limits) | PASS | **24 pp** measured (build log, `pdfinfo`, footer). Compression plan executed: 33 pp → 24 pp; 5 tables moved to prose, 2 more to prose (retry/stages), 5→3 algorithms, wide tables footnotesize/scriptsize, bibliography footnotesize, 4→2 result figure placeholders, float spacing tightened, prose −~2.6k words, section headings tightened. | **Caveat:** inserting the frozen result tables/figures replaces minimal PENDING blocks — projected **+1.5–2.5 pp** (see K2). Re-measure then; if >25, apply the documented reserve cuts. |
+| H2 | Page count reported | PASS | 24 recorded here and in VENUE-RULES §7.2. | Update after results insertion. |
 
 ## I. Language, author information, anonymity
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| I1 | Language: English acceptable; PT/ES/EN welcome (About page; S1 does not itself state the language policy — attribution corrected during re-verification) | PASS | Manuscript in English; bilingual template block in Portuguese; venue confirms "Submissions in Portuguese, Spanish, and English are welcome" (About page, read 2026-11-24). | None. |
-| I2 | Complete author information (S2: names, affiliations, emails) | PASS | `main.tex:111-113`: João Brito, UFABC, Santo André, SP, Brazil, correiadebrito.joao@gmail.com. | Keep in sync with SEER metadata (A7). |
-| I3 | Corresponding author clearly marked | PASS | `\textsuperscript{1,*}` and `*Corresponding author:` line (p.1). | None. |
-| I4 | Double-blind peer review compatibility (About page: "sent to specialists for double-blind peer review"; S1 nevertheless requires author names/affiliations/emails in the manuscript) | PENDING — venue-process question | Current PDF carries full author identity on p.1 and PDF metadata (`Author: Joao Brito`, `pdftitle`), as S1 demands. | At submission, confirm whether SEER strips identity for reviewers or whether a blinded copy is requested. Do **not** remove the required author footnote from the submitted manuscript; if a blinded copy is requested, produce it from the same build with the author block and self-references neutralised. |
+| I1 | English acceptable (About page; S1 silent) | PASS | English manuscript; dual-language template block retained. | — |
+| I2 | Complete author information (S2) | PASS | name, UFABC affiliation, e-mail in manuscript; COI/ethics complete. | Keep in sync with SEER. |
+| I3 | Corresponding author marked | PASS | `^{1,*}` + `*Corresponding author:` line. | — |
+| I4 | Double-blind review compatibility (About page N1; VENUE-RULES §7.1) | PENDING | Author-identified PDF required by S1; anonymized review copy deliberately not yet produced (per lead, after results insertion). | Build `submission/main-anonymized.pdf` after results: remove author block/affiliation/e-mail, clear PDF author metadata, neutralise acknowledgements that identify. |
 
-## J. Project/submission hygiene (BRIEF binding rules)
+## J. Project hygiene
 
-| ID | Requirement (source) | Status | Evidence | Required fix |
+| ID | Requirement | Status | Evidence | Fix |
 |---|---|---|---|---|
-| J1 | Official RITA template used; provenance recorded (VENUE-RULES §6) | PASS | `SelfArx.cls` SHA-256 `0582DA240FAFD843CAA5CD669B2BDA09B0929C501185C6FFF07442A929DA6367` — identical at repo root and in the recovered official archive (`paper-template/template/SelfArx.cls`), matches `submission/VENUE-RULES.md:19-21`. Live template URL re-tested 2026-11-24: still **HTTP 404** (Wayback copy remains the authoritative source). | If SEER later publishes a new template/link, re-fetch, hash, and diff before the final build. |
-| J2 | Template-vs-written-guideline conflicts resolved and documented (VENUE-RULES §6) | PASS | Official template example is 10 pt (`paper-template/template/template.tex:22` → `size10.clo` in its log) while S2 requires 12 pt; manuscript compiles the same official class at 12 pt. Letter paper, two columns, bilingual block, ABNT numeric citations retained. | None. |
-| J3 | CI green (BRIEF §7) | PENDING | No CI run recorded for this tree. `.github/workflows/ci.yml` `secret-scan` runs `tools/guard-secrets.ps1` (clean at 10:30, so that job should pass); but the `paper` job uses `latex-action`/latexmk with `-halt-on-error`, and undefined references are only warnings, so CI can be green while `build.ps1` (the documented build, BRIEF §9) fails — it does fail today (A6). That is a gate mismatch, not a green build. | Run CI on the final commit; make the paper job fail on unresolved refs (or run `build.ps1` semantics in CI); require CI green + `build.ps1` exit 0 on the `v1.0-submission` tag. |
-| J4 | Every quantitative claim traceable to a committed artifact; no invented/stale numbers (BRIEF §2) | FAIL | The TLC table in `sections/formal.tex:347-360` does not match the archived artifact `formal/tlc-results/tlc-summary.json` (checked 2026-11-24T12:51:13Z): `06-txn-only` distinct states **39** in the artifact vs **36** in the paper, `07-early-probe` **22** vs **21**; the caption timestamp **2026-11-24T12:47:30Z** (`formal.tex:338`) matches no artifact. `formal/README.md:118` itself warns the count varies 36–39 and says "do not hard-code them here". | Regenerate the table from `tlc-summary.json` (or drop the volatile distinct-state counts and cite the artifact for them); align the timestamp; do not edit the artifact to match prose. Re-check after `t5-tlc` lands. |
-| J5 | Honest deviations recorded (BRIEF §2; A1 §10) | PASS (as of now) | `results/DEVIATIONS.md` generated 2026-11-24T13:09:54Z: "No run records exist yet… pilot has not started", no cell dropped; `docs/P1-APPROVAL.md` records budget 8–24 h; paper states the native-process deviation (`sections/method.tex:27-45`). | After the campaign, update DEVIATIONS.md and the paper's deviations paragraph before upload. |
-| J6 | Artifact acceptance tests green (TEAM onboarding; CI conditional) | PENDING | CI runs Maven tests only if `artifact/pom.xml` exists; `artifact/` is present but I did not run the full suite in this audit (S3 active). | Lead/S3: `cd artifact; mvn -B -ntp test` green at final; CI already wired. |
-| J7 | Final proofread (S2 language/style) | FAIL | Typo/mismatch items in D4; placeholder content in D5 makes a final proofread impossible now. | Full proofread after results + compression; re-check D4 list. |
-| J8 | Licensing/attribution consistent | PASS | `LICENSE` (MIT), `CITATION.cff` MIT + author + title, README license section; manuscript footer uses the venue's CC BY-NC-ND 4.0 (template default, matches About page). | Keep; update `CITATION.cff` version/date if the release tag changes. |
+| J1 | Official template used; provenance recorded | PASS | `SelfArx.cls` SHA-256 `0582DA…DA6367` matches record; live template URL still 404 (Wayback authoritative). | — |
+| J2 | Template-vs-guidelines conflicts documented | PASS | 12 pt written rule beats template 10 pt; letter paper/two columns/bilingual block/ABNT numeric retained (`VENUE-RULES.md` §6). | — |
+| J3 | CI green (BRIEF §7) | PENDING | No CI run on this tree; CI's paper job (latexmk) does not enforce `build.ps1`'s undefined-ref gate; secret-scan gate now clean locally. | Run CI on final commit; align paper job with `build.ps1`. |
+| J4 | Quantitative claims traceable; no invented/stale numbers | PASS | TLC table now matches archived `tlc-summary.json` (txn-only 39, early-probe 22, early+dedup 21; timestamp 2026-11-24T12:51:13Z) and notes count variance; no other measured numbers exist yet (results placeholders). | Re-verify each results number after insertion. |
+| J5 | Deviations recorded | PASS | `results/DEVIATIONS.md` + native-process deviation stated in §6.1/§9.3; 8–24 h budget and cut ladder stated in §6.5. | Update after campaign. |
+| J6 | Artifact acceptance tests (Maven) green | PENDING | not run in this pass (S3 domain). | `mvn -B -ntp test` green at final. |
+| J7 | Final proofread | PASS (current text) | scripted typo/spelling scan clean on this build; results text is placeholder. | Proofread final artifact-inserted build. |
+| J8 | Licensing/attribution consistent | PASS | MIT repo; template CC BY-NC-ND footer matches venue; `CITATION.cff` consistent. | Update version at tag. |
+
+## K. Compression-pass records and residual risks
+
+| ID | Requirement | Status | Evidence | Fix |
+|---|---|---|---|---|
+| K1 | Compression executed without fabricating results | PASS | Results section states data status and PENDING blocks; no numbers, no past-tense measured claims; discussion/conclusion phrases model-derived claims as predictions; TLC numbers remain the only quantitative table and are artifact-matched. | Keep until results pass. |
+| K2 | Post-results page budget | PENDING | Current 24 pp uses compact non-floated PENDING blocks (≈1 block-line each). The real artifacts (5 tables + 2 two-panel figures) are estimated at **+1.5–2.5 pp** → projected **25.5–26.5 pp**, i.e. the 25-pp ceiling can be missed at insertion. Documented reserve cuts (from `docs/compliance-report.md` §a, still available): `tab:faults`/`tab:gates` → prose (−0.6), crashverdicts matrix flattened (−0.3), bibliography restore/trim trade, further prose tightening −700 words (−1.1), merge result figures (−0.3). | Re-measure after insertion; execute reserve cuts if >25. |
+| K3 | Layout health of this build | PASS | 24 pp; 1 overfull hbox / 0 overfull vbox / 26 underfull hbox / 7 underfull vbox; warnings benign (title block `\twocolumn` height on p.1, template `fancyhdr` headheight, `\balance` in second column, caption hypcap option for `\captionof`); no text overlap. | Optional cosmetic cleanup at final. |
+| K4 | Results section honest and compiles | PASS | §7 opens with a `Data status` paragraph; all tables/figures marked PENDING; hypothesis verdicts render `pending` from default macros and will be filled by `results/analysis/macros.tex` if present; section compiles with 0 undefined refs. | — |
+| K5 | No invented campaign data | PASS | `results/analysis/` empty; no run data used; only TLC (machine-checked, archived) numbers appear. | — |
+| K6 | What a reviewer might miss after compression (recorded for the lead) | PASS | Content moved, not deleted, except proof sketches shortened to one sentence each: (i) component table → §3.1 prose; (ii) ledger schema table → inline column list; (iii) closure table → Lemma 5.2 sentence; (iv) counterexample-trace table → §5.3 prose list (X1/X3/X4/X6 retained); (v) crash-point class table merged as a column into the crash-point table; (vi) retry-semantics table → §4.2 prose; (vii) stage table → §6.5 prose with all N/runs; (viii) design-space table → §4.2 prose; (ix) hypothesis verdict table → §7.5 prose list; (x) TLC table → §5.5 prose with all 8 outcomes and archived counts; (xi) M0/M3 pseudocode → prose (M1/M2/M4 algorithms retained); (xii) 4 result figures → 2 two-panel PENDING figures; (xiii) **proof sketches of the 12 propositions shortened to one sentence each** (propositions and counterexample traces intact); (xiv) 4 lightly-supportive gray citations dropped from the narrative (E8). All protected content (I1–I4, C1–C12, P1–P12, traces, gates G1–G8, statistics plan, controls, oracle independence, threats, AI/COI/ethics, decision-table structure) retained. | Reviewer-facing trade-off to be re-checked in S5 re-review. |
 
 ---
 
-## Summary of findings
+## Summary
 
-| Status | Count | IDs |
-|---|---|---|
-| **PASS** | **38** | A3, A4, A10, A11, B1, B2, B3, B4, B6, B7, B8, C1, C2, C3, C5, C6, C8, C9, E1, E2, E3, E4, E8, F1, F2, F3, F6, F7, F8, F9, G3, I1, I2, I3, J1, J2, J5, J8 |
-| **FAIL** | **20** | A5, A6, C4, C7, D1, D2, D3, D4, D5, D7, E5, E6, E7, F4, F5, G1, G2, H1, J4, J7 |
-| **PENDING** | **14** | A1, A2, A7, A8, A9, A12, A13, B5, D6, G4, H2, I4, J3, J6 |
-| **N/A** | **0** | — (G2's *content* answer is N/A, but the declaration itself is required, so the row is FAIL) |
+| Status | Count (row-count by status marker; dual-status rows counted at worst) |
+|---|---|
+| PASS | 62 |
+| FAIL | 2 (A5 package; C7 abstract content) |
+| PENDING | 14 |
+| **Total rows** | **78** |
 
-> Total rows: 72 (A 13, B 8, C 9, D 7, E 8, F 9, G 4, H 2, I 4, J 8). Dual-status rows (C4, C7) are counted at their worst status. **Not-PASS = 34 (20 FAIL + 14 PENDING)** as of the audit build. A10 was FAIL mid-audit (guard-secrets 7 hits) and is PASS at 10:30 after the team sanitized the tree; re-verify at the final pass.
+**Top residual risks:** (1) K2 — the 25-pp ceiling can be missed when real result artifacts replace the compact PENDING blocks (projected 25.5–26.5); reserve cuts are documented. (2) C7/D5 — the abstract and results section are still placeholders; the submitted PDF cannot go out like this. (3) A5/I4 — no package and no anonymized review copy yet (deliberately deferred per lead). (4) Compressed proof sketches/removed supporting citations may draw reviewer questions (K6/E8). (5) G4 — artifact availability statement pending the double-blind/masked-copy decision.
 
-## Top 5 blocking compliance risks (ranked)
+## Sign-off (final pass, after results insertion)
 
-1. **Length: 33 pp now, ≈36 pp after the pending artifacts — ≈11 pp over the 25-pp ceiling.** Nothing else matters if the paper is returned for length; execute the compression plan and re-measure (H1 / report §a).
-2. **Mandatory AI declaration is factually wrong as worded** (claims every figure is script-generated — false for the TikZ figure; claims every reference was "opened and verified" beyond what was retrieved) and admits uses wider than the policy allows ("drafting prose", "analysis code"). RITA's AI policy is binding; a false declaration is worse than an incomplete one. Rewrite to the audited text (F4/F5 / report §c).
-3. **Submission cannot build cleanly**: 6 unresolved references and 4 placeholder figures; `build.ps1` exits 1; a PDF with "??" and "pending" must never be uploaded (A6, D1, D5).
-4. **Reference list is visibly defective**: internal audit notes printed (14 entries), garbled corporate authors (4), colliding two-digit labels (54) — reviewers see this first (E5/E6/D3 / report §e).
-5. **Ethics/COI declarations absent (G1/G2) + the confidentiality gate must stay clean** (A10): both are cheap checklist items the venue may bounce a submission on; the secret scan failed mid-audit (7 hits) and passed only after sanitization at 10:30 — re-run it on the final tree, since the repo is public and the firewall is permanent.
-
-## Sign-off (to be completed at the final pass)
-
-- [ ] Final build green (`build.ps1` exit 0), 0 undefined refs, 0 "??" in PDF, 0 overfull >2 pt.
-- [ ] Final page count measured: **_____ pp** (≤ 25) — measured via `pdfinfo main.pdf` and `main.log`, footer agrees.
-- [ ] All FAIL rows above closed; PENDING rows resolved or answered in the cover letter.
-- [ ] `python tools/verify-refs.py` PASS; `powershell -File tools/guard-secrets.ps1` exit 0.
-- [ ] PDF + LaTeX source + cover letter copied to `submission/`, SHA-256 recorded, `v1.0-submission` tag pushed, CI green.
-- [ ] Rules record re-verified on the submission day (S1/S2/S3), date recorded here: **__________**.
+- [ ] Build green (`build.ps1` exit 0), 0 undefined refs/citations, 0 overfull >2 pt, page count ≤25 measured and recorded.
+- [ ] Results/abstract/resumo/pending blocks replaced from frozen artifacts; numbers traceable to run records; TLC numbers unchanged.
+- [ ] `verify-refs.py` PASS; `guard-secrets.ps1` exit 0; CI green on tagged commit.
+- [ ] Package (PDF + source + cover letter) and `main-anonymized.pdf` in `submission/`; SHA-256 recorded; `v1.0-submission` tag.
+- [ ] Rules re-verified on submission day (record date here: ______).
 - S6 compliance editor: ____________ (date) · Lead acceptance: ____________ (date)

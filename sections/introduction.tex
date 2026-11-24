@@ -1,87 +1,73 @@
-% Section 1 — Introduction
-% Drafted by the lead from docs/method.md, docs/AMENDMENT-A1.md and the verified reference base.
-% No result values appear here: outcome-dependent sentences live in Section 7.
-
+% Section 1 — Introduction (compressed; no result values appear here)
 \section{Introduction}
 \label{sec:intro}
 
-Event-driven architectures have become the default way to move money between financial
-institutions. A payment is ingested as an event, validated, split into debit and credit legs, and
-appended to a general ledger; downstream services notify counterparties, update balances, and
-trigger settlement. Apache Kafka is the most common substrate for this pipeline, and its
-\emph{exactly-once semantics} (EOS) is routinely presented as the guarantee that makes the
-pipeline safe: a record is said to be processed exactly once even in the presence of broker
-failures, consumer crashes and rebalances~\cite{kip98,kafka-design}.
+Event-driven architectures are now the default way to move money: a payment is ingested,
+validated, split into debit and credit legs, and appended to a general ledger, and downstream
+services notify counterparties, update balances and trigger settlement. Apache Kafka is the most
+common substrate for this pipeline, and its \emph{exactly-once semantics} (EOS) is routinely
+presented as the guarantee that makes it safe: a record is processed exactly once even under
+broker failures, consumer crashes and rebalances~\cite{kip98,kafka-design}.
 
 The guarantee is real, but bounded. Kafka's transactions make \emph{Kafka-internal} effects
-atomic: records appended to Kafka topics, consumer offsets committed through the transaction
-coordinator, and the producer's own idempotency state all commit or abort together. When the
-useful side effect of the computation must land in an external system --- a PostgreSQL ledger, a
-core-banking database, a payment rail --- that write is a separate transaction at a separate site,
-with its own write-ahead log and no shared coordinator. Kafka's own documentation is explicit that
-in this case the consumer's position must be coordinated with what is actually stored as
-output~\cite{kafka-design}; the exactly-once guarantee is not a distributed transaction spanning
-Kafka and the external store~\cite{kip98,txncommit2006}.
+atomic: topic appends, offsets committed through the transaction coordinator, and the producer's
+idempotency state all commit or abort together. When the useful side effect must land in an
+external system --- a PostgreSQL ledger, a core-banking database, a payment rail --- that write is
+a separate transaction at a separate site, with its own write-ahead log and no shared coordinator.
+Kafka's documentation is explicit that the consumer's position must then be coordinated with what
+is actually stored as output~\cite{kafka-design}; the guarantee is not a distributed transaction
+spanning Kafka and the external store~\cite{kip98,txncommit2006}.
 
-For most applications the resulting duplicates or gaps are an annoyance to be cleaned up later. In
-a double-entry ledger they are a correctness failure of a different kind. Accounting represents
-every economic event as a journal entry whose debit and credit legs sum to zero, and it requires
-that the ledger be append-only and that each business event appear exactly once. A duplicate
-posting is not a redundant row that can be deleted in a reconciliation job without breaking
-auditability: it silently changes balances, often in a way that still sums to zero and therefore
-passes naive balance checks. A lost posting is worse: the money exists on one side of the books
-only, and no later retry can be distinguished from a legitimate new event unless the pipeline
-carried an idempotency mechanism. Both failures are silent, permanent, and exactly the kind of
-defect that surfaced in industrial incident reports and in the correctness discussions around
-streaming data pipelines~\cite{kafka2015,flink2017,bailis2014}.
+For most applications the resulting duplicates or gaps are an annoyance. In a double-entry
+ledger they are a correctness failure: accounting represents every event as a journal entry whose
+debit and credit legs sum to zero, and requires the ledger to be append-only with each event
+appearing exactly once. A duplicate posting silently changes balances --- often still summing to
+zero and therefore passing naive balance checks --- and deleting it breaks auditability. A lost
+posting is worse: the money exists on one side of the books only, and no later retry can be
+distinguished from a legitimate new event unless the pipeline carried an idempotency mechanism.
+Both failures are silent, permanent, and the kind of defect documented in streaming-pipeline
+correctness discussions~\cite{kafka2015,flink2017,bailis2014}.
 
-Practitioners nevertheless deploy pipelines in which Kafka transactions are treated as if they
-covered the database write. The pattern has a long history: an application consumes a record,
-writes to the database, and then commits the offset inside a Kafka transaction (or, in older
-Spring code, inside a ``chained'' transaction manager), with the implicit assumption that either
-both commits happen or neither does. When the process dies between the two commits, or when one
-commit succeeds while the other times out, the assumption fails. What is missing from the
-literature is not the theoretical observation that two sites cannot be committed atomically
-without a protocol such as two-phase commit~\cite{txncommit2006,pg-prepare}, but a systematic,
-empirical mapping from failure modes to ledger-invariant violations, mechanism by mechanism, with
-the cost of each remedy measured under the same conditions. Survey work on microservice data
-consistency documents the patterns and the practitioner confusion but reports no fault-injection
-counts~\cite{laigner2021,micro2026}; systems papers on exactly-once semantics stop at the
+Practitioners nevertheless deploy pipelines that treat Kafka transactions as if they covered the
+database write: the application consumes a record, writes to the database, then commits the
+offset inside a Kafka transaction (or, in older Spring code, a ``chained'' transaction manager),
+assuming that either both commits happen or neither. When the process dies between the commits,
+or one commit succeeds while the other times out, the assumption fails. What is missing is not
+the observation that two sites cannot commit atomically without a protocol such as two-phase
+commit~\cite{txncommit2006,pg-prepare}, but a systematic empirical mapping from failure modes to
+ledger-invariant violations, mechanism by mechanism, with each remedy's cost measured under the
+same conditions. Microservice-consistency surveys document the patterns but report no
+fault-injection counts~\cite{laigner2021,micro2026}; exactly-once systems papers stop at the
 framework's own state~\cite{flink2017,millwheel2013,dstreams2013}; and ledger/auditability work
-assumes the invariant rather than testing its preservation~\cite{triple2019,triple2021}.
+assumes the invariant rather than testing it~\cite{triple2019,triple2021}.
 
 This paper closes that gap for the canonical case: a Kafka source topic whose records are
 balanced journal entries, a consumer service that must append the corresponding postings to an
 external relational database and maintain consumption progress, and a pipeline that must keep
-four ledger invariants under scripted faults. We ask three questions.
-\textbf{RQ1:} for which failure modes does Kafka EOS fail to preserve double-entry ledger
-invariants when the sink is an external relational database?
-\textbf{RQ2:} how do five mechanisms and three combinations compare --- naive at-least-once
-(M0, negative control), Kafka EOS with a Kafka-internal sink (M1-kafka, positive control), Kafka
-EOS wrapped around a non-atomic external write (M1x, the deployed pattern), a transactional
-outbox/inbox (M2), idempotency keys with a unique index (M3), offsets stored in the ledger
-database transaction (M4), and M2+M3, M4+M3, M1x+M3 --- on duplicate postings, lost postings,
-invariant violations, throughput and tail latency?
+four ledger invariants under scripted faults. We ask three questions. \textbf{RQ1:} for which
+failure modes does Kafka EOS fail to preserve double-entry ledger invariants when the sink is an
+external relational database? \textbf{RQ2:} how do six mechanism variants and three combinations
+compare --- naive at-least-once (M0, negative control), Kafka EOS with a Kafka-internal sink
+(M1-kafka, positive control), Kafka EOS wrapped around a non-atomic external write (M1x, the
+deployed pattern), a transactional outbox/inbox (M2), idempotency keys with a unique index (M3),
+offsets stored in the ledger database transaction (M4), and M2+M3, M4+M3, M1x+M3 --- on
+duplicate postings, lost postings, invariant violations, throughput and tail latency?
 \textbf{RQ3:} what is the minimal mechanism set sufficient for each failure-exposure class?
 
 Our approach has four components. First, we define the ledger state machine and the precise
-\emph{EOS boundary} of the pipeline, enumerate every point at which a process can crash or a
-message can be lost, duplicated or reordered (crash points C1--C12), and give an
-invariant-preservation proposition or an explicit counterexample trace for every mechanism and
-crash-point class. A bounded version of the crash-point semantics is machine-checked with TLC,
-which confirms the expected duplicate and loss witnesses within stated bounds; the model is a
-bounded witness, not an unbounded proof, and we are explicit about the difference. Second, we
-implement all nine configurations in one code base with identical tuning, and inject six fault
-modes with real scripted injectors --- broker kills, consumer kills, produce timeouts with unknown
-outcome, commit-order failures in both directions, database network partitions, and duplicate
-redelivery after rebalance --- alongside deterministic crash-point failpoints. Third, we score
-every run with an independent oracle: the load generator writes the expected posting set before
-producing, and a separate Python checker recomputes it from the specification and compares it with
-the database after quiescence, so duplicates, losses, imbalance and mutation are measured rather
-than inferred from logs. Fourth, we pre-register the statistical analysis plan (exact confidence
-intervals for mostly-zero correctness outcomes, bootstrap intervals and Friedman/Nemenyi/Cliff's
-delta for performance) and execute a staged campaign designed to fit a fixed wall-clock budget,
-recording every deviation.
+\emph{EOS boundary}, enumerate every point at which a process can crash or a message can be lost,
+duplicated or reordered (C1--C12), and give an invariant-preservation proposition or explicit
+counterexample trace for every mechanism and crash-point class; a bounded version of the
+semantics is machine-checked with TLC, a bounded witness rather than an unbounded proof. Second,
+we implement all nine configurations in one code base with identical tuning and inject six fault
+modes with real scripted injectors (broker kills, consumer kills, unknown-outcome timeouts,
+commit-order failures in both directions, database partitions, duplicate redelivery) alongside
+deterministic failpoints. Third, we score every run with an independent oracle: the generator
+writes the expected posting set before producing and a separate Python checker recomputes it and
+compares it with the database after quiescence. Fourth, we pre-register the statistical analysis
+plan (exact intervals for mostly-zero correctness outcomes; bootstrap and
+Friedman/Nemenyi/Cliff's delta for performance) and execute a staged campaign within a fixed
+wall-clock budget, recording every deviation.
 
 Our contributions are:
 \begin{itemize}[leftmargin=1.1em,itemsep=1pt]
@@ -96,12 +82,11 @@ Our contributions are:
       the raw run records and the scripts that regenerate every table and figure.
 \end{itemize}
 
-The remainder of the paper is organised as follows. Section~\ref{sec:related} reviews Kafka EOS,
-consistency mechanisms, ledger invariants and experimental methodology. Section~\ref{sec:model}
-defines the system, ledger state machine, invariants and the EOS boundary.
-Section~\ref{sec:mechanisms} presents the mechanisms. Section~\ref{sec:formal} states and argues
-the invariant-preservation results and reports the machine-checked model.
-Section~\ref{sec:method} describes the implementation, faults, oracle and pre-registered design.
-Section~\ref{sec:results} reports correctness and performance results and the hypothesis verdicts.
-Section~\ref{sec:decision} derives the decision table, Section~\ref{sec:threats} discusses threats
-to validity, and Section~\ref{sec:conclusion} concludes.
+Section~\ref{sec:related} reviews Kafka EOS, consistency mechanisms, ledger invariants and
+experimental methodology. Section~\ref{sec:model} defines the system, ledger state machine,
+invariants and EOS boundary. Section~\ref{sec:mechanisms} presents the mechanisms.
+Section~\ref{sec:formal} states and argues the invariant-preservation results and reports the
+machine-checked model. Section~\ref{sec:method} describes the implementation, faults, oracle and
+pre-registered design. Section~\ref{sec:results} reports the results and hypothesis verdicts.
+Section~\ref{sec:decision} derives the decision table, Section~\ref{sec:threats} discusses
+threats to validity, and Section~\ref{sec:conclusion} concludes.

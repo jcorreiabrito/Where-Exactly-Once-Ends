@@ -1,80 +1,85 @@
-% Section 8 — Discussion and practitioner decision table
+% Section 8 — Discussion and practitioner decision table (compressed)
 \section{Discussion and Decision Table}
 \label{sec:decision}
 
 \subsection{What the boundary analysis implies for practitioners}
 \label{sec:dec-implications}
 
-The experiments answer the three research questions as follows. For RQ1, Kafka EOS fails to
-preserve ledger invariants exactly when the external write and the consumption progress can be
-committed in different orders across a crash or an unknown-outcome timeout: the duplicate window
-(effect durable, progress not) and the loss window (progress durable, effect not). Broker failure,
-consumer death, rebalance and network partition are not failures \emph{of Kafka} in this setting;
-they are failures that expose the two windows. For RQ2, the mechanisms differ in \emph{which}
-window they close and at what cost, not in a single ``exactly-once'' score. For RQ3, the minimal
-sufficient set is determined by the exposure the operator is willing to accept and by whether the
-external effect must be recoverable independently of the ledger.
+The boundary analysis answers the three questions as follows. For RQ1, Kafka EOS fails to
+preserve ledger invariants exactly when the external write and the progress can be committed in
+different orders across a crash or unknown-outcome timeout: the duplicate window (effect durable,
+progress not) and the loss window (progress durable, effect not). Broker failure, consumer death,
+rebalance and partition are not failures \emph{of Kafka} here; they expose the two windows. For
+RQ2, mechanisms differ in \emph{which} window they close and at what cost, not in a single score.
+For RQ3, the minimal sufficient set depends on the exposure the operator accepts and on whether
+the external effect must be independently recoverable.
 
 The practical consequence is that a deployment claim should name the mechanism, not the label:
-``we use Kafka exactly-once'' says nothing about the external store; ``we commit the ledger and
-the consumption progress in one database transaction'' (M4) says everything about the duplicate
-and loss windows, and its residual exposure is a zombie writer, which an idempotency index closes
-(M4+M3). Operators who cannot move progress into the database can obtain the same coverage with an
-atomic ledger transaction plus a deduplication claim (M2), at the cost of an inbox/outbox write
-and a relay. Operators who must keep the Kafka transaction for the publication stream can add an
-idempotency index to the external write (M1x+M3); this closes duplicates but not losses.
+``we use Kafka exactly-once'' says nothing about the external store, whereas ``we commit the
+ledger and the progress in one database transaction'' (M4) says everything about both windows,
+with a residual zombie-writer exposure that an idempotency index closes (M4+M3). Operators who
+cannot move progress into the database can use an atomic ledger transaction plus a deduplication
+claim (M2), at the cost of an inbox/outbox write and a relay; operators who must keep the Kafka
+transaction for the publication stream can add an index to the external write (M1x+M3), which
+closes duplicates but not losses.
 
 \subsection{Practitioner decision table}
 \label{sec:dec-table}
 
-Table~\ref{tab:decision} maps a failure exposure to the minimal mechanism set that covers it and to
-the measured cost of that coverage. The table is derived mechanically from the correctness and
-performance run records by the frozen derivation rules of the pre-registration
+Table~\ref{tab:decision} maps a failure exposure to the minimal mechanism set that covers it and
+to the measured cost of that coverage. The table is derived mechanically from the frozen
+correctness and performance run records by the pre-registered derivation rules
 (Section~\ref{sec:method}); no cell is set by hand. The cost column reports the pre-registered
 performance contrast against the naive baseline rather than an absolute number, so the table
-remains meaningful when hardware changes.
+remains meaningful when hardware changes. Until the campaign completes, each cell cites the
+predicted coverage of Section~\ref{sec:formal} and the cost cell is marked \emph{PENDING}; the
+verdicts are replaced by measured contrasts by the frozen pipeline.
 
-\inputifexists{results/analysis/tables/t6-decision.tex}
+\IfFileExists{results/analysis/tables/t6-decision.tex}{\input{results/analysis/tables/t6-decision.tex}}{%
+\begin{center}
+\footnotesize
+\fbox{\parbox{0.92\linewidth}{\centering\textbf{Table PENDING.} Decision table: exposure
+$\rightarrow$ minimal mechanism set $\rightarrow$ measured cost vs.\ M0, derived mechanically
+from frozen run records.}}
+\captionof{table}{Practitioner decision table as a function of failure exposure (derived
+mechanically from frozen run records; PENDING until the campaign completes).}
+\label{tab:decision}
+\end{center}}
 
-A caution accompanies the table. Correctness cells with zero observed violations carry a rule-of-
-three upper bound; they are evidence of practical adequacy at the tested sample size, not a proof
-of impossibility. The word ``certified'' is reserved, per the pre-registered language rule, for
-cells where the formal model proves the invariant under the mechanism's assumptions \emph{and} the
-deterministic adversarial runs are clean; a purely empirical zero is reported as ``no violation
-observed in $N$ runs'' with its upper bound.
+A caution accompanies the table: zero-observed cells carry a rule-of-three upper bound, evidence
+of practical adequacy at the tested sample size, not a proof of impossibility. The word
+``certified'' is reserved, per the pre-registered language rule, for cells where the formal model
+proves the invariant under the mechanism's assumptions \emph{and} the deterministic adversarial
+runs are clean; a purely empirical zero is reported as ``no violation observed in $N$ runs''.
 
 \subsection{When the extra machinery is not worth it}
 \label{sec:dec-negative}
 
-Not every pipeline needs atomic progress. If duplicate postings can be corrected by an upstream
-system of record before they affect balances, or if the sink is idempotent by construction, then a
-simple at-least-once pipeline with an idempotency index may be sufficient and cheaper than moving
-progress into the database. The decision table therefore begins with the exposure question rather
-than with a recommended mechanism: which of the two windows is reachable in the deployment, what
-is the cost of a duplicate or a lost posting, and is the external effect independently recoverable?
-Only then does the measured cost column matter.
+Not every pipeline needs atomic progress. If duplicates can be corrected upstream before they
+affect balances, or the sink is idempotent by construction, an at-least-once pipeline with an
+idempotency index may suffice and be cheaper. The decision table therefore begins with the
+exposure question --- which window is reachable, what a duplicate or lost posting costs, and
+whether the external effect is independently recoverable --- before the measured cost column
+matters.
 
 \subsection{Relation to prior work}
 \label{sec:dec-prior}
 
-The results are consistent with the vendor's own statement of the boundary~\cite{kafka-design} and
-with KIP-98's producer-scoped guarantee~\cite{kip98}, but they quantify what those documents state
-qualitatively: the duplicate and loss windows are not hypothetical, they are reachable under
-ordinary fault schedules, and their frequency depends on the mechanism. They extend stream-
-processing fault-tolerance results~\cite{flink2017,millwheel2013} by showing that the same
-snapshot-style reasoning that protects internal state does not protect an external database. They
-also give the outbox/idempotency patterns~\cite{debezium-outbox,stripe-idempotency} a measured
-correctness--cost profile in the ledger setting, and they confirm the microservice surveys'
-observation~\cite{laigner2021,micro2026} that practitioners lack a clear consistency contract,
-by supplying one for this class of pipelines.
+The model is consistent with the vendor's statement of the boundary~\cite{kafka-design} and
+KIP-98's producer-scoped guarantee~\cite{kip98}, but makes structural what those documents state
+qualitatively: both windows are reachable under ordinary fault schedules. It extends
+stream-processing fault-tolerance results~\cite{flink2017,millwheel2013} by showing that
+snapshot-style reasoning protects internal state but not an external database, gives the
+outbox/idempotency patterns~\cite{debezium-outbox,stripe-idempotency} a correctness--cost profile
+in the ledger setting, and supplies the consistency contract missing from microservice
+surveys~\cite{laigner2021,micro2026}.
 
 \subsection{Reusability of the method}
 \label{sec:dec-reuse}
 
-The experimental method is mechanism-agnostic: a ground-truth generator that writes the expected
-effect before producing, an independent oracle that recomputes it from the specification, scripted
-faults with fire receipts, and exact statistics for mostly-zero outcomes. Any candidate pipeline
-that writes to an external store can be placed in the same harness by instantiating the poll /
-commit skeleton and declaring which durable transitions share a site. The bounded TLA+ model can be
-extended with the new mechanism's transition relation and checked at the same bounds before the
-expensive campaign, which is how the propositions in this paper were separated from the measurement.
+The method is mechanism-agnostic: a ground-truth generator that writes the expected effect
+before producing, an independent oracle that recomputes it, scripted faults with fire receipts,
+and exact statistics for mostly-zero outcomes. Any pipeline writing to an external store can be
+placed in the same harness by instantiating the poll/commit skeleton and declaring which durable
+transitions share a site, and the bounded TLA+ model can be extended with the new mechanism's
+transition relation and checked at the same bounds before an expensive campaign.

@@ -1,4 +1,4 @@
-% Section 10 — Conclusion (draft; outcome sentences completed after results)
+% Section 10 — Conclusion (compressed)
 \section{Conclusion}
 \label{sec:conclusion}
 
@@ -7,29 +7,21 @@ stops at the external-store boundary. For a double-entry ledger that boundary is
 implementation detail: a duplicate posting is a silent accounting error, and a lost posting is a
 silent omission that no retry can distinguish from a new event. This paper made the boundary
 explicit, enumerated the crash points at which it manifests, and turned the question ``is this
-pipeline exactly once?'' into a set of falsifiable invariant-preservation claims per mechanism and
-per failure class, backed by a machine-checked bounded model.
+pipeline exactly once?'' into a set of falsifiable invariant-preservation claims per mechanism
+and per failure class, backed by a machine-checked bounded model.
 
-We then measured those claims. Nine configurations --- from the naive at-least-once baseline and
-the Kafka-internal positive control, through the deployed ``Kafka EOS plus external database''
-pattern and the transactional outbox, idempotency-index, database-offset and combined mechanisms
---- were implemented in one code base, scored by an independent oracle on duplicate postings, lost
-postings, imbalance and append-only mutation, and executed under scripted broker, consumer,
-timeout, commit-order, partition and redelivery faults with pre-registered statistics. The
-hypothesis verdicts are reported in Section~\ref{sec:results}; the resulting practitioner decision
-table in Section~\ref{sec:decision} maps a failure exposure to the minimal mechanism set that
-covers it, together with the measured cost of each guarantee.
+The evaluation in Section~\ref{sec:results} is populated from frozen run records by the
+pre-registered analysis; its hypothesis verdicts and decision table map each failure exposure to
+the minimal mechanism set that covers it and the measured cost of each guarantee. Two conclusions
+follow for practice. First, ``we use Kafka transactions'' is not a statement about the ledger:
+the mechanism must be described by which durable transitions share a site and which idempotency
+or progress-atomicity argument closes the remaining window. Second, no mechanism is free --- the
+guarantees that survive a crash between effect and progress cost throughput or latency, and the
+decision table makes that cost explicit rather than hiding it behind a single ``exactly once''
+label.
 
-Two conclusions follow for practice. First, ``we use Kafka transactions'' is not a statement about
-the ledger; the mechanism must be described in terms of which durable transitions share a site and
-which idempotency or progress-atomicity argument closes the remaining window. Second, no mechanism
-is free: the guarantees that survive a process kill between the effect and the progress cost
-throughput or latency, and the decision table makes that cost explicit rather than hiding it behind
-a single ``exactly once'' label.
-
-Two directions remain open. The ledger model can be extended to multi-leg and multi-currency
-entries, reversals and corrections, which multiply the crash points in ways our enumeration does
-not cover. And the empirical study can move from a single host to a replicated multi-node
-deployment with real machine failures, where the durability assumptions our model abstracts become
-observable. The artifact, the fault injectors and the oracle are public so that both extensions can
-build on the measured baseline rather than re-deriving it.
+Two directions remain open: extending the ledger model to multi-leg and multi-currency entries,
+reversals and corrections (which multiply the crash points), and moving from a single host to a
+replicated multi-node deployment with real machine failures, where the durability assumptions the
+model abstracts become observable. The artifact, injectors and oracle are public so both
+extensions can build on the measured baseline.

@@ -26,14 +26,16 @@ data. Evidence files are committed under `results/harness/`.
 | S3 artifact acceptance (live end-to-end) | **4/4 passed** | `results/harness/acceptance/acceptance-result.json`, `acceptance-suite.log` |
 | Oracle checker mutation testing (G3) | **1,800/1,800 detected (100 %), 1,800/1,800 correctly attributed, 18/18 classes pass**; clean controls and input-integrity controls pass; corpus is SYNTHETIC (harness validation, not a mechanism measurement) | `results/harness/g3-mutation.json` (`overview.all_classes_passed=true`) |
 | Gate negative controls (G1–G8 can fail) | **8/8 fail as required** | `results/harness/gate-negative-controls.json` (`all_passed=true`) |
-| Live end-to-end smoke (fault-free) | **passed=true**; record schema-valid, source_integrity=true, GT=expected, artifact matches freeze, receipts attested | `results/harness/live-smoke-evidence.json` (run `pilot-m2-f0-1k-p3-r00`) |
-| Live fault attestation — app-owned class | **attested** (K3): one app `fired` + one S4 `restored`, 2,000 expected / 2,044 observed / 44 duplicates / 0 losses; M0 negative control produces the predicted I3 violations | `results/raw/run-records/run_pilot-valid-g1k3-r22.json` |
-| Live fault attestation — S4-owned class | **attested** (K2): one S4 `fired` inside the real load window (`action_verified=true`) + one `restored`; 2,000/2,000, no duplicates/losses | `results/raw/run-records/run_a-m3-k2-1k-p3-r02.json` |
+| Live end-to-end smoke (fault-free) | **passed=true**; record schema-valid, source_integrity=true, GT=expected, artifact matches freeze, receipts attested | `results/windows-pilot/live-smoke-evidence.json` (run `pilot-m2-f0-1k-p3-r00`, archived Windows substrate) |
+| Live fault attestation — app-owned class | **attested** (K3): one app `fired` + one S4 `restored`, 2,000 expected / 2,044 observed / 44 duplicates / 0 losses; M0 negative control produces the predicted I3 violations | `results/windows-pilot/run-records/run_pilot-valid-g1k3-r22.json` |
+| Live fault attestation — S4-owned class | **attested** (K2): one S4 `fired` inside the real load window (`action_verified=true`) + one `restored`; 2,000/2,000, no duplicates/losses | `results/windows-pilot/evidence-only/run_a-m3-k2-1k-p3-r02.json` (quarantined evidence-only, M14) |
 | Model checking (bounded witnesses) | **8/8 TLC configurations match expectations** (bounded scope N=3/BatchSize=2; not an unbounded proof) | `formal/tlc-results/tlc-summary.json` |
 | Oracle independence | oracle and derivator hashes recorded; oracle reads only frozen vectors + raw dumps | `g3-mutation.json` → `oracle` block; `docs/redteam-oracle.md` |
 
 Note: G3's mutation corpus is synthetic by design (docs/method.md §7.6 requires seeded mutations of a
 clean fixture, not re-labelled real runs), so it validates the checker, not the mechanisms.
+The Windows-substrate outputs are archived under `results/windows-pilot/` (M17) and are not part of
+the Linux confirmatory analysis; the Linux campaign regenerates live evidence against its own freeze.
 
 ## 3. Pilot results and compute projection
 

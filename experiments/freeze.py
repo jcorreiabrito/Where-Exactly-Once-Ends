@@ -96,10 +96,16 @@ PROVENANCE_FILES = [
     "docs/prereg-amendment-A4.md",
 ]
 
-#: Pre-freeze harness evidence whose hash is recorded (not part of the pipeline).
+#: Pre-freeze harness evidence whose hash is recorded (not part of the pipeline).  Entries are
+#: optional at the provisional bootstrap freeze and MUST be present at the single final campaign
+#: freeze (`--require-evidence`): the calibration-derived rates and the Linux fault-efficacy/smoke
+#: evidence are gates S5 re-confirms before Stage A.
 EVIDENCE_FILES = [
     "results/harness/g3-mutation.json",
     "results/harness/gate-negative-controls.json",
+    "results/harness/live-smoke-evidence.json",
+    "results/harness/linux-fault-efficacy.json",
+    "experiments/rates.json",
 ]
 
 #: Artifact binding: the measured service is the shipped jar; the freeze records the jar digest
@@ -372,6 +378,9 @@ def main(argv=None) -> int:
     parser.add_argument("--print", dest="do_print", action="store_true")
     parser.add_argument("--force", action="store_true",
                         help="overwrite an existing freeze (requires a DEVIATIONS entry)")
+    parser.add_argument("--require-evidence", action="store_true",
+                        help="final campaign freeze: require the calibration/fault-efficacy/live "
+                             "smoke evidence files to exist (S5 Stage-A condition)")
     args = parser.parse_args(argv)
     if args.check:
         report = check()
@@ -386,6 +395,16 @@ def main(argv=None) -> int:
         print("REFUSING to freeze: missing files: " + ", ".join(doc["missing_at_freeze"]),
               file=sys.stderr)
         return 2
+    if args.require_evidence:
+        bound = set((doc.get("pre_freeze_harness_evidence") or {}).get("files_sha256") or {})
+        required = [rel for rel in ("results/harness/live-smoke-evidence.json",
+                                    "results/harness/linux-fault-efficacy.json",
+                                    "experiments/rates.json")]
+        absent = [rel for rel in required if rel not in bound]
+        if absent:
+            print("REFUSING final freeze: campaign evidence missing (S5 Stage-A condition): "
+                  + ", ".join(absent), file=sys.stderr)
+            return 2
     if os.path.exists(FREEZE_PATH) and not args.force:
         existing = json.load(open(FREEZE_PATH, encoding="utf-8"))
         if existing.get("aggregate_pipeline_sha256") == doc["aggregate_pipeline_sha256"]:
