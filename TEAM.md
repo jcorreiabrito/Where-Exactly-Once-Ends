@@ -45,13 +45,14 @@ re-approval of the projected budget before P3.
   B 4,020, C 1,800 = 7,866 planned / 7,851 executable (+20 validation)`; run order generated and
   constraint-checked; seeds recorded; G5 derivation erratum (R5) resolved with independently
   verified normative vectors (`docs/derive-vectors.csv`).
-- **S5 early red-team review (pre-Stage-A): verdict BLOCK** — 9 critical, 19 major, 6 minor findings
-  (`docs/redteam-oracle.md`). Implementation/pre-registration defects (not research-design defects):
-  oracle live-dump `time` import, receipt protocol, Stage-A fault wiring/tokens, quiescence, gates
-  tautology, unsatisfiable H1–H5 decision rules, censoring/denominators, F6 semantics, performance
-  pipeline. Fix pass running: S4 (implementation), S2 (prereg amendment A2 for author approval),
-  S3 (artifact-side: real fsync, failpoint coverage, interface hand-off). S5 will re-review after
-  fixes; re-freeze only then.
+- **S4 fix pass (post-S5) complete except two evidence runs**: 40/40 tests green (26 red-team
+  regression tests failed on the reviewed snapshot, all pass now); gates G1–G8 rebuilt as
+  falsifiable with purpose-built negative fixtures (`results/harness/gate-negative-controls.json`);
+  receipt protocol v2; matrix regenerated and re-hashed due to truthful K-class realisations +
+  6 gate-control runs: **pilot 216/198, A 1,530, B 3,960, C 1,800 = 7,506 planned / 7,488
+  executable + 26 validation** (material amendment, needs author approval at P2); freeze re-issued;
+  path hygiene enforced; `results/redteam-fixes.md` maps every finding. **Open:** live e2e smoke,
+  extended G3 corpus (must pass before pilot), service-side F-M1 fields (S3).
 - Manuscript: all 10 sections drafted and integrated (`sections/`); builds clean apart from the
   analysis artefacts still being generated; ~33 pp and must be compressed to ≤25 in P6/P7.
 - S2: method-heavy sections delivered (system, mechanisms, formal, method). Amendment A2 drafted
