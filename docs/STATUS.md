@@ -21,45 +21,29 @@ approval and the P2 hard stop. It is not part of the paper.
 | Post-P1 platform deviations | disclosed normatively | `docs/prereg-amendment-A3.md`, `results/DEVIATIONS.md` §6 |
 | CI | **green** at `09e08c7` (4/4 jobs) | GitHub Actions run #17 |
 
-## 2. Running now
+## 2. Current state (2026-11-24 ~16:45 local)
 
-- **Pilot**: 198 executable rows + 26 validation runs, launched 16:14 local with
-  `WXEO_DISABLE_PERIODIC_RESET=1` (deviation M11). Measured pace ≈ 41 s/run at 1k events/3
-  partitions/2 consumer instances, so the pilot should finish around 18:30–19:00 local.
-- Kafka index preallocation grows the runtime by ≈36 MB/run; a manual broker-log reset is planned
-  mid-pilot (≈run 80) to stay well above the 3 GB free-space floor. The pilot is resumable: completed
-  run records are skipped on restart.
+- **Pilot: paused** after 9 post-freeze rows (of 198 executable + 26 validation) because three
+  structural injector defects surfaced in the first rows (F3/F1/F5 fire outside the ~1 s 1k/max load
+  window; the app-owned F4b `before_effect_commit` failpoint never fires under `ordering=early` for
+  M1x+M3). Rows are kept; invalid rows will be re-run after the fixes. Deviation **M16**.
+- **Measured projection:** six valid post-freeze runs give median 43.7 s / p90 45.4 s per 1k run, so
+  Stage A alone projects to ≈19.3 h (p90). **The pre-registered 7,506-run programme cannot fit the
+  approved 8–24 h budget on this host.** The author must choose the reduced design (P2-GATE §3.2).
+- **S5 verdict:** PILOT gate PASS-WITH-CONDITIONS (retroactive pilot launch accepted); Stage A/B/C
+  remain BLOCKED under the five conditions in `docs/redteam-rereview.md` §10.
+- **Live evidence** regenerated against the committed freeze `fd271416…`: `passed=true`, with
+  app-owned K3 and S4-owned F2 attestations (`results/harness/live-smoke-evidence.json`).
+- The stack is stopped; no experiment process is running.
 
-## 3. P2 decision point — measured feasibility warning (preliminary, to be finalised with pilot p90)
+## 3. P2 decision point (hard stop — author input required)
 
-From the first valid pilot runs the 1k/P3/C=2 run takes ≈36–45 s end-to-end (service start, load,
-fault+restore, quiescence, dumps, oracle, archive). Projected with the frozen formula (§9.2,
-p90 basis) and the frozen run counts:
+Requested at `docs/P2-GATE.md` §4: (1) matrix amendment M1; (2) Amendment A2 items/AC choices;
+(3) K6 non-realisability; (4) **budget/scope** given the measured infeasibility; (5) M7 calibration
+block; (6) acknowledgement of the S5 conditions. Stage A/B/C will not start before this approval.
+No B/C result may be claimed in the paper unless the corresponding runs are executed.
 
-| Block | runs | measured basis | projected h (p90) |
-|---|---|---|---|
-| Validation | 26 | 36–43 s | ≈0.3 |
-| Stage A (crash classes + controls) | 1,530 | 45.4 s (preliminary) | ≈19.3 (+15 % = 22.2) |
-| Stage B (core/S1/S2, 10k–100k) | 3,960 | **not measured** (needs M7 calibration block) | — |
-| Stage C (fixed-rate/saturation/1M) | 1,800 | **not measured** | — |
-
-**Consequence:** even the *largest* cut-ladder step defined in A1 §7 (reduce correctness N to 20)
-leaves Stage A at ≈1,020 runs ≈13 h, and Stage B/C cannot be projected at all until the pilot
-calibration block exists. The full 7,506-run programme is **not executable within the approved
-8–24 h unattended budget on this host**. This is a genuine P2 decisions item, not an implementation
-bug: the author must choose a reduced, still pre-registered design (e.g. Stage A only with
-reduced N and B/C explicitly out of scope, or a narrow B subset after the M7 calibration block) or
-extend the budget/host.
-
-## 4. Waiting on
-
-- **S5 final focused re-review** of R1–R9 + R11 + live evidence (PILOT gate verdict + residual
-  Stage-A conditions). `docs/redteam-rereview.md` is being updated.
-- **Pilot completion**, then the measured projection worksheet (`tools/projection.py`) and the
-  **P2 gate ask to the author** (matrix amendment M1, Amendment A2, K6 non-realisability, M7
-  calibration block, budget/scope decision). Stage A/B/C remain hard-stopped until then.
-
-## 5. Honest limitations recorded so far
+## 4. Honest limitations recorded so far
 
 - Native Windows processes instead of containers (no Docker/WSL2/admin); single-host memory/disk
   pressure forced smaller JVM heaps and 1 MB Kafka index files (A3, M8/M9).

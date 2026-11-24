@@ -2,7 +2,7 @@
   "schema": "wxeo.live-smoke-evidence.v1",
   "kind": "live-end-to-end-smoke",
   "run_id": "pilot-m2-f0-1k-p3-r00",
-  "generated_at_utc": "2026-11-24T19:14:14Z",
+  "generated_at_utc": "2026-11-24T19:39:36Z",
   "passed": true,
   "checks": {
     "record_present": true,
@@ -110,7 +110,7 @@
     },
     "source_tree_sha256": "60ef2c711adb3acb17f5ef5b3c75efd386d43b51688c235e531ae6d641f7d447",
     "matches_freeze": true,
-    "freeze_aggregate": "1ccb5aac713a2cb3a397f0269f62aa824d37e72850e07e4001da305fad4443a9"
+    "freeze_aggregate": "fd271416aebb6f9cb88da680694e4fd43e692b94db8c1e9f78c3dfd8d84e788a"
   },
   "receipt_attestation": [
     {
@@ -125,8 +125,8 @@
       "s4_fired": 0
     },
     {
-      "run_id": "a-m3-k2-1k-p3-r02",
-      "fault": "K2",
+      "run_id": "pilot-m1x-f2-1k-p3-r01",
+      "fault": "F2",
       "owner": "s4",
       "attested": true,
       "reason": null,
