@@ -93,10 +93,18 @@ h1 = SHA-256("wxeo1|event|" + master_seed + "|" + decimal(seq))
 event_id   = lowercase_hex(h1[0:16])            // 32 hex chars
 account_d  = "acct:" + hex(h1[16:22])          // 12 hex chars
 account_c  = "acct:" + hex(h1[22:28])
-amount     = 1 + (uint64_be(h1[28:36]) mod 100000)
+amount     = 1 + (uint32_be(h1[28:32]) mod 100000)   // see erratum note below
 h2         = SHA-256("wxeo1|part|" + master_seed + "|" + decimal(seq))
 partition  = uint64_be(h2[0:8]) mod P          // recorded in the produced manifest
 ```
+
+**Erratum (2026-11-24, pre-freeze, P2).** The original text wrote `uint64_be(h1[28:36])`; a
+SHA-256 digest has 32 bytes, so that window is out of bounds. The implemented and independently
+verified semantics is the literal in-bounds slice `h1[28:32]` interpreted as a 32-bit big-endian
+word (`uint32_be`), which is also what a Python `int.from_bytes(h1[28:36], "big")` evaluates to.
+This changes no N, cell, factor or statistic. Normative test vectors are committed in
+`docs/derive-vectors.csv`; both the Java generator and the Python oracle must reproduce them
+exactly (gate G5).
 
 Hash-derived determinism removes PRNG-implementation drift between the Java producer and the Python oracle, makes ground truth regenerable instead of stored (§7.4, D10), and lets the checker be written in a different language without shared code.
 

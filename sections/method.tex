@@ -1,0 +1,230 @@
+% ============================================================================
+% sections/method.tex -- Section 6: Experimental Method
+% Drafted from the P1-approved docs/prereg.md and docs/method.md (§7, §8, §9).
+% DESIGN ONLY: this section contains no results and no measured numbers.
+% ============================================================================
+
+\section{Experimental Method}
+\label{sec:method}
+
+The evaluation is a staged campaign of scripted faults, verified by an independent
+oracle and analysed under a pre-registered protocol. This section states the substrate,
+the injectors, the oracle and its validation gates, the design of the stages, the
+metrics, and the frozen statistical plan. All design constants (cell counts,
+repetitions, quiescence bounds, test thresholds) were fixed before the first
+measurement; the protocol and the analysis code are archived with the artifact.
+
+\subsection{Implementation and substrate}
+\label{sec:method:substrate}
+
+The artifact is a Java~21 service (one process per consumer instance) that implements all
+nine configurations behind two flags: the mechanism and the commit ordering
+(\emph{strict} or \emph{early}). The load generator is a Java program that emits the
+deterministic event stream and writes the ground truth; the oracle is an independent
+Python program that shares no code with the service. The service emits structured phase
+markers and writes its effective configuration at startup and its counters at shutdown.
+
+The reported campaign runs on a \emph{native-process substrate}: three Kafka~3.7.2 KRaft
+brokers, PostgreSQL~16.11, Toxiproxy~2.9.0 and the service, all as native Windows
+processes on one host, with JDK~21.0.13.1 and Maven~3.9.9. This is an explicit deviation
+from a containerised deployment: the host has no Docker, no administrator rights and no
+WSL2. The substrate has three consequences that the paper carries as limitations.
+First, isolation is process-level: CPU affinity, priority class, heap bounds, connection
+pools and every broker/database setting are pinned and recorded per run, and the shared
+configuration is hashed so that a non-intrinsic difference between mechanisms fails the
+run. Second, the Kafka cluster is three processes on one operating system rather than
+three machines: a broker kill is a real process death and a real leader election, but
+not a machine loss. Third, container-level guarantees (cgroup limits, image digests) are
+replaced by recorded process limits and SHA-256 digests of the vendored binaries, and
+the periodic full-stack restart every 50 runs bounds cross-run interference. Each run
+uses a fresh logical state --- new source and publication topics, a new consumer group,
+and a fresh database schema --- and the identities of every process are recorded so that
+an injector can target a specific one.
+
+\subsection{Fault injection}
+\label{sec:method:injection}
+
+Two injection levels are used, because they answer different questions. \emph{Level~1}
+places a fault deterministically at a named crash point of Section~\ref{sec:model}:
+failpoints at fixed code locations trigger one of four actions (crash, throw, abort the
+transaction, or pause) on a chosen occurrence. Level~1 is the structural experiment: a
+mechanism that survives a fault placed at its worst location has absorbed it.
+\emph{Level~2} applies the six scripted faults of Table~\ref{tab:faults} at random,
+recorded times within the steady-state window; it measures how often a fault realises an
+exposed window in a realistic timeline. Every armed injection writes two attestation
+records to the fault log --- one when it fires and one when the system is restored ---
+and a run whose injection did not fire is invalid, excluded and counted, with the
+exclusion rate reported per cell.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Scripted faults (Level~2) and the crash classes they realise. Timing is either
+phase-coupled (Level~1) or a seeded random offset (Level~2); every action is attested in
+the fault log. F4 is split by commit direction; F6 is protocol-level duplicate
+redelivery only.}
+\label{tab:faults}
+\begin{tabular}{@{}p{0.7cm}p{5.4cm}p{4.4cm}p{5.2cm}@{}}
+\toprule
+Fault & Injected condition & Mechanism manipulated & Crash classes \\
+\midrule
+F1 & one broker killed mid-produce (leader and transaction coordinator of the instance) & Kafka broker process, hard kill & $K_2$, $K_3$ \\
+F2 & consumer instance killed during processing, forcing a rebalance & consumer process, hard kill & $K_1$--$K_3$, $K_5$ \\
+F3 & produce or transaction commit times out with unknown outcome & TCP delay/timeout on the produce link & $K_2$, $K_3$ \\
+F4a & effect commit durable, progress commit fails & offset-commit link cut after the effect marker & $K_3$ \\
+F4b & progress commit durable, effect commit fails (early ordering probe) & ordering flag plus a database-link cut & $K_4$ \\
+F5 & network partition between the service and the database & TCP blackhole/reset on the database link & $K_2$, $K_3$ \\
+F6 & duplicate redelivery after a rebalance (protocol-level replay) & consumers stopped, resume point rewound, consumers resumed & $K_5$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Independent oracle and ground truth}
+\label{sec:method:oracle}
+
+Correctness is measured against ground truth created \emph{before} the effect: the
+generator derives the whole event stream from the repetition seed, writes one canonical
+line per expected posting to a ground-truth file, computes its SHA-256, and fsyncs both
+before producing the first record. After the run, the oracle (i) regenerates the expected
+posting set from the seed with its own implementation, (ii) checks that the regenerated
+digest equals the pre-send digest, (iii) dumps the source topic and checks that it is
+contiguous and exactly matches the produced manifest, and (iv) compares the sink against
+the expected multiset. Only when the first three checks pass is $\Omega$ well defined
+and the run eligible for analysis. The oracle reads the sink through a read-only role
+and computes the invariants I1--I4 of Table~\ref{tab:invariants} and the verdict of
+Eq.~\eqref{eq:consistency} directly from the dumps.
+
+Two properties of the oracle protect the conclusions. The first is independence: it is a
+separate program in a different language, with no shared code, and ground truth exists
+before the pipeline runs. The second is mutation testing: before any measurement, the
+checker is attacked with seeded synthetic defects --- a dropped posting, a duplicated
+posting, a flipped leg sign, an updated row, and a spurious posting, at least one hundred
+mutations per class --- and it must detect one hundred percent of them, attributed to the
+correct invariant. A checker that misses a defect class invalidates the campaign rather
+than a mechanism. The approach follows the systematic-testing tradition of crash
+consistency \cite{crashmonkey2019} and isolation-anomaly checking \cite{elle2020}: the
+verifier is an independent executable model of the property, not an assertion inside the
+system under test.
+
+\textbf{Quiescence.} A run is observed only in a quiescent state: consumer lag is zero
+for all source partitions, no new sink row has appeared for ten seconds, no application
+transaction is active, and the retry drain interval has elapsed. If quiescence is not
+reached within a pre-registered bound of 300~s, the run is \emph{censored}: it counts as
+a violating run (or as a quiescence failure if the application is still active) rather
+than being dropped. The final observation is a single repeatable-read snapshot
+\cite{pg-isolation}.
+
+\subsection{Harness-validation gates}
+\label{sec:method:gates}
+
+No measurement is analysed until the gates of Table~\ref{tab:gates} pass. The gates are
+deliberately adversarial: the negative control must fail, the positive controls must pass,
+and the oracle must catch synthetic defects before it is trusted to judge the pipeline.
+The gate that most often reveals a design error is the negative control: M0 is expected
+to produce duplicates under the deterministic $W_1$ injection, so a clean M0 means the
+injector or the oracle is broken, not that naive at-least-once is safe.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Harness-validation gates. G1--G8 must pass on pilot data before any experimental
+run is analysed; failures halt the campaign.}
+\label{tab:gates}
+\begin{tabular}{@{}p{0.7cm}p{8.3cm}p{6.4cm}@{}}
+\toprule
+Gate & Requirement & Failure action \\
+\midrule
+G1 & negative control: M0 shows duplicates under the deterministic $W_1$ injection, with attestation & halt; harness broken \\
+G2 & positive controls: M1-kafka and M4+M3 show no violation in fault-free runs & halt \\
+G3 & checker mutation testing: 100\,\% detection of drop, duplicate, sign flip, update, spurious row ($\geq 100$ mutations per class) & fix checker; repeat \\
+G4 & injector attestation: one fired and one restored record per armed injection; exclusion rate computed from receipts only & exclude and count; flag cell if $>20\,\%$ \\
+G5 & ground-truth independence: generator digest equals oracle digest; source-integrity gate passes & invalidate runs; fix derivation \\
+G6 & configuration equality: shared configuration hash identical across mechanisms; only declared intrinsic keys differ & halt; unfair comparison \\
+G7 & load-generator capability: sustained $\geq 3\times$ the fastest measured mechanism throughput; doubling the quiet period does not change any count & resize generator; recalibrate quiescence \\
+G8 & clock and host sanity: single boot, no clock step, free disk above the floor, affinity and priority as pinned & flag or rerun \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Design, metrics, and statistics}
+\label{sec:method:design}
+
+The campaign is staged so that the structural questions are answered cheaply and
+deterministically before the frequency and performance questions are measured under load
+(Table~\ref{tab:stages}). Stage~A runs every reachable crash class through every
+mechanism with deterministic Level-1 injections at small load; its cells are the 52
+reachable (mechanism, crash-class) pairs of Table~\ref{tab:crashverdicts} plus one
+control cell per mechanism. Stage~B applies the six scripted faults at random times to
+all mechanisms at the canonical operating point and adds the sensitivity blocks. Stage~C
+measures performance in the fault-free case; Stage~D reuses Stage~B runs for performance
+under faults and for time-to-consistent-state. The campaign was pre-registered with an
+unattended wall-clock budget of 8--24 hours; if the pilot projection exceeds the budget,
+a fixed cut ladder is applied in order --- the large-load block first, then the partition
+sensitivity block, then repetitions down to the pre-registered floor for correctness
+cells; control cells are never cut.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Staged design. Repetitions $N$ apply per cell; ``cells'' counts executed
+(mechanism, condition) pairs, with structurally unreachable cells recorded as not
+applicable rather than as passes. The total is 7{,}866 matrix runs plus 20 validation
+runs. No number in this table is a measurement.}
+\label{tab:stages}
+\begin{tabular}{@{}p{0.7cm}p{4.6cm}p{5.0cm}p{1.4cm}p{1.5cm}@{}}
+\toprule
+Stage & Purpose & Design & $N$ & Runs \\
+\midrule
+P & calibrate per-run cost, validate oracle and injectors, measure capacity for the target-rate rule & 9 mechanisms $\times$ 8 conditions $\times$ 1k events, 3 partitions & 3 & 216 \\
+A & structural correctness under deterministic crash points & 52 crash-class cells + 9 control cells $\times$ 1k events, 3 partitions & 30 & 1{,}830 \\
+B & correctness under stochastic faults at realistic load, plus sensitivity & 67 fault cells $\times$ 100k events, 6 partitions; sensitivity blocks at 10k events & 30 / 10 & 4{,}020 \\
+C & performance, fault-free & 9 mechanisms $\times$ 2 loads $\times$ 3 partition counts; large-load and capacity blocks & 30 / 10 & 1{,}800 \\
+D & performance under faults and time-to-consistent-state & reuse of Stage~B runs & --- & 0 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Metrics.}
+Correctness is measured per run by the counts of duplicate postings ($\mathrm{I3}$),
+lost postings ($\mathrm{I4}$), imbalanced entries ($\mathrm{I1}$) and mutated postings
+($\mathrm{I2}$), and by the binary outcome \emph{violating run} --- any of the four
+counts positive. Performance is measured in two modes. In the \emph{fixed-rate} mode the
+generator offers events at a target rate independent of the service, so latency is not
+corrupted by coordinated omission; in the \emph{saturation} mode the offered rate is far
+above capacity and the outcome is achieved throughput. End-to-end latency of an event is
+the interval from its scheduled emission to the observation that the effect commit for
+its batch returned; per-run percentiles p50, p90, p99 and p99.9 are recorded with
+HdrHistogram \cite{hdrhistogram} at a pre-registered precision and range. The first
+$\max(2000,\,10\,\%)$ events of a run are discarded from performance statistics as
+warm-up and retained for correctness. Throughput is committed events over the
+steady-state window. Time-to-consistent-state is the interval from the end of load to the
+first quiescent sample, and is reported with the censoring rate. Measurement practice
+follows the benchmarking literature: fixed machine state and identical configuration for
+all mechanisms, median and IQR rather than single observations, tail percentiles rather
+than means \cite{dean2013}, awareness that small configuration differences can reverse
+conclusions \cite{mytkowicz2009,raasveldt2018}, explicit reporting of the measurement
+setup \cite{hoefler2015}, and statistically rigorous treatment of JVM effects
+\cite{georges2007}. The design adopts the benchmarking discipline advocated for stream
+processing engines \cite{theodolite2021}.
+
+\paragraph{Frozen statistics.}
+The analysis plan was frozen, together with the analysis code, before the first
+experimental run; anything not in the plan is labelled exploratory. For correctness,
+each cell reports the proportion of violating runs with an exact
+Clopper--Pearson 95\,\% confidence interval \cite{brown2001,jsta2014}; when no violation
+is observed, the rule-of-three bound is reported as a conservative summary
+\cite{rule3} and the text states explicitly that the bound does not prove absence.
+Mechanisms are compared with McNemar's exact test on paired runs --- the same repetition
+seeds are used for every mechanism within a cell, so the comparison is paired
+\cite{mcnemar1947} --- with Fisher's exact test as an unpaired sensitivity analysis, and
+Holm's correction within pre-declared families \cite{holland1987}. For performance, each
+cell reports median and IQR with a bootstrap 95\,\% confidence interval (10{,}000
+resamples, recorded seed) \cite{efron1979}; mechanisms are compared with the Friedman
+test over blocks of load and partition count, Nemenyi post-hoc analysis, and Cliff's
+delta with pre-registered magnitude thresholds (negligible below 0.147, small below 0.33,
+medium below 0.474) \cite{demsar2006,cliff1993}. The level is $\alpha=0.05$ throughout,
+unadjusted and adjusted $p$-values are both reported, all $N$ and exclusion rates are
+reported per cell, and power statements accompany zero-event claims. Statistical
+practice follows the guidance for randomised and benchmark comparisons in software
+engineering \cite{arcuri2011,arcuri2012}, and the raw data, seeds and frozen scripts
+are released so that every table can be regenerated \cite{collberg2016}.

@@ -110,7 +110,7 @@ appears in the pipeline.
 the de-duplicating mechanisms (M3, M2+M3, M4+M3, M1x+M3). Append-only enforcement is
 identical for all mechanisms.}
 \label{tab:posting}
-\begin{tabular}{@{}p{2.5cm}p{2.4cm}p{3.0cm}@{}}
+\begin{tabular}{@{}p{2.9cm}p{1.8cm}p{2.4cm}@{}}
 \toprule
 Column & Type & Constraint \\
 \midrule
@@ -123,7 +123,7 @@ Column & Type & Constraint \\
 \texttt{currency} & char(3) & not null \\
 \texttt{produced\_at} & timestamptz & from the event \\
 \midrule
-\multicolumn{3}{@{}p{7.9cm}@{}}{\texttt{UNIQUE(event\_id, leg\_no)} --- de-duplicating mechanisms only} \\
+\multicolumn{3}{@{}p{7.1cm}@{}}{\texttt{UNIQUE(event\_id, leg\_no)} --- de-duplicating mechanisms only} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -139,21 +139,43 @@ $D$ be the observed posting multiset (rows of the sink, or committed records of 
 publication stream when that stream is the ledger) and let $\Omega$ be the expected
 posting multiset derived from the events that are durably present in the source topic.
 Write $\mathrm{mult}(D,\pi)$ for the multiplicity of posting $\pi=(e,\ell)$ in $D$.
-
-\begin{align}
-\text{I1 (balanced entries):}\quad & \forall e\in D:\ \text{postings of } e \text{ are exactly one D and one C leg,}\notag\\
-& \text{equal amounts, one currency, signed sum } 0. \label{eq:i1}\\
-\text{I2 (append-only):}\quad & \text{no durable posting is modified or deleted, and every matched}\notag\\
-& \text{posting carries the expected value.} \label{eq:i2}\\
-\text{I3 (uniqueness):}\quad & \forall e\in D:\ \mathrm{mult}(D,e)\le 2 \ \wedge\ \forall\pi:\ \mathrm{mult}(D,\pi)\le 1. \label{eq:i3}\\
-\text{I4 (completeness):}\quad & \forall e\in E_{\text{source}}:\ \text{the two postings of } \Pi(e) \text{ occur exactly once in } D. \label{eq:i4}
-\end{align}
+Table~\ref{tab:invariants} states the four invariants and their executable form.
 
 I1 is split into structural well-formedness (\emph{I1a}: exactly two legs, one per
 side, equal amount, single currency) and the signed-sum condition (\emph{I1b}); the
 split matters because whole-entry duplication leaves the signed sum at zero. I4 is an
 end-state completeness property, measured after quiescence; the corresponding liveness
 argument is stated, but not relied upon for measurement.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{The four ledger invariants and their executable form (abbreviated).
+\texttt{expected} is the oracle's expected multiset $\Omega$; \texttt{signed} is
+$+\mathit{amount}$ for a debit and $-\mathit{amount}$ for a credit. All predicates are
+evaluated by the independent oracle (Section~\ref{sec:method}).}
+\label{tab:invariants}
+\begin{tabular}{@{}p{0.9cm}p{7.0cm}p{7.1cm}@{}}
+\toprule
+ & Formal statement & Executable predicate (summary) \\
+\midrule
+I1 & For every $e\in D$: exactly one D and one C leg, equal amounts, one currency,
+signed sum zero. & group postings by event id; flag groups with $\mathit{count}\neq2$,
+or $\sum\mathit{signed}\neq0$, or more than one currency, or not exactly one D and one
+C. \\
+I2 & No durable posting is modified or deleted, and every matched posting carries the
+expected value. & compare $(\mathit{account},\mathit{side},\mathit{amount},
+\mathit{currency})$ with the expected value on matched keys; attest that the application
+role may not \texttt{UPDATE}/\texttt{DELETE} and that the append-only trigger exists. \\
+I3 & $\forall e\in D:\ \mathrm{mult}(D,e)\le 2$ and $\forall\pi:\
+\mathrm{mult}(D,\pi)\le 1$. & flag keys with count $>1$ per
+$(\mathit{event\_id},\mathit{leg\_no})$, and events with more than two postings. \\
+I4 & $\forall e\in E_{\mathrm{source}}$: the two postings of $\Pi(e)$ occur exactly
+once in $D$. & anti-join of the expected multiset against the sink: every expected key
+must be present exactly once. \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 The four invariants are deliberately orthogonal. A duplicated balanced entry is still
 balanced: it violates I3, not I1. A missing entry is invisible to a uniqueness index: it
@@ -162,59 +184,32 @@ well-formed. This orthogonality is the analytical basis for the mechanisms' fail
 signatures in Section~\ref{sec:formal}.
 
 After the application is stopped and quiescence is established, the observation
-function returns $O(r)=(D,A,G,T)$: the sink multiset $D$, the publication multiset $A$,
-the durable progress state $G$, and the timing record $T$. The observation is taken in
-one repeatable-read snapshot \cite{pg-isolation,berenson1995}. A run is \emph{consistent}
-when
+function returns the sink multiset, the publication-stream multiset, the durable
+progress state and the timing record; it is taken in one repeatable-read snapshot
+\cite{pg-isolation,berenson1995}. A run is \emph{consistent} when
 \begin{equation}
 \label{eq:consistency}
 \mathrm{Consistent}(D,\Omega)\ \Longleftrightarrow\ \text{I1}\wedge\text{I2}\wedge\text{I3}\wedge\text{I4}.
 \end{equation}
-Table~\ref{tab:invariants} gives the executable form of each predicate. The predicates
-are evaluated by the independent oracle (Section~\ref{sec:method}); their SQL
-realisation is released with the artifact.
-
-\begin{table}[t]
-\centering
-\small
-\caption{Invariants and their executable form (abbreviated). \texttt{expected} is the
-oracle's expected multiset $\Omega$; \texttt{signed} is $+\mathit{amount}$ for D and
-$-\mathit{amount}$ for C.}
-\label{tab:invariants}
-\begin{tabular}{@{}p{1.0cm}p{7.1cm}@{}}
-\toprule
- & Executable predicate (summary) \\
-\midrule
-I1 & group postings by \texttt{event\_id}; flag groups with $\mathit{count}\neq2$, or
-$\sum \mathit{signed}\neq0$, or more than one currency, or not exactly one D and one C. \\
-I2 & for every expected key present in the sink, compare
-$(\mathit{account},\mathit{side},\mathit{amount},\mathit{currency})$ with the expected
-value; plus attest that the application role may not \texttt{UPDATE}/\texttt{DELETE}
-and that the append-only trigger exists. \\
-I3 & flag keys with $\mathrm{count}>1$ per $(\mathit{event_id},\mathit{leg\_no})$, and
-events with more than two postings. \\
-I4 & anti-join of the expected multiset against the sink: every expected key must be
-present exactly once. \\
-\bottomrule
-\end{tabular}
-\end{table}
+The predicates are evaluated by the independent oracle (Section~\ref{sec:method});
+their SQL realisation is released with the artifact.
 
 \subsection{The exactly-once boundary}
 \label{sec:model:eos}
 
-Kafka's exactly-once semantics for a consume--transform--produce pipeline are built on
-the transactional producer \cite{kip98,kip447,kafka-design}: a transaction may include
+Kafka's exactly-once semantics for a consume, transform and produce pipeline rest on
+the transactional producer \cite{kip98,kip447,kafka-design}. A transaction may include
 records appended to Kafka topics and the consumer offsets of the records being
-processed, and the transaction coordinator makes both visible atomically, with
-`\texttt{read\_committed}` consumers observing all or none of the transaction and stale
-producer epochs being fenced. Formally, let $H_K$ be the sub-history of durable
-operations at the Kafka site and let a transaction $T$ contain
-$\mathrm{Append}(L)$, the records produced to Kafka, and $\mathrm{CommitOffsets}(G)$,
-the offsets of the processed input. Then the set of transitions that Kafka makes atomic is
-\begin{equation}
+processed, and the transaction coordinator makes both visible atomically. Read-committed
+consumers observe all or none of the transaction, and stale producer epochs are fenced.
+Formally, let $H_K$ be the durable sub-history at the Kafka site and let a transaction
+$T$ contain the produced records and the processed offsets. The set of transitions that
+Kafka makes atomic is then
+\begin{multline}
+\mathrm{EOS}(T)\ =\ \mathrm{vis}\big(\mathrm{Append}(L)\\
+\cup\ \mathrm{CommitOffsets}(G)\big),
 \label{eq:eos}
-\mathrm{EOS}(T)\ =\ \mathrm{vis}\big(\mathrm{Append}(L)\ \cup\ \mathrm{CommitOffsets}(G)\big),
-\end{equation}
+\end{multline}
 a single-site atomic visibility relation inside Kafka.
 
 The ledger, however, lives at a different site. Its commit
@@ -228,10 +223,14 @@ transactions \cite{sagas1987} and application-level coordination
 \cite{laigner2021,micro2026} are the alternatives practitioners use; they do not make
 the two commits atomic either.
 
-Consequently, for an event $e$ processed in a batch $b$, two windows exist:
+Consequently, for an event $e$ processed in a batch $b$, two windows exist. Let
+$\Sigma$ be the set of admissible schedules, $\mathrm{Dur}_S(b)\subseteq\Sigma$ the
+schedules in which the effect commit of $b$ is durable, and
+$\mathrm{Dur}_K(b)\subseteq\Sigma$ the schedules in which the progress commit of $b$ is
+durable. Then
 \begin{align}
-W_1(b) &= \{\,\sigma : \mathrm{durable}(\mathrm{Commit}_{S}(b),\sigma)\ \wedge\ \neg\mathrm{durable}(\mathrm{Commit}_{K}(b),\sigma)\,\}, \label{eq:w1}\\
-W_2(b) &= \{\,\sigma : \mathrm{durable}(\mathrm{Commit}_{K}(b),\sigma)\ \wedge\ \neg\mathrm{durable}(\mathrm{Commit}_{S}(b),\sigma)\,\}. \label{eq:w2}
+W_1(b) &= \mathrm{Dur}_S(b)\setminus\mathrm{Dur}_K(b), \label{eq:w1}\\
+W_2(b) &= \mathrm{Dur}_K(b)\setminus\mathrm{Dur}_S(b). \label{eq:w2}
 \end{align}
 $W_1$ is the \emph{duplicate} window: the effect was applied but progress did not
 advance, so a redelivery re-applies the effect unless the effect is idempotent. $W_2$
@@ -252,7 +251,7 @@ commits are concurrent or their order is not enforced, both windows may be non-e
 Under crash-recovery semantics with prefix-consistent storage
 (assumption A1), a crash scheduled between two sequential durable operations leaves the
 first durable and the second not. A process kill is such a crash. Concurrency admits an
-interleaving in which either commit is durable alone. \hfill$\square$
+interleaving in which either commit is durable alone.
 \end{proofsketch}
 
 \begin{corollary}[The EOS gap]
@@ -272,27 +271,24 @@ from its ledger.
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[font=\scriptsize,>=Stealth,
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\footnotesize,>=Stealth,
   store/.style={draw,rounded corners,minimum height=0.8cm,align=center,inner sep=2pt},
-  ev/.style={circle,fill=black,inner sep=1.1pt},
   lab/.style={align=center}]
-% axes
-\draw[->] (0,0) -- (8.4,0) node[right]{time};
-% store rows
-\node[store,anchor=west,minimum width=7.6cm] (k) at (0,1.45)
+\draw[->] (0,0) -- (8.1,0) node[right]{time};
+\node[store,anchor=west,minimum width=7.3cm] (k) at (0,1.45)
   {Kafka log + consumer offsets (site $K$)};
-\node[store,anchor=west,minimum width=7.6cm] (p) at (0,-1.45)
+\node[store,anchor=west,minimum width=7.3cm] (p) at (0,-1.45)
   {PostgreSQL ledger (site $S$)};
-% program order markers
-\draw[->,thick] (2.9,1.0) -- (2.9,0.15) node[lab,left=2pt,pos=0.25]{produce/commit};
-\draw[->,thick] (3.4,-1.0) -- (3.4,-0.15) node[lab,below=1pt,pos=0.35]{DB COMMIT};
-\draw[->,thick] (5.1,1.0) -- (5.1,0.15) node[lab,right=2pt,pos=0.25]{offset/txn commit};
-% windows
+\draw[->,thick] (2.9,1.0) -- (2.9,0.15) node[lab,above right=1pt,pos=0.2]{produce};
+\draw[->,thick] (3.4,-1.0) -- (3.4,-0.15) node[lab,below right=1pt,pos=0.2]{DB COMMIT};
+\draw[->,thick] (5.1,1.0) -- (5.1,0.15) node[lab,above left=1pt,pos=0.2]{commit};
 \fill[red!18] (3.4,0.0) rectangle (5.1,0.15);
 \fill[blue!14] (2.9,-0.15) rectangle (3.4,0.0);
-\node[lab,red!70!black] at (4.25,0.55) {$W_1$: effect durable, progress not $\Rightarrow$ duplicate};
-\node[lab,blue!60!black,align=center] at (1.6,-0.65) {$W_2$: progress\\durable, effect not};
-\end{tikzpicture}
+\node[lab,red!70!black] at (4.25,0.52)
+  {$W_1$: effect durable,\\progress not $\Rightarrow$ duplicate};
+\node[lab,blue!60!black] at (1.55,-0.62) {$W_2$: progress\\durable, effect not};
+\end{tikzpicture}}
 \caption{The EOS boundary on a timeline. Kafka's atomic commit covers the log append
 and the offset commit (top); the ledger commit is a separate single-site commit
 (bottom). A crash inside either shaded interval yields exactly one durable commit:
@@ -381,7 +377,7 @@ $C_{12}$ & partial-batch durability (per-record autocommit) & part of the batch 
 equivalent when, for every admissible schedule at one, a schedule exists at the other
 with the same durable projection at recovery.}
 \label{tab:kclasses}
-\begin{tabular}{@{}p{0.8cm}p{2.0cm}p{5.2cm}@{}}
+\begin{tabular}{@{}p{0.7cm}p{1.8cm}p{4.7cm}@{}}
 \toprule
 Class & Members & Equivalence reason \\
 \midrule

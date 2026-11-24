@@ -45,6 +45,8 @@
 \newtheorem{assumption}{Assumption}
 
 % Manuscript/analysis integration: analysis outputs (owned by S4) define these if present.
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\inputifexists}[1]{\IfFileExists{#1}{\input{#1}}{}}
 \inputifexists{results/analysis/macros.tex}
 \providecommand{\ResHypothesisOneVerdict}{pending}
 \providecommand{\ResHypothesisTwoVerdict}{pending}
@@ -66,8 +68,6 @@
 \providecommand{\ResMkafkaViolatingRuns}{--}
 \providecommand{\ResEarlyProbeLossRuns}{--}
 \providecommand{\ResSubstrateDeviationText}{native Windows processes instead of containers}
-\newcommand{\code}[1]{\texttt{#1}}
-\newcommand{\inputifexists}[1]{\IfFileExists{#1}{\input{#1}}{}}
 
 % RITA template rule colour / boxes
 \definecolor{mycolor}{rgb}{0,0,0}

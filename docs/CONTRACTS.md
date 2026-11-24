@@ -27,8 +27,12 @@ through the lead and are recorded in `results/DEVIATIONS.md`. Normative sources:
 
 ## 3. Event spec and deterministic derivation
 Exactly `docs/method.md` §1.4.1 (JSON schema `wxeo.ledger-event.v1`; SHA-256 derivation with domain
-prefixes `wxeo1|event|` and `wxeo1|part|`). Java load generator and Python oracle implement it
-independently and must agree byte-for-byte on the canonical posting lines and their digest (gate G5).
+prefixes `wxeo1|event|` and `wxeo1|part|`), including the **pre-freeze erratum** of 2026-11-24:
+the amount word is the literal in-bounds slice `uint32_be(h1[28:32]) mod 100000` (the original
+`h1[28:36]` window exceeds the 32-byte digest; the corrected semantics is what both implementations
+already evaluate). Normative reference vectors: **`docs/derive-vectors.csv`** — Java and Python
+must reproduce every row byte-for-byte (gate G5). Java load generator and Python oracle implement
+the spec independently.
 
 ## 4. Ground-truth file and canonical digest
 - Phase 1 (before ANY produce): generate all events, write `gt_<run_id>.ndjson` — one posting leg per

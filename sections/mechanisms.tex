@@ -106,7 +106,7 @@ and are outside the pipeline model studied here.)
   \State $B \gets \Call{Poll}{ }$
   \State \Call{DbBegin}{ }
   \ForAll{$r \in B$}
-    \State $\mathit{claimed} \gets \Call{ClaimInbox}{r}$ \Comment{INSERT $\ldots$ ON CONFLICT DO NOTHING}
+    \State \Call{ClaimInbox}{r} $\rightarrow \mathit{claimed}$ \Comment{claim if absent}
     \If{$\mathit{claimed}$}
       \State \Call{insert\_plain}{$\Pi(\mathrm{parse}(r))$}
       \State \Call{AppendOutbox}{$r$}
@@ -127,8 +127,9 @@ and are outside the pipeline model studied here.)
 \end{algorithm}
 
 \paragraph{M3 --- idempotency key with a unique index.}
-M3 (Algorithm~\ref{alg:m3}) adds a unique index on $(\mathit{event\_id},
-\mathit{leg\_no})$ and inserts every leg with \texttt{ON CONFLICT DO NOTHING}. A
+M3 (Algorithm~\ref{alg:m3}) adds a unique index on the pair formed by the event
+identifier and the leg number, and inserts every leg with a conflict-ignoring insert
+(\texttt{ON CONFLICT} \texttt{DO NOTHING}). A
 redelivery is absorbed by the index; the effect becomes idempotent without any
 additional table. Offsets are committed after the database commit. The mechanism is the
 cheapest de-duplication known in practice --- idempotency keys are the standard recipe
@@ -145,7 +146,7 @@ never written is not restored by a unique index.
   \State \Call{DbBegin}{ }
   \ForAll{$r \in B$}
     \ForAll{$\ell \in \Pi(\mathrm{parse}(r))$}
-      \State \Call{insert\_idem}{$\ell$} \Comment{ON CONFLICT (event\_id, leg\_no) DO NOTHING}
+      \State \Call{insert\_idem}{$\ell$} \Comment{ignore conflicts}
     \EndFor
   \EndFor
   \State \Call{DbCommit}{ } \Comment{D-effect durable}
@@ -169,7 +170,7 @@ case is a second writer of the same partition (crash point $C_7$).
 \caption{M4: offsets stored in the posting transaction}
 \label{alg:m4}
 \begin{algorithmic}[1]
-\State \textbf{on assignment} $p$: $o \gets \Call{StoredOffset}{p}$; seek $p$ to $o$
+\State \textbf{on assignment} $p$: $o \gets$ \Call{StoredOffset}{p}; seek $p$ to $o$
 \Loop
   \State $B \gets \Call{Poll}{ }$
   \State \Call{DbBegin}{ }
@@ -208,13 +209,13 @@ windows of Eqs.~\eqref{eq:w1}--\eqref{eq:w2}.
 \centering
 \small
 \caption{The mechanism design space. ``Atomic'' means the ledger effect and consumption
-progress are one atomic commit; ``dedup'' means the effect is idempotent under
-$(\mathit{event\_id},\mathit{leg\_no})$; ``recovery'' is the durable state consulted
-after a crash; the last column lists the failure exposures closed by construction.}
+progress commit together; ``dedup'' means the effect is idempotent under the pair
+(event identifier, leg number); ``recovery'' is the durable state consulted after a
+crash; the last column lists the failure exposures closed by construction.}
 \label{tab:distinct}
-\begin{tabular}{@{}p{1.5cm}p{2.1cm}p{2.0cm}p{2.6cm}p{3.4cm}p{3.3cm}@{}}
+\begin{tabular}{@{}p{1.9cm}p{1.5cm}p{1.5cm}p{2.3cm}p{3.0cm}p{3.2cm}@{}}
 \toprule
-Mechanism & Effect+progress atomic & De-duplication & Publication path & Recovery source & Exposures closed \\
+Mechanism & Atomic & Dedup & Publication & Recovery source & Exposures closed \\
 \midrule
 M0 & no & none & inline, at-least-once & Kafka offsets & --- \\
 M1-kafka & yes (Kafka site) & implicit (transaction) & inside $T$ & Kafka transaction & $W_1$, $W_2$, publication \\

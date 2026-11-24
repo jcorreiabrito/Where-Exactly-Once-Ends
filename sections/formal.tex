@@ -1,0 +1,374 @@
+% ============================================================================
+% sections/formal.tex -- Section 5: Invariant Preservation
+%
+% DRAFT — author-owned formal content, pending author sign-off.
+% ============================================================================
+
+\section{Invariant Preservation}
+\label{sec:formal}
+
+This section states the preservation results that the experiment is designed to test.
+The propositions are stated as falsifiable predictions: each names the invariant, the
+window or crash point it concerns, and the measurement that can refute it. Proof
+sketches are given for the closure results; concrete counterexample traces are given for
+the violations. The pen-and-paper argument is complemented by a bounded TLA+
+\cite{lamport1994} model that was machine-checked with TLC at the bounds stated in
+Section~\ref{sec:formal:tlc}; the model is a bounded witness of the crash-point
+semantics, not an unbounded proof.
+
+\subsection{Closure conditions}
+\label{sec:formal:closure}
+
+Lemma~\ref{lem:windows} leaves exactly two ways to close the windows of
+Eqs.~\eqref{eq:w1}--\eqref{eq:w2}: make the effect idempotent, or make the effect and
+the progress one atomic commit. Lemma~\ref{lem:closure} records which mechanism property
+closes which window.
+
+\begin{lemma}[Closure]
+\label{lem:closure}
+A mechanism preserves I3 against a schedule in $W_1$ if and only if its effect is
+idempotent under the business key $(\mathit{event\_id},\mathit{leg\_no})$ or its effect
+and progress are one atomic commit. A mechanism preserves I4 against a schedule in $W_2$
+if and only if its effect and progress are one atomic commit; de-duplication is
+irrelevant to $W_2$.
+\end{lemma}
+
+\begin{proofsketch}
+($W_1$, $\Leftarrow$) If the effect is idempotent, re-executing the batch after a
+redelivery is a no-op on the sink; if effect and progress are atomic, a durable effect
+implies durable progress, so no redelivery occurs. ($W_1$, $\Rightarrow$) If neither
+holds, take a crash between the two commits (trace X1): the effect is durable, progress
+is lost, the batch is redelivered, and the plain insert applies the effect twice.
+($W_2$) In a $W_2$ schedule progress is durable and the effect is absent; no redelivery
+occurs, so there is nothing for de-duplication to suppress and only atomicity prevents
+the state (trace X3). \hfill$\square$
+\end{proofsketch}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Closure of the two windows. A ``$\bullet$'' marks a property that closes the
+window on its own; de-duplication closes $W_1$ only, and ordering alone closes $W_2$
+only against ordinary message reordering.}
+\label{tab:closure}
+\begin{tabular}{@{}p{3.6cm}p{1.5cm}p{1.5cm}@{}}
+\toprule
+Property & $W_1$ & $W_2$ \\
+\midrule
+Atomic effect+progress & $\bullet$ & $\bullet$ \\
+Idempotent effect (dedup) & $\bullet$ & --- \\
+Strict ordering only & --- & $\bullet$ \\
+2PC across the two sites & $\bullet$ & $\bullet$ \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+{\footnotesize Strict ordering closes $W_2$ only against an ordinary reordering of
+message delivery, not against the deliberate \emph{early} ordering probe, which commits
+progress first by construction.}
+\end{table}
+
+Lemma~\ref{lem:closure} classifies every mechanism of Section~\ref{sec:mechanisms}.
+M0 and M1x have neither property and fail $W_1$; M3 has de-duplication and fails $W_2$
+under the early probe; M4 and M2 have atomicity and fail neither, except for the
+concurrent-writer exposure of M4 (crash point $C_7$), which is not a window between
+commits but a second writer. The combinations add the missing property to the base
+mechanism. The classification is the model's answer to RQ1 and is quantified --- per
+failure class and per mechanism --- by the experiment; the rows of
+Table~\ref{tab:crashverdicts} are the predictions that the measurements can refute.
+
+\subsection{Propositions}
+\label{sec:formal:props}
+
+\begin{proposition}[EOS boundary]
+\label{prop:p1}
+Kafka's atomic commit covers exactly the transitions of Eq.~\eqref{eq:eos}; for every
+mechanism except M1-kafka the ledger commit is outside it, so under $W_1$ the internal
+publication stream and the external ledger can both be ``correct'' on their own terms
+while diverging from each other.
+\end{proposition}
+\begin{proofsketch}
+By construction of the boundary: the transaction includes Kafka appends and offsets, and
+the database commit is a separate site (Corollary~\ref{cor:eosgap}). The divergence is
+realised by trace X4: an aborted transaction discards the stream records while the
+database rows persist, and the retry appends a second ledger row but a single stream
+record. Refuted if M1x shows no divergence while its transaction demonstrably aborts.
+\end{proofsketch}
+
+\begin{proposition}[$W_1$ closure]
+\label{prop:p2}
+Under strict ordering and crash-recovery faults, a mechanism preserves I3 in every
+schedule of $W_1$ if and only if it is idempotent under the business key or commits
+effect and progress atomically.
+\end{proposition}
+\begin{proofsketch}
+Lemma~\ref{lem:closure} applied to the $W_1$ schedules; the counterexample is trace X1
+and the positive cases are traces X2 and X5. The test is the deterministic $C_4$
+injection (class $K_3$) with M0 as the negative control.
+\end{proofsketch}
+
+\begin{proposition}[$W_2$ closure]
+\label{prop:p3}
+A mechanism preserves I4 against the early-ordering probe if and only if its effect and
+progress are one atomic commit; de-duplication cannot restore a posting that was never
+written.
+\end{proposition}
+\begin{proofsketch}
+Trace X3: progress is durable, the effect is absent, and the batch is never redelivered,
+so the posting is missing irrespective of any unique index. Tested by the early-ordering
+probe at class $K_4$ across all mechanisms; predicted to fail for every mechanism whose
+progress is a separate commit, including M3 and M2.
+\end{proofsketch}
+
+\begin{proposition}[M0 negative control]
+\label{prop:p4}
+M0 yields duplicates (I3 violations) under the deterministic $W_1$ injection and under
+duplicate redelivery, because it has neither de-duplication nor atomic progress.
+\end{proposition}
+\begin{proofsketch}
+Lemma~\ref{lem:closure}, failure direction. If M0 is clean under an attested $C_4$
+injection the harness is broken, so M0 is the campaign's negative control (failure is
+the expected observation, not an anomaly).
+\end{proofsketch}
+
+\begin{proposition}[M1-kafka positive control]
+\label{prop:p5}
+M1-kafka preserves I1--I4 in every executed cell: both duties are inside one Kafka
+transaction \cite{kip98}, and the publication stream is its own ledger.
+\end{proposition}
+\begin{proofsketch}
+A replay of an uncommitted transaction produces no durable record, and a committed
+transaction carries its offsets atomically; producer fencing excludes a zombie. Any
+violation in M1-kafka is a harness or configuration defect and fails the positive-control
+gate.
+\end{proofsketch}
+
+\begin{proposition}[M1x fails where the gap opens]
+\label{prop:p6}
+M1x yields duplicates (I3) in the $W_1$ crash classes and the corresponding fault
+conditions, while its publication stream remains exactly-once; it has no $W_2$ exposure
+under strict ordering.
+\end{proposition}
+\begin{proofsketch}
+The ledger rows are committed outside the transaction, while the stream records and the
+offsets are inside it; a crash between the database commit and the transaction commit
+(trace X4) duplicates the ledger and discards the stream record of the aborted
+transaction. Tested by the $C_4/C_{10}$ injections and by the ``broker killed
+mid-produce'' fault.
+\end{proofsketch}
+
+\begin{proposition}[M2 sufficiency]
+\label{prop:p7}
+M2 preserves I1--I4 in all executed cells: the inbox claim makes redelivery a no-op, the
+database transaction makes the effect atomic, and the outbox makes publication
+recoverable.
+\end{proposition}
+\begin{proofsketch}
+Each $W_1$ schedule is absorbed by the claim (trace X2 with a table instead of an
+index); $W_2$ is unreachable under strict ordering; the relay window concerns only
+publication (trace X7). M2's cost is a separate, measured prediction.
+\end{proofsketch}
+
+\begin{proposition}[M3: duplicates closed, losses open]
+\label{prop:p8}
+M3 preserves I1--I4 in the $W_1$ crash classes and yields no duplicate in any modelled
+condition, but loses postings under the early-ordering probe.
+\end{proposition}
+\begin{proofsketch}
+The unique index absorbs every replay ($W_1$, trace X2). Under the probe, progress is
+durable before the effect, no redelivery occurs, and the index has no row to conflict
+with ($W_2$, trace X3). This is the formal content of H3.
+\end{proofsketch}
+
+\begin{proposition}[M4: atomicity without de-duplication]
+\label{prop:p9}
+M4 preserves I1--I4 in the $W_1$ and $W_2$ crash classes because effect and progress are
+one database transaction, but it is exposed to a concurrent writer (crash point $C_7$).
+\end{proposition}
+\begin{proofsketch}
+A durable transaction advances the stored offset atomically, so a crash can only leave
+both or neither durable ($W_1$/$W_2$ unreachable, trace X5). A paused owner that resumes
+after reassignment writes a second copy with no constraint to stop it (trace X6). This is
+why the combination M4+M3 exists.
+\end{proofsketch}
+
+\begin{proposition}[Combinations]
+\label{prop:p10}
+M2+M3, M4+M3 and M1x+M3 each close exactly the exposure missing from their base
+mechanism and introduce no new durable duty.
+\end{proposition}
+\begin{proofsketch}
+Superposition of Propositions~\ref{prop:p7}--\ref{prop:p9}: the added component is a
+constraint (a unique index), not a protocol step, so it cannot open a window. Predicted
+clean in every executed cell; the cost differences are measured.
+\end{proofsketch}
+
+\begin{proposition}[Balance checks are blind to duplication]
+\label{prop:p11}
+There are schedules in which I3 is violated while I1 holds: a duplicated balanced entry
+sums to zero. Consequently a practitioner who checks only that every entry balances will
+not detect the duplicates produced by the EOS gap.
+\end{proposition}
+\begin{proofsketch}
+A second copy of a balanced entry is itself balanced; the per-entry signed sum remains
+zero and the legs are structurally well-formed. Only the count of entries per business
+event (I3) changes. The experiment counts runs in which I3 is violated while I1 is not;
+the checker's mutation test certifies that a duplicated row is detectable.
+\end{proofsketch}
+
+\begin{proposition}[No dominance]
+\label{prop:p12}
+Under the model no single mechanism is simultaneously complete on correctness and
+best on cost: M3 is the cheapest complete ledger mechanism under strict ordering but is
+blind to $W_2$; M4 closes both windows without an index but is open to $C_7$ and does not
+preserve publication exactly-once; M1x+M3 is required for ledger integrity plus
+Kafka-internal exactly-once publication and pays the transaction cost; M2 buys
+recoverable publication at the highest write cost.
+\end{proposition}
+\begin{proofsketch}
+Lemma~\ref{lem:closure} and the distinctness matrix of Table~\ref{tab:distinct}: each
+mechanism closes a different subset, and the properties that close correctness
+(dedup, atomicity) are not the properties that reduce cost. H5 is supported if the
+measured performance ordering shows at least one of these trade-offs; it is refuted if
+some mechanism is both clean in every correctness cell and non-inferior in throughput
+and tail latency.
+\end{proofsketch}
+
+\subsection{Counterexample traces}
+\label{sec:formal:traces}
+
+Table~\ref{tab:traces} gives the four most instructive traces. The remaining traces of
+the pre-registered protocol (a duplicate absorbed by a unique index, a relay window that
+affects only publication, an external-progress-advance variant of $W_2$) are
+corollaries of these four.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Counterexample traces. ``Durable'' lists the state that survives the crash;
+each step is an admissible schedule under assumptions A1--A13.}
+\label{tab:traces}
+\begin{tabular}{@{}p{1.2cm}p{9.0cm}p{5.6cm}@{}}
+\toprule
+Trace & Schedule & Consequence \\
+\midrule
+X1 & Batch $b$: effect commit returns (postings durable); process killed before the
+offset commit (crash point $C_4$); restart; batch redelivered from the last committed
+offset; plain insert executes again. & Every posting of $b$ occurs twice: I3 violated,
+I1 intact. The canonical $W_1$ duplicate. \\
+X3 & Batch $b$: progress committed first (early probe); process killed before the
+effect transaction is durable ($C_5$); restart resumes past $b$; $b$ is never
+redelivered. & The postings of $b$ are never written: I4 violated. A unique index cannot
+restore them; de-duplication is irrelevant. \\
+X4 & Transaction $T$ produces the stream records of $b$; the database commit of $b$
+returns; broker kill aborts $T$ (no stream records, no offsets) ($C_{10}$); retry
+re-writes the ledger and commits a new transaction. & The ledger holds two copies of
+$b$; the stream holds one: ledger I3 violated and the audit stream diverges from the
+ledger even though the stream is exactly-once. \\
+X6 & Instance A reads $b$, opens its transaction, is paused beyond the poll interval;
+the group reassigns the partition to instance B, which processes $b$ and later batches;
+A resumes and commits its transaction. & The postings of $b$ are written twice with no
+constraint to stop it: I3 violated. M4 needs either the index (M4+M3) or fencing. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Predicted verdicts per crash class}
+\label{sec:formal:verdicts}
+
+Table~\ref{tab:crashverdicts} gives the model's predicted verdict for every
+(mechanism, crash class) pair; the experiment measures each cell with the injector
+mapped to its class. The symbols are: $\mathsf{P}$ preserved (no I1--I4 violation
+expected); $\mathsf{V}_3$ duplicate expected; $\mathsf{V}_4$ loss expected;
+$\mathsf{C}_3$ conditional on the unknown-outcome resolution; $\varnothing$ structurally
+unreachable for that mechanism. The predictions are pre-registered; a measurement that
+contradicts a cell is a result that the paper must report as such.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Model-predicted verdicts by mechanism and crash class. $K_4$ is executed with
+the early-ordering probe; the M4 and M4+M3 entries in that column are labelled as probe
+(degraded-variant) results, not as the canonical mechanism. $\varnothing$ marks a state
+that the mechanism's protocol cannot reach (single-site atomicity or absence of a
+second commit).}
+\label{tab:crashverdicts}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Mechanism & $K_1$ & $K_2$ & $K_3$ & $K_4$ (probe) & $K_5$ & $K_6$ & $K_7$ \\
+\midrule
+M0        & P & C$_3$ & V$_3$ & V$_4$ & V$_3$ & V$_3$ & $\varnothing$ \\
+M1-kafka  & P & P     & $\varnothing$ & $\varnothing$ & P & P & $\varnothing$ \\
+M1x       & P & V$_3$ & V$_3$ & V$_4$ & V$_3$ & V$_3$ & $\varnothing$ \\
+M2        & P & P     & P     & V$_4$ & P     & P     & P \\
+M3        & P & P     & P     & V$_4$ & P     & P     & $\varnothing$ \\
+M4        & P & P     & $\varnothing$ & V$_4^{\dagger}$ & P & V$_3$ & $\varnothing$ \\
+M2+M3     & P & P     & P     & V$_4$ & P     & P     & P \\
+M4+M3     & P & P     & $\varnothing$ & V$_4^{\dagger}$ & P & P & $\varnothing$ \\
+M1x+M3    & P & P     & P     & V$_4$ & P     & P     & $\varnothing$ \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+{\footnotesize $^{\dagger}$Probe result for the degraded early-ordering variant; the
+canonical M4 and M4+M3 protocols have no separate progress commit, so $K_3$ and the
+canonical form of $K_4$ are unreachable and the cell is not a pass.}
+\end{table*}
+
+\subsection{Bounded machine-checked model}
+\label{sec:formal:tlc}
+
+The crash-point semantics of Section~\ref{sec:model} were encoded in a small TLA+
+\cite{lamport1994} model whose state consists of per-$(\mathit{event},\mathit{leg})$
+posting multiplicities, the durable progress, the publication records, and a crash flag.
+Four booleans parameterise the mechanism family: de-duplication, atomicity of effect and
+progress, atomicity of publication and progress (the Kafka transaction), and the
+early-ordering probe. The model is deliberately small --- three events, batches of two,
+one partition --- and the bounds were fixed before any check.
+
+Table~\ref{tab:tlc} reports the checked outcome. All eight configurations matched the
+expectation recorded before checking: the naive and transaction-only configurations
+violate the uniqueness invariant (I3) --- a duplicate posting is reachable --- while the
+de-duplicating and atomic configurations violate none, and both early-ordering probes
+violate completeness (I4) --- a posting is lost while the unique index is present. The
+two probes are the machine-checked form of Proposition~\ref{prop:p3}: de-duplication
+does not preserve completeness.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Bounded TLC check (TLC~2.19, tla2tools~v1.7.4, Java~21; checked
+2026-11-24T12:47:30Z). Bounds: $N=3$ events, batch size~2, one partition. Columns
+D/A/T/E are the model's de-duplication, atomic effect+progress, Kafka-transaction and
+early-ordering booleans. ``Outcome'' is the invariant whose counterexample TLC found,
+with the number of distinct states explored before the run ended (a violating
+configuration stops at the first counterexample, so its count varies slightly with
+worker scheduling); ``ok'' means no violation. All eight rows matched the pre-registered
+expectation.}
+\label{tab:tlc}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Config & D & A & T & E & Outcome \\
+\midrule
+naive        & F & F & F & F & I3 (20) \\
+dedup        & T & F & F & F & ok (18) \\
+atomic       & F & T & F & F & ok (8) \\
+atomic+dedup & T & T & F & F & ok (8) \\
+kafka-txn    & F & T & T & F & ok (8) \\
+txn-only     & F & F & T & F & I3 (36) \\
+early probe  & F & F & F & T & I4 (21) \\
+early+dedup  & T & F & F & T & I4 (21) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three qualifications bound the claim. First, the model is a \emph{bounded witness}:
+it explores a finite state space, so it demonstrates that the two windows are reachable
+and that the closure conditions hold for the modelled protocols at those bounds; it is
+not an unbounded proof of Lemma~\ref{lem:closure}. Second, the model abstracts away
+multi-partition scheduling, rebalancing, the zombie writer and the relay path
+(Section~\ref{sec:model:assumptions}); those cells rest on the pen-and-paper argument and
+on the deterministic injections of Section~\ref{sec:method}. Third, the encoding is a
+model of the protocols, not of the Java implementation: it can refute an incorrect
+closure claim, but it cannot establish that the artifact implements the modelled protocol
+--- that is the role of the independent oracle and the harness-validation gates. The
+model, the eight configurations, the TLC invocation and the logs are archived with the
+artifact, and the bounded results are reported as such in the paper.

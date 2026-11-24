@@ -32,8 +32,22 @@ checker mutation testing; two-level fault injection; staged design A–D; pre-re
 - Interfaces between S3 and S4 frozen in `docs/CONTRACTS.md`.
 
 ## Current gate
-**P2 in progress.** Next hard stop: **P2 gate** = pilot executed, projection worksheet filled from
-measured pilot values, cut-ladder decision, author re-approval of the projected budget before P3.
+**P2 in progress.** S3 artifact implementation and S4 oracle/runner under way; S5 early adversarial
+review of oracle/runner/matrix spawned before any confirmatory run. Next hard stop: **P2 gate** =
+pilot executed, projection worksheet filled from measured pilot values, cut-ladder decision, author
+re-approval of the projected budget before P3.
+
+## P2 progress log
+- Formal model: **machine-checked** with TLC 2.19 (tla2tools v1.7.4), bounds N=3/BatchSize=2; all 8
+  configurations matched pre-registered expectations (`formal/tlc-results/tlc-summary.json`).
+- S4: oracle + checker mutation testing **G3 green: 720/720 mutations detected with correct
+  attribution** (+ clean control + tamper controls); matrix `216 planned/201 executable, A 1,830,
+  B 4,020, C 1,800 = 7,866 planned / 7,851 executable (+20 validation)`; run order generated and
+  constraint-checked; seeds recorded; G5 derivation erratum (R5) resolved with independently
+  verified normative vectors (`docs/derive-vectors.csv`).
+- Manuscript: all 10 sections drafted and integrated (`sections/`); builds clean apart from the
+  analysis artefacts still being generated; currently 32 pp and must be compressed to ≤25 in P6/P7.
+- S2: method-heavy sections delivered (system, mechanisms, formal, method).
 
 ## Activity log
 - 2026-11-24: recon; foundation; template recovery; toolchain bootstrap; substrate validation.
