@@ -1777,3 +1777,133 @@ executed; the Linux host was not contacted.
 *End of fourth re-review. Verdict at `bd41133`: **BLOCK** pending Q1 (A6 saturation criterion +
 realistic tests + A6-r2 wording) and Q2 (G7 ≥3× capability decision), with Q3–Q6 as
 fix-before-freeze conditions. P1/P2/P3/P4 and B1–B8 are verified green.*
+
+---
+
+## 15. FIFTH RE-REVIEW — commit `d481c59` (2026-11-24, ~21:30–22:15Z)
+
+**Reviewer:** S5. **Tree:** `d481c59` (HEAD `d481c59113c44870…`; previous `bd41133`, `054d307`).
+**Method:** docs/code inspection only; **no stack or runner command executed**; read-only git; pure
+`python -m pytest experiments/tests -q` → **158 passed** (matches the lead); `matrix.py --check`
+clean. Matrix/order hashes verified unchanged: `5d348efe…` / `f4e731a2…` / `aa9ad0b9…`; 7,631 rows;
+calibration 54+54+9 = 117; confirmatory 7,506/7,488 + 26.
+
+### 15.0 Verdict
+
+> # **BLOCK — documentation/ops only. No code or measurement blocker remains.**
+> Q1–Q6 are genuinely fixed and verified in code; P1/P2/P3/P4 and B1–B8 remain green; the
+> measurement basis, A6 r2 saturation criterion, G7 narrowing, 0.5× supersede record, per-instance
+> warm-up split, partial-run handling and mandatory app-committed schema are all implemented and
+> tested. **The single remaining host-run blocker is the stale operator hand-off:**
+> `docs/HOST-HANDOFF.md` (which the final freeze now binds) pins **commit `29a33fd`**, says
+> `git checkout bd41133`, reports **151 tests / CI #27**, and points at the stale §13 verdict. An
+> operator following it would check out the pre-fix tree (bd41133 has the impossible A6 criterion)
+> and T1b would fail. Fix the hand-off document (one commit, no code changes), report that commit +
+> its green CI run id, and the tree passes for host execution; the final host freeze is still subject
+> to the §15.3 evidence confirmation.
+
+### 15.1 Q1–Q6 verified fixed at `d481c59`
+
+| Q | Status | Evidence checked |
+|---|---|---|
+| **Q1** A6 criterion | **CLOSED** | `rates.derive_rates()` records `saturation_capacity_by_mechanism` from the M7spot 100k/P6 saturation samples (per mechanism, app-committed); `saturation_validation_report()` compares achieved app-committed throughput to **that mechanism's measured capacity** (`|achieved−capacity|/capacity ≤ 0.25` AND `achieved ≥ 0.75×capacity` for saturation), records `measured_capacity`, `achieved_throughput`, `achieved_vs_capacity_relative`, `saturated`; missing capacity is a per-run failure; realistic tests: capacity `120000/54 = 2222.2/s`, offered 5555, achieved 2222 → pass; achieved 0.5×capacity → fail; A6 r2 text documents the criterion |
+| **Q2** G7 narrowing | **CLOSED** | `rates.json` carries `g7_capability = {mode:"documented-saturation-rate", multiplier:2.5, prereg_6_2_three_x_claim:"narrowed", author_approved:true, amendment:"A6 r2"}`; `rates.g7_checks()` fails closed if absent/unauthorised; A6 r2 §A6.4 records the author-approved narrowing; DEVIATIONS M21; P2-APPROVAL item 9 |
+| **Q3** 0.5× vs §6.2 0.75× | **CLOSED (docs+record)** | `frozen_rule_supersedes = {prereg_6_2_fraction_of_min_capacity:0.75, implemented_fraction_of_min_capacity:0.5, author_approved:true, amendment:"A5 r3"}` in `rates.json`; `g7_checks` fails closed if missing; A5 r3 text records the supersession; DEVIATIONS M20; P2-APPROVAL item 9 |
+| **Q4** per-instance warm-up | **CLOSED** | `runner.per_instance_warmup(total, C) = ceil(total/C)`; `_service_args()` passes the per-instance value and sets `warmup_total`/`warmup_per_instance`; `config.runner` records `warmup_events_total`, `warmup_events_per_instance`, `consumer_instances`; `performance.warmup_events_excluded` records the total; tests `(2000,2)=1000`, `(2000,1)=2000`, `(1000,3)=334` |
+| **Q5** partial runs | **CLOSED** | `_performance_block()` records `instances_expected`, `partial`, `app_blocks`; fewer app blocks than expected ⇒ `committed_basis="app-committed-partial"`, `partial=true`, **no throughput**; rates capacity loader and A6 reject any basis ≠ `app-committed`; test covers the crash/partial case |
+| **Q6** schema basis | **CLOSED** | `validate_record` for stages M7/B/C requires `performance.committed_basis ∈ {"app-committed","app-committed-partial"}` and `partial=true` when partial; producer-ack fallback records are rejected; partial crash runs remain schema-valid; tests cover both |
+| **P1/P2/P3/P4 + B1–B8** | **green** | unchanged from §14 verification (app-committed aggregation, A2 macros, A5 r2 text, censored/loader/lag gates, M7sat/two-step rates/phase order/endpoints/container-images/freeze evidence) |
+| **Matrix/accounting** | **green** | hashes equal actual files; `matrix.py --check` clean; 7,631 rows; confirmatory unchanged |
+| **Analyzer G7** | **green** | `tools/analyze.py::_g7_rates_check()` calls `rates.g7_checks()` with the required blocks; fails closed on invalid/narrowing-missing rates |
+
+### 15.2 The remaining blocker (documentation/ops) and the minimum set to clear
+
+**HB1 (host-run blocker, docs-only).** `docs/HOST-HANDOFF.md` is stale and internally inconsistent,
+yet `experiments/freeze.py` now binds it (`FROZEN_FILES` includes `docs/HOST-HANDOFF.md`):
+- line 6: "current verdict pending §13" → should reference this final verdict (§15);
+- line 12: "Commit to run `29a33fd`" → should be the final host-ready commit (currently `d481c59`,
+  or the docs-fix commit);
+- line 13: "CI run **#27**, 151 passed" → should be run **#29** (or the new run) and **158/158**;
+- line 33: `git checkout bd41133` → wrong commit (pre-Q1 tree with the impossible A6 criterion);
+- line 57: "otherwise the `29a33fd` run #25" → inconsistent with the table.
+`STATUS.md` line 50 claims the hand-off is pinned to the final host-ready commit with green CI and
+158 tests — contradicting the actual file; `docs/P2-APPROVAL.md` still says "63-run M7spot" in item 6
+and the A5 checkbox (A5 r2 = 54; note A5 r3/A6 r2 approvals are correctly recorded in item 9).
+
+**Minimum set to clear (no code/measurement changes required):**
+1. Correct `docs/HOST-HANDOFF.md` to the single final host-ready commit SHA, the matching CI run id
+   (all jobs green on that exact commit), **158/158** harness tests, and the current verdict reference;
+   make the `git checkout <sha>` line match the table; update the host-tree/CI wording.
+2. Fix the stale `63/63` counts in `docs/P2-APPROVAL.md` to 54 (A5 r2) and keep item 9 as the
+   authority for A5 r3/A6 r2/G7 narrowing/0.5×; optionally tidy STATUS line 50.
+3. Commit those documentation edits (new commit), report the commit SHA + green CI run id; the host
+   may then run T0 → T0b → T1a → T1b → T3 → final freeze. No further code re-review is expected
+   unless the docs-fix commit changes code — if it does, report it and I re-check.
+
+**Non-blocking residuals (record or fix later; they do not stop the host):**
+- **NR1** `derive_rates()` does not itself fail at T1a if a mechanism's saturation-capacity spot is
+  missing; the candidate can be written from a subset and A6 then fails at T1b on the missing
+  capacity (fail-closed but later). Small improvement: require all nine
+  `saturation_capacity_by_mechanism` keys in `derive_rates`/`--derive`.
+- **NR2** A5/A6 reference measurements are single-run (M7spot N=1 per mechanism, M7sat N=1); the ±25 %
+  / ≥75 % criterion rests on one measurement each. This is the author-approved design; if T1b flakes
+  on the host, any rerun must follow the frozen rerun policy and be recorded (not silently tuned).
+- **NR3** The runner does not independently re-check `rates.validated`/`g7_checks` before Stage B/C
+  (the T1b phase, final freeze and analyzer G7 do). Phase order makes this safe; a defense-in-depth
+  preflight check would be nice, not required.
+- **NR4** `docs/P2-APPROVAL.md` line 7 ("A6 … validated only if all sustain it") predates the A6 r2
+  capacity criterion; item 9 is authoritative, but the wording could be aligned.
+
+### 15.3 (b) Final-freeze evidence S5 will re-verify on the host
+
+Same as §14.4 with Q1–Q6 now real:
+1. **Freeze:** `docs/prereg-freeze.json` file SHA-256; `aggregate_pipeline_sha256`; `frozen_at_utc`;
+   `git_sha` = reported host HEAD (the final docs-fix commit); `missing_at_freeze: []`; artifact jar
+   SHA-256 + source-tree digest; `pre_freeze_harness_evidence.files_sha256` containing
+   `experiments/rates.json`, `results/harness/live-smoke-evidence.json`,
+   `results/harness/linux-fault-efficacy.json`, `results/harness/linux-gate-controls.json`,
+   `results/harness/container-images.json`; my independent recomputation of the aggregate from the
+   reported file hashes = claim; `freeze.py --check` → `ok:true`; clean `git status` (only ignored
+   runtime artefacts) and **green CI on the reported commit (run id)**.
+2. **`rates.json`:** `validated=true`, `validation.validated=true`,
+   `saturation_validation.mode="post-rates"`, `saturation_validation.validated=true`,
+   `observed_runs==9`, rule ids `A5.partition-scale.v1` / `SAT-2.5x-max`,
+   `saturation_capacity_by_mechanism` present for all nine mechanisms,
+   `g7_capability` present (documented 2.5× narrowing, author-approved),
+   `frozen_rule_supersedes` present (0.75→0.5, author-approved), seven fixed blocks + six A5 spot
+   checks; `rates.py --check` G7 ok; **117 calibration records** (M7-cal 54, M7spot 54, M7sat 9)
+   schema-valid under stage `M7`; every M7sat record: app-committed (not partial) basis,
+   `rate_mode="saturation-validation"`, `offered_rate` = final saturation rate, non-censored,
+   loader exit 0, G7 lag p99 ≤5 ms, `measured_capacity`/`achieved_throughput` within the A6 r2 bound
+   and `saturated=true`; **no producer-ack or partial-basis records among the 117**.
+3. **Bootstrap host log:** OS/kernel, Docker+Compose versions, container image repo digests,
+   JDK/Maven/Python/psql versions, jar SHA, `mvn package`/`mvn verify` summaries, `pytest` **158**
+   summary, `--check-env`, 3-broker + proxy-inventory liveness.
+4. **T0/T0b:** `live-smoke-evidence.json passed=true` (clean M0/M2/M3/M1-kafka + app F4b + S4 F2),
+   `linux-fault-efficacy.json passed=true`.
+5. **T3:** `linux-gate-controls.json passed=true`, produced **before** the final freeze.
+6. **P2 macro regression:** analysis CLI emits `\ResHypothesis*Verdict` equal to A2 verdicts on the
+   fixture (158-suite green); `hypotheses.json` `source:"A2"`; legacy artefacts non-citable.
+7. **Dispositions:** Q4/Q5/Q6 record fields present in live records; Q3/Q2 records in rates; P2-APPROVAL
+   sign-off boxes remain pending until S5 re-confirms; RUNLOG rows for T0/T0b/T1a/T1b/T3/freeze with
+   aggregate+git SHA; HOST-HANDOFF corrected and bound in the freeze.
+
+### 15.4 Commands used (read-only; no stack/runner)
+
+```powershell
+Get-Content .git/refs/heads/main ; git log --oneline -2 ; git status --porcelain
+python -m pytest experiments/tests -q -p no:cacheprovider        # 158 passed
+python experiments/matrix.py --check                             # clean
+sha256: matrix.yaml 5d348efe…, run_order.csv f4e731a2…, matrix.sha256 aa9ad0b9…
+# reads: rates.py (capacity map/A6 r2/g7 checks), runner (per_instance_warmup/_performance_block/
+#   config.runner), validate_record, test_perf_basis_p1/test_m7_rates_chain, analyze G7,
+#   A5 r3/A6 r2/P2-APPROVAL/DEVIATIONS M20–M22, HOST-HANDOFF/STATUS/runbook, freeze.py
+```
+
+**No repository file was created or modified except this memo.** No stack/runner command was
+executed; the Linux host was not contacted.
+
+*End of fifth re-review. Verdict at `d481c59`: **BLOCK — documentation/ops only.** Q1–Q6 and P1–P4,
+B1–B8, matrix/accounting and gate wiring are verified; correct the stale `docs/HOST-HANDOFF.md`
+(commit/CI/test-count/checkout/verdict) and the stale `63` counts in P2-APPROVAL, commit, report the
+new commit + green CI run id, and the tree passes for T0/T0b/T1a/T1b/T3 + final freeze.*
