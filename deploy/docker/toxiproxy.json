@@ -1,0 +1,8 @@
+{
+  "proxies": [
+    {"name": "kafka",         "listen": "0.0.0.0:19092", "upstream": "kafka-1:29092", "enabled": true},
+    {"name": "kafka-produce", "listen": "0.0.0.0:19093", "upstream": "kafka-1:29092", "enabled": true},
+    {"name": "kafka-consume", "listen": "0.0.0.0:19094", "upstream": "kafka-1:29092", "enabled": true},
+    {"name": "db",            "listen": "0.0.0.0:15433", "upstream": "postgres:5432",  "enabled": true}
+  ]
+}

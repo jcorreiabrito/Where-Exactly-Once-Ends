@@ -86,10 +86,20 @@ def test_R3_counts_unchanged_after_mode_fix():
     import yaml
     doc = yaml.safe_load(open(os.path.join(REPO, "experiments", "matrix.yaml"), encoding="utf-8"))
     t = doc["accounting"]["totals"]
+    # P2 confirmatory accounting stays 7,506/7,488 + 26 validation; the M7 calibration
+    # block is reported separately and is NOT folded into those counts.
+    stages = doc["accounting"]["stages"]
+    assert stages["pilot"]["runs_planned"] == 216
+    assert stages["A"]["runs_planned"] == 1530
+    assert stages["B"]["runs_planned"] == 3960
+    assert stages["C"]["runs_planned"] == 1800
     assert t["runs_planned"] == 7506
     assert t["runs_executable"] == 7488
     assert t["validation_runs"] == 26
     assert t["nominal_total_executable_plus_validation"] == 7514
+    cal = doc["accounting"]["calibration"]
+    assert cal["stage"] == "M7" and cal["runs"] == 54 and cal["cells"] == 18
+    assert cal["block"] == "M7-cal"
 
 
 # ---- R2: single-owner receipt protocol ----------------------------------------------------

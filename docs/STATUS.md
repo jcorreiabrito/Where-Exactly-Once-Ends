@@ -21,27 +21,37 @@ approval and the P2 hard stop. It is not part of the paper.
 | Post-P1 platform deviations | disclosed normatively | `docs/prereg-amendment-A3.md`, `results/DEVIATIONS.md` §6 |
 | CI | **green** at `09e08c7` (4/4 jobs) | GitHub Actions run #17 |
 
-## 2. Current state (2026-11-24 ~16:45 local)
+## 2. Current state (2026-11-24 ~17:05 local)
 
-- **Pilot: paused** after 9 post-freeze rows (of 198 executable + 26 validation) because three
-  structural injector defects surfaced in the first rows (F3/F1/F5 fire outside the ~1 s 1k/max load
-  window; the app-owned F4b `before_effect_commit` failpoint never fires under `ordering=early` for
-  M1x+M3). Rows are kept; invalid rows will be re-run after the fixes. Deviation **M16**.
-- **Measured projection:** six valid post-freeze runs give median 43.7 s / p90 45.4 s per 1k run, so
-  Stage A alone projects to ≈19.3 h (p90). **The pre-registered 7,506-run programme cannot fit the
-  approved 8–24 h budget on this host.** The author must choose the reduced design (P2-GATE §3.2).
-- **S5 verdict:** PILOT gate PASS-WITH-CONDITIONS (retroactive pilot launch accepted); Stage A/B/C
-  remain BLOCKED under the five conditions in `docs/redteam-rereview.md` §10.
-- **Live evidence** regenerated against the committed freeze `fd271416…`: `passed=true`, with
-  app-owned K3 and S4-owned F2 attestations (`results/harness/live-smoke-evidence.json`).
-- The stack is stopped; no experiment process is running.
+- **P2: APPROVED by the author** (`docs/P2-APPROVAL.md`): matrix amendment M1, Amendment A2 with the
+  recommended AC choices, K6 non-realisability, M7 calibration block — and the campaign moves to a
+  **Linux/container host with the full frozen design**. The Windows host is retired for confirmatory
+  runs; its pilot rows stay as disclosed calibration data (M14–M16).
+- **Linux/container package is turnkey**: `deploy/docker/docker-compose.yml` (3 KRaft brokers, PG 16,
+  Toxiproxy 2.9 with the four proxies; same ports as the frozen code), `experiments/stack.py`
+  (native/docker adapter; docker reset = `compose down -v && up -d --wait`),
+  `deploy/linux/bootstrap.sh`, `deploy/linux/run-campaign.sh`, and the full operational contract
+  `docs/LINUX-CAMPAIGN-RUNBOOK.md`. Platform/injector changes are normative in
+  `docs/prereg-amendment-A4.md`.
+- **S5 Stage-A conditions being closed:** R10 A2 analyzer implemented and tested (AC-3b pooled
+  stratified sign test, H5-A + non-vacuity, canonical H2/H4, P3, v1a/v1b+P11, matrix pin, record
+  re-validation); R12 `experiments/rates.py` implemented (refuses to write until the M7 block exists);
+  M7 54-run calibration block added as a separate accounting block (confirmatory counts untouched:
+  7,506/7,488 + 26); injector fixes: F1/F3/F5 now marker-driven, F4b threshold scaled to effect-
+  transaction geometry. Harness tests: **86/86 green**.
+- **Paper:** S6 is executing the 33 pp → ≤25 pp compression (no results fabricated; Results stays
+  placeholder-only until the Linux campaign produces data).
+- The Windows stack is stopped; no experiment process is running.
 
-## 3. P2 decision point (hard stop — author input required)
+## 3. Remaining path to submission (all specified in the runbook)
 
-Requested at `docs/P2-GATE.md` §4: (1) matrix amendment M1; (2) Amendment A2 items/AC choices;
-(3) K6 non-realisability; (4) **budget/scope** given the measured infeasibility; (5) M7 calibration
-block; (6) acknowledgement of the S5 conditions. Stage A/B/C will not start before this approval.
-No B/C result may be claimed in the paper unless the corresponding runs are executed.
+1. On the Linux host: `deploy/linux/bootstrap.sh` → phase T0 smoke evidence → T1 M7 calibration +
+   `rates.py --write` → single final re-freeze → S5 re-confirmation of that freeze.
+2. Pilot (T4) → measured projection → confirm the cut-ladder/budget against the container-host times.
+3. Stage A → B → C (full 7,488 executable runs) with the frozen cadence; records auto-logged.
+4. A2 analysis + figures + macros; insert results into the paper; rebuild ≤25 pp PDF; anonymized
+   review PDF; submission package; tag `v1.0-submission`; green CI.
+5. No B/C result may be claimed before its runs exist; no numbers are estimated or invented.
 
 ## 4. Honest limitations recorded so far
 

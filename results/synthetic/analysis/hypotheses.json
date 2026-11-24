@@ -38,15 +38,19 @@
               "comparison": "M2 vs M3",
               "cliff_delta": 1.0,
               "magnitude": "large",
+              "direction_expected": 1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
-              "note": "pre-registered direction: M2 worse than M3"
+              "note": "pre-registered direction: M2 better than M3"
             },
             "M2_vs_M3_throughput": {
               "family": "P1",
               "comparison": "M2 vs M3",
               "cliff_delta": -1.0,
               "magnitude": "large",
+              "direction_expected": -1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
               "note": "pre-registered direction: M2 worse than M3"
@@ -56,15 +60,19 @@
               "comparison": "M2 vs M4",
               "cliff_delta": 1.0,
               "magnitude": "large",
+              "direction_expected": 1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
-              "note": "pre-registered direction: M2 worse than M4"
+              "note": "pre-registered direction: M2 better than M4"
             },
             "M2_vs_M4_throughput": {
               "family": "P1",
               "comparison": "M2 vs M4",
               "cliff_delta": -1.0,
               "magnitude": "large",
+              "direction_expected": -1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
               "note": "pre-registered direction: M2 worse than M4"
@@ -110,13 +118,8 @@
         "latency_component": {
           "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
           "tests": {
-            "M4_vs_M2_P2": {
+            "M4_vs_M2_p99": {
               "family": "P2",
-              "confirmed": false,
-              "note": "no Stage C data for the pre-registered contrast"
-            },
-            "M4_vs_M2_P1": {
-              "family": "P1",
               "confirmed": false,
               "note": "no Stage C data for the pre-registered contrast"
             }
@@ -126,46 +129,12 @@
       }
     },
     "H5": {
-      "verdict": "confirmed",
-      "reason": "no mechanism satisfies both dominance clauses",
+      "verdict": "inconclusive",
+      "reason": "no complete Stage C performance blocks; dominance clause (ii) not assessable",
       "evidence": {
-        "applicable": true,
-        "definition": "mechanism dominates iff (i) zero violating runs in every executed correctness cell with attested injections and (ii) non-inferior to the best other mechanism in >=4 of 6 Stage C blocks on both throughput and p99 (|Cliff delta|<0.147 and bootstrap CI of median ratio contains 1)",
-        "correctness_clause_i": {
-          "M0": false,
-          "M1x": false,
-          "M2": true,
-          "M3": false,
-          "M4": true
-        },
-        "non_inferiority_clause_ii": {
-          "M0": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M1x": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M2": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M3": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M4": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          }
-        },
-        "dominant_mechanisms": []
+        "applicable": false,
+        "reason": "no complete Stage C performance blocks; dominance clause (ii) not assessable",
+        "correctness_clause_i": {}
       }
     }
   }

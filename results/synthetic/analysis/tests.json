@@ -720,15 +720,19 @@
           "comparison": "M2 vs M3",
           "cliff_delta": 1.0,
           "magnitude": "large",
+          "direction_expected": 1,
+          "direction_ok": true,
           "p_adjusted": 1.0,
           "confirmed": false,
-          "note": "pre-registered direction: M2 worse than M3"
+          "note": "pre-registered direction: M2 better than M3"
         },
         "M2_vs_M3_throughput": {
           "family": "P1",
           "comparison": "M2 vs M3",
           "cliff_delta": -1.0,
           "magnitude": "large",
+          "direction_expected": -1,
+          "direction_ok": true,
           "p_adjusted": 1.0,
           "confirmed": false,
           "note": "pre-registered direction: M2 worse than M3"
@@ -738,15 +742,19 @@
           "comparison": "M2 vs M4",
           "cliff_delta": 1.0,
           "magnitude": "large",
+          "direction_expected": 1,
+          "direction_ok": true,
           "p_adjusted": 1.0,
           "confirmed": false,
-          "note": "pre-registered direction: M2 worse than M4"
+          "note": "pre-registered direction: M2 better than M4"
         },
         "M2_vs_M4_throughput": {
           "family": "P1",
           "comparison": "M2 vs M4",
           "cliff_delta": -1.0,
           "magnitude": "large",
+          "direction_expected": -1,
+          "direction_ok": true,
           "p_adjusted": 1.0,
           "confirmed": false,
           "note": "pre-registered direction: M2 worse than M4"
@@ -757,13 +765,8 @@
     "H4-latency": {
       "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
       "tests": {
-        "M4_vs_M2_P2": {
+        "M4_vs_M2_p99": {
           "family": "P2",
-          "confirmed": false,
-          "note": "no Stage C data for the pre-registered contrast"
-        },
-        "M4_vs_M2_P1": {
-          "family": "P1",
           "confirmed": false,
           "note": "no Stage C data for the pre-registered contrast"
         }
@@ -776,43 +779,9 @@
       "tests": {}
     },
     "H5-dominance": {
-      "applicable": true,
-      "definition": "mechanism dominates iff (i) zero violating runs in every executed correctness cell with attested injections and (ii) non-inferior to the best other mechanism in >=4 of 6 Stage C blocks on both throughput and p99 (|Cliff delta|<0.147 and bootstrap CI of median ratio contains 1)",
-      "correctness_clause_i": {
-        "M0": false,
-        "M1x": false,
-        "M2": true,
-        "M3": false,
-        "M4": true
-      },
-      "non_inferiority_clause_ii": {
-        "M0": {
-          "blocks_throughput_non_inferior": 0,
-          "blocks_p99_non_inferior": 0,
-          "clause_ii": false
-        },
-        "M1x": {
-          "blocks_throughput_non_inferior": 0,
-          "blocks_p99_non_inferior": 0,
-          "clause_ii": false
-        },
-        "M2": {
-          "blocks_throughput_non_inferior": 0,
-          "blocks_p99_non_inferior": 0,
-          "clause_ii": false
-        },
-        "M3": {
-          "blocks_throughput_non_inferior": 0,
-          "blocks_p99_non_inferior": 0,
-          "clause_ii": false
-        },
-        "M4": {
-          "blocks_throughput_non_inferior": 0,
-          "blocks_p99_non_inferior": 0,
-          "clause_ii": false
-        }
-      },
-      "dominant_mechanisms": []
+      "applicable": false,
+      "reason": "no complete Stage C performance blocks; dominance clause (ii) not assessable",
+      "correctness_clause_i": {}
     }
   },
   "hypotheses": {
@@ -853,15 +822,19 @@
               "comparison": "M2 vs M3",
               "cliff_delta": 1.0,
               "magnitude": "large",
+              "direction_expected": 1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
-              "note": "pre-registered direction: M2 worse than M3"
+              "note": "pre-registered direction: M2 better than M3"
             },
             "M2_vs_M3_throughput": {
               "family": "P1",
               "comparison": "M2 vs M3",
               "cliff_delta": -1.0,
               "magnitude": "large",
+              "direction_expected": -1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
               "note": "pre-registered direction: M2 worse than M3"
@@ -871,15 +844,19 @@
               "comparison": "M2 vs M4",
               "cliff_delta": 1.0,
               "magnitude": "large",
+              "direction_expected": 1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
-              "note": "pre-registered direction: M2 worse than M4"
+              "note": "pre-registered direction: M2 better than M4"
             },
             "M2_vs_M4_throughput": {
               "family": "P1",
               "comparison": "M2 vs M4",
               "cliff_delta": -1.0,
               "magnitude": "large",
+              "direction_expected": -1,
+              "direction_ok": true,
               "p_adjusted": 1.0,
               "confirmed": false,
               "note": "pre-registered direction: M2 worse than M4"
@@ -925,13 +902,8 @@
         "latency_component": {
           "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
           "tests": {
-            "M4_vs_M2_P2": {
+            "M4_vs_M2_p99": {
               "family": "P2",
-              "confirmed": false,
-              "note": "no Stage C data for the pre-registered contrast"
-            },
-            "M4_vs_M2_P1": {
-              "family": "P1",
               "confirmed": false,
               "note": "no Stage C data for the pre-registered contrast"
             }
@@ -941,46 +913,12 @@
       }
     },
     "H5": {
-      "verdict": "confirmed",
-      "reason": "no mechanism satisfies both dominance clauses",
+      "verdict": "inconclusive",
+      "reason": "no complete Stage C performance blocks; dominance clause (ii) not assessable",
       "evidence": {
-        "applicable": true,
-        "definition": "mechanism dominates iff (i) zero violating runs in every executed correctness cell with attested injections and (ii) non-inferior to the best other mechanism in >=4 of 6 Stage C blocks on both throughput and p99 (|Cliff delta|<0.147 and bootstrap CI of median ratio contains 1)",
-        "correctness_clause_i": {
-          "M0": false,
-          "M1x": false,
-          "M2": true,
-          "M3": false,
-          "M4": true
-        },
-        "non_inferiority_clause_ii": {
-          "M0": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M1x": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M2": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M3": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          },
-          "M4": {
-            "blocks_throughput_non_inferior": 0,
-            "blocks_p99_non_inferior": 0,
-            "clause_ii": false
-          }
-        },
-        "dominant_mechanisms": []
+        "applicable": false,
+        "reason": "no complete Stage C performance blocks; dominance clause (ii) not assessable",
+        "correctness_clause_i": {}
       }
     }
   },
@@ -1131,28 +1069,6 @@
     {
       "dataset": "synthetic-fixture",
       "stage": "C",
-      "mechanism": "M0",
-      "fault": "F0",
-      "n_valid": 1,
-      "n_excluded": 0,
-      "cp_upper_one_sided": 0.95,
-      "rule_of_three": 3.0,
-      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
-    },
-    {
-      "dataset": "synthetic-fixture",
-      "stage": "C",
-      "mechanism": "M0",
-      "fault": "F0",
-      "n_valid": 1,
-      "n_excluded": 0,
-      "cp_upper_one_sided": 0.95,
-      "rule_of_three": 3.0,
-      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
-    },
-    {
-      "dataset": "synthetic-fixture",
-      "stage": "C",
       "mechanism": "M1x",
       "fault": "F0",
       "n_valid": 1,
@@ -1284,41 +1200,42 @@
     }
   ],
   "inputs": {
-    "records_dir": "synthetic\\run-fixture\\run-records",
+    "records_dir": "results/synthetic/run-fixture/run-records",
+    "reserved_runs": "results/synthetic/run-fixture/summaries/reserved-runs.csv",
     "record_sha256": {
-      "run_a-m0-ctrl-1k-p3-r00.json": "5297ce4e8f804d7c2e5cd11ef08ed22839fe33816f9a0e712b1f20fec1dd3e9b",
-      "run_a-m0-k3-1k-p3-r00.json": "4e36b77054aa4435889fa020e85c4435319cfc35d786d6c6441c787fb0ecb479",
-      "run_a-m0-k4-1k-p3-r00.json": "1c0ab14e59ba66512ab10213bd5321fe415e805f9da7640bd5c612ab965b29d6",
-      "run_a-m1x-ctrl-1k-p3-r00.json": "a9de7d4f135d279f83805038c65049c9f75516b31201167cf31e2555412520a3",
-      "run_a-m1x-k3-1k-p3-r00.json": "0a80255de252e2696a5b5e69a3cf2273e0828eb8ea0fb0a7cbbd0e71aa0082ec",
-      "run_a-m1x-k4-1k-p3-r00.json": "7fdfc2fcae4da29a7126a0b0a2e71598d80aa5e17ee4be982935b21df1644697",
-      "run_a-m2-ctrl-1k-p3-r00.json": "c73b064dd8db9fa9da45b4c08a7868b90a4cb12e8f6f80751dc2e88b35cd250e",
-      "run_a-m2-k3-1k-p3-r00.json": "e8a9b691e71d0b9ce3d00a230e9f80f8f6bb599014df9ea846d6ee3b6ec5dbfb",
-      "run_a-m2-k4-1k-p3-r00.json": "d953d4613493328ad3a5b73a1d429049bd4fa904fed7b86f440e713597b77e4f",
-      "run_a-m3-ctrl-1k-p3-r00.json": "9caf7b6e3d6f1c71914853f131ee1b644c04f352c49103beb66c636cdaf9bb83",
-      "run_a-m3-k3-1k-p3-r00.json": "eb425e6d22c2ec6d803bb06ecbcf60301b7fddc69ad5e28a31a7655bf87f86f1",
-      "run_a-m3-k4-1k-p3-r00.json": "0d98b7f4104eb66dde8636defc85b0713065f54312ad9e04589c6a091a39f281",
-      "run_a-m4-ctrl-1k-p3-r00.json": "5a22a4fdbfa7b0a4fcded7dc391624298af44391ede64fd09b8eaac893984e58",
-      "run_a-m4-k3-1k-p3-r00.json": "aba57e6be8afcbce8f764b8180417eba88502a1029abb3e51a19ab7d5229d60f",
-      "run_a-m4-k4-1k-p3-r00.json": "c6b2f0cbed9d199c1345292a57b1f2165981e7235574a9459d79a7e95fcfa34a",
-      "run_c-m0-f0-100k-p3-r00.json": "b893faec4646db39548d53c2a4d14fd47cbd55e89ea82ec2d3280cb6ec125d5f",
-      "run_c-m0-f0-10k-p3-r00.json": "73fc3a7bad4dd2721bc5e7905f1700c3cfdd97924098c78c63fd47ecd7e33602",
-      "run_c-m0-f0-10k-p6-r00.json": "26eadb0143db8b02e6b9214a067a350e53e4fc28b3a6d3917324c518aa484d58",
-      "run_c-m1x-f0-100k-p3-r00.json": "a7fa7efd8c40ce4313314457d4705a75759fce8fb47b3e48ade93556ff8f0b91",
-      "run_c-m1x-f0-10k-p3-r00.json": "64061da1c9093ff75a5c69b12fa91e7dbc880e2c12d24547acf51a3971165860",
-      "run_c-m1x-f0-10k-p6-r00.json": "d437e7501ffce1a8a4cc442ace3d537a853a728fc49625d1751551c11b112d3a",
-      "run_c-m2-f0-100k-p3-r00.json": "b9a7792b6d21269aed75274a83de7ce57527f48fb0db5b02a7b3162704dc077d",
-      "run_c-m2-f0-10k-p3-r00.json": "60d01093826fd3d8bac5621ed471f7da0200c4e29332d88974a66bdd32b4e44b",
-      "run_c-m2-f0-10k-p6-r00.json": "4ac7129ea625ff9f2109c23af8443ef250bdfa7082d7a2318e22cb99002b7fe4",
-      "run_c-m3-f0-100k-p3-r00.json": "d4e3e8c9873a8853a458b5df8f3fb7cd87730620bda9ffb179a41733e54d97c8",
-      "run_c-m3-f0-10k-p3-r00.json": "e2fac2d3285665ea76edac1a45cdeb8fadf7bdc98caaed8904298779ff062b70",
-      "run_c-m3-f0-10k-p6-r00.json": "3aad4b93108e9e857c6184b7b22cecbcc2121d36087c9c0e952e77b005b96abe",
-      "run_c-m4-f0-100k-p3-r00.json": "4175c93684f519516c60c1205441e541891f17aa73ef1fd99fc33ba7e9323a94",
-      "run_c-m4-f0-10k-p3-r00.json": "40b65540a3e7c387cc54e6cff40432169f789c5d77c2286fa4fc841e5959a635",
-      "run_c-m4-f0-10k-p6-r00.json": "52a2e5cbab4448474802dc24ea4cc051190fc4d35d769865d8d687980aad0976"
+      "run_a-m0-ctrl-1k-p3-r00.json": "f18a7901912cb3898a60d850c41d19002441712245b4c0dc5755b9a817afb810",
+      "run_a-m0-k3-1k-p3-r00.json": "23c03884fa526ea2fffc7a5c51e77ab52c848c86df4dc9855c3b354f41ed4c15",
+      "run_a-m0-k4-1k-p3-r00.json": "7ed083ebb55e15af585e7e4d6b7eedcc27afd146fcd8741dd54b088ad0c0dbb2",
+      "run_a-m1x-ctrl-1k-p3-r00.json": "e4382ccc36c4461d382de17c1ab0a4f6fe4dee4a85919825f123ae3fcd694736",
+      "run_a-m1x-k3-1k-p3-r00.json": "135c2f0d72585c5b33198c6d1472b939ddbc8784483d6b2381a85eef2f2d7a45",
+      "run_a-m1x-k4-1k-p3-r00.json": "05d8955c534f44fe2fa83a45df22c3588e25fdf7c028239ed0b7bb9dec4d1c74",
+      "run_a-m2-ctrl-1k-p3-r00.json": "a3611d47002e360db763b88f8b378ab8fb7df830d9649eca820b2dd6dc54cb88",
+      "run_a-m2-k3-1k-p3-r00.json": "8c948d69d4cad13b2ae567eff833833188e056eef575a5a584c5eea6d57af355",
+      "run_a-m2-k4-1k-p3-r00.json": "ef67d0a451e8643cb160d388997bfb42c73587093f1e7b6610396b0f4be99d46",
+      "run_a-m3-ctrl-1k-p3-r00.json": "7c2ce4b0b811d7423fcc59fc47dcae9a61a574261a8c187538dead3f75f34ac6",
+      "run_a-m3-k3-1k-p3-r00.json": "252bac89d231f53e92c88db8c2f0417af198efd4af047923569ea4c4c4dcf2e8",
+      "run_a-m3-k4-1k-p3-r00.json": "34684a202e3f024a6277edc084a85bb8bb863795839acae589f2bf873ce66697",
+      "run_a-m4-ctrl-1k-p3-r00.json": "a173ae38997e18cd3420ae75ce2c3d47234385f863b00428e2b0cc96b558a781",
+      "run_a-m4-k3-1k-p3-r00.json": "efcbe04ed082efabe4b30fda64a50dea280bf37338cb8ae5e9d4e5d232caae54",
+      "run_a-m4-k4-1k-p3-r00.json": "2aa682e8efe243874a9e3d11eb8c31ac319022bc2ef73c522514ceba0fa60fea",
+      "run_c-m0-f0-100k-p3-r00.json": "70c3e9419adafba0d20f0565e531e93f25d9f96fbc55e639b2692fd4454b1244",
+      "run_c-m0-f0-10k-p3-r00.json": "b974695d68196580aa49542d47d2add9639129bf1e6b5174dbaa378cbfaaa2e6",
+      "run_c-m0-f0-10k-p6-r00.json": "79446410f4326aedc1e8e32efd54bc40a283720ba0ac199074f7b58d96929d46",
+      "run_c-m1x-f0-100k-p3-r00.json": "618351a1750ff3bf78a002dbb2aa277190af784ea29d63530cff39889dc7e328",
+      "run_c-m1x-f0-10k-p3-r00.json": "94756c6b810be842be0368d141193d7ca57b4ef6107ff0aa983499326586257d",
+      "run_c-m1x-f0-10k-p6-r00.json": "580c11cfeda2d69478f443a0baf662b37cba45c8ed2892444392fbeaad0c7e57",
+      "run_c-m2-f0-100k-p3-r00.json": "d44ef93193bd2696699ce6b65f7096b6c406dd83bbf8d662287adbb8e15e5691",
+      "run_c-m2-f0-10k-p3-r00.json": "bd99e4c7a7d07104679955bb609420961db9d58cff542e178d397f365de049ac",
+      "run_c-m2-f0-10k-p6-r00.json": "2d2e335f62a072a2221a06c8b503fdaaef9a2f78ac4c44f07e38b79e871c69f7",
+      "run_c-m3-f0-100k-p3-r00.json": "dc8f88a94e875de1421e6396665867c3dcfebcea0371888d8a5b9ac52ed55d7a",
+      "run_c-m3-f0-10k-p3-r00.json": "ed4dc488a5956db2eb0a17aad56f648a4c174e2ecad4fd31dd6aa61b8b7e6781",
+      "run_c-m3-f0-10k-p6-r00.json": "a56d1105860b586a6cfaa7d7d25b7cc4c044d6f8f7d1ce851bc0080a89334759",
+      "run_c-m4-f0-100k-p3-r00.json": "e5a3d8e6a2b4029e6220509b0cc73653b38d83ff39a6f9903bcac4f706fbaf58",
+      "run_c-m4-f0-10k-p3-r00.json": "4fb2130ed36e654625f211b3cfcead632f049d2e935365e7a01397eaacb4a61e",
+      "run_c-m4-f0-10k-p6-r00.json": "4d3d934679fecaae3f8f9a75b05fd4720b4dcbbddae87c9e3257af6b2090c1e8"
     },
-    "freeze_file": "<repo>\\docs\\prereg-freeze.json",
-    "freeze_sha256": "26686eba877b18947e5dcff1f5b09a0897f59740fba9db93e3699f2c5b7d5d93"
+    "freeze_file": "docs/prereg-freeze.json",
+    "freeze_sha256": "216779da6db8152da9ce9d16925ae963164c0a3c68a3263b6fe501dd2a9f8734"
   },
-  "analysis_script_sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5"
+  "analysis_script_sha256": "fa08b0bc20fe91bff8d2581bf4b348de7e58edbfeeb1298f803acadb7bbebd39"
 }

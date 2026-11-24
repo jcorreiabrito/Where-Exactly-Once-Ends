@@ -1,0 +1,5 @@
+# Runner-side Python dependencies for the Linux/container campaign host.
+# Versions are pinned to the versions the frozen harness was developed and tested against.
+confluent-kafka==2.16.2
+PyYAML==6.0.2
+pytest==8.3.3

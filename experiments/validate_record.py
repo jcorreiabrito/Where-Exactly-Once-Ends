@@ -29,7 +29,7 @@ except ImportError:  # script execution
     from experiments import pathsafe  # type: ignore
 
 SCHEMA_VERSION = "wxeo.run.v1"
-STAGES = {"pilot", "A", "B", "C", "D"}
+STAGES = {"pilot", "M7", "A", "B", "C", "D"}
 MECHANISMS = {"M0", "M1-kafka", "M1x", "M2", "M3", "M4", "M2+M3", "M4+M3", "M1x+M3"}
 ORDERING = {"strict", "early"}
 FAULTS = {"F0", "F1", "F2", "F3", "F4a", "F4b", "F5", "F6",
@@ -104,7 +104,7 @@ def validate_record(rec: dict, *, path: str = "") -> list[str]:
                                                                  rec.get("run_id", "")):
         err("run_id must be a lower-case [a-z0-9-] string")
     if rec.get("stage") not in STAGES:
-        err("stage must be one of pilot/A/B/C/D")
+        err("stage must be one of pilot/M7/A/B/C/D")
     if not isinstance(rec.get("cell_id"), str) or not rec.get("cell_id"):
         err("cell_id must be a non-empty string")
     if rec.get("mechanism") not in MECHANISMS:

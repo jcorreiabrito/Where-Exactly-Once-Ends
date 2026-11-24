@@ -16,10 +16,10 @@
     "ResHypothesisTwoVerdict": "partially confirmed",
     "ResHypothesisThreeVerdict": "inconclusive",
     "ResHypothesisFourVerdict": "partially confirmed",
-    "ResHypothesisFiveVerdict": "confirmed",
+    "ResHypothesisFiveVerdict": "inconclusive",
     "ResTotalValidRuns": "30",
     "ResTotalExcludedRuns": "0",
-    "ResMzeroViolatingRuns": "1",
+    "ResMzeroViolatingRuns": "3",
     "ResMkafkaViolatingRuns": "0",
     "ResMonexViolatingRuns": "1",
     "ResMonexViolationRate": "16.7\\",
@@ -36,10 +36,10 @@
     "H2": "partially confirmed",
     "H3": "inconclusive",
     "H4": "partially confirmed",
-    "H5": "confirmed"
+    "H5": "inconclusive"
   },
   "n_valid": 30,
   "n_excluded": 0,
-  "analysis_script_sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5",
+  "analysis_script_sha256": "fa08b0bc20fe91bff8d2581bf4b348de7e58edbfeeb1298f803acadb7bbebd39",
   "bootstrap_seed": "a6a7bdd0682f686e7165dd7d2cfbaeab"
 }

@@ -170,7 +170,8 @@ def injector_ownership(fault: str, mechanism: str | None = None,
 
 def record_stage(stage_label: str) -> str:
     """Canonical run-record ``stage`` value from a matrix stage label (S5 F-RN1)."""
-    mapping = {"P": "pilot", "V": "pilot", "A": "A", "B": "B", "C": "C"}
+    mapping = {"P": "pilot", "V": "pilot", "A": "A", "B": "B", "C": "C",
+               "M7": "m7"}
     if stage_label not in mapping:
         raise ValueError(f"unknown stage label {stage_label!r}")
     return mapping[stage_label]
@@ -181,6 +182,8 @@ def record_fault(condition: str) -> str:
     token = str(condition)
     upper = token.upper()
     if upper == "CTRL":
+        return "none"
+    if upper == "CAL":
         return "none"
     if upper in ("F4A", "F4B"):
         return "F4a" if upper == "F4A" else "F4b"
@@ -229,6 +232,8 @@ STAGE_A_RUNS = 42 * 30 + 9 * 30          # crash cells + controls = 1,530
 STAGE_B_RUNS = 66 * 30 + 66 * 10 + 66 * 2 * 10   # core + S1 + S2 = 3,960
 STAGE_C_RUNS = 1_800
 VALIDATION_RUNS = 26
+#: M7 calibration block (author-approved at P2): 9 mechanisms x {10k,100k} x P6 x N=3.
+M7_CAL_RUNS = 9 * 2 * 3
 
 
 if validate_design():

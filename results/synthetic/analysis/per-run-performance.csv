@@ -14,8 +14,8 @@ synthetic-fixture,a-m3-k4-1k-p3-r00,A,M3,K4,1000,3,0,True,False,True,1035.09,7.1
 synthetic-fixture,a-m4-ctrl-1k-p3-r00,A,M4,none,1000,3,0,True,False,False,1005.13,7.82,24.91,44.83,0,3352
 synthetic-fixture,a-m4-k3-1k-p3-r00,A,M4,K3,1000,3,0,True,False,False,1005.13,7.82,24.91,44.83,0,3352
 synthetic-fixture,a-m4-k4-1k-p3-r00,A,M4,K4,1000,3,0,True,False,False,1005.13,7.82,24.91,44.83,0,3352
-synthetic-fixture,c-m0-f0-100k-p3-r00,C,M0,F0,100000,3,0,True,False,False,1271.36,3.86,25.86,46.54,1,
-synthetic-fixture,c-m0-f0-10k-p3-r00,C,M0,F0,10000,3,0,True,False,False,1158.82,4.68,25.73,46.31,1,
+synthetic-fixture,c-m0-f0-100k-p3-r00,C,M0,F0,100000,3,0,True,False,True,1271.36,3.86,25.86,46.54,1,
+synthetic-fixture,c-m0-f0-10k-p3-r00,C,M0,F0,10000,3,0,True,False,True,1158.82,4.68,25.73,46.31,1,
 synthetic-fixture,c-m0-f0-10k-p6-r00,C,M0,F0,10000,6,0,True,False,False,1278.3,4.19,25.29,45.53,0,2866
 synthetic-fixture,c-m1x-f0-100k-p3-r00,C,M1x,F0,100000,3,0,True,False,False,1003.38,6.61,36.43,65.58,0,2898
 synthetic-fixture,c-m1x-f0-10k-p3-r00,C,M1x,F0,10000,3,0,True,False,False,985.99,7.99,43.76,78.77,0,3699

@@ -70,6 +70,7 @@ from experiments import kafka_admin as KA  # noqa: E402
 from experiments import matrix_design as MD  # noqa: E402
 from experiments import pathsafe  # noqa: E402
 from experiments import receipts as RCPT  # noqa: E402
+from experiments import stack as STACK  # noqa: E402
 from experiments.fixtures import make_fixtures as FX  # noqa: E402
 from experiments.oracle import derive as D  # noqa: E402
 from experiments.oracle import oracle as O  # noqa: E402
@@ -90,6 +91,19 @@ BROKER_REQUIRED_PROPERTIES = {
     "delete.topic.enable": "false",
     "log.retention.check.interval.ms": "3600000",
 }
+
+
+def expected_effect_transactions(load_events: int, consumer_instances: int = 1,
+                                 max_poll_records: int | None = None) -> int:
+    """Number of app effect transactions a run can produce (failpoint trigger geometry).
+
+    The app failpoint counter advances once per effect transaction, i.e. once per polled batch of
+    ``MAX_POLL_RECORDS`` events per consumer instance -- not once per event. Seeded thresholds must
+    be scaled by this number or they can never fire (the M16/F4b 300 s timeout).
+    """
+    batch = int(max_poll_records or INJ.MAX_POLL_RECORDS)
+    per_instance = max(1, int(load_events) // max(1, int(consumer_instances) * batch))
+    return per_instance
 
 
 def reset_cadence_for(load_events: int, load_mode: str = "fixed-rate") -> int:
@@ -255,11 +269,29 @@ def host_block() -> dict:
             stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
             ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
             ram = round(stat.ullTotalPhys / (1 << 30), 1)
+        else:
+            meminfo = "/proc/meminfo"
+            if os.path.exists(meminfo):
+                with open(meminfo, encoding="utf-8") as fh:
+                    for line in fh:
+                        if line.startswith("MemTotal:"):
+                            ram = round(int(line.split()[1]) / (1024 * 1024), 1)
+                            break
     except Exception:  # noqa: BLE001 - best effort host record
         ram = None
+    cpu = os.environ.get("PROCESSOR_IDENTIFIER", platform.processor() or "unknown")
+    if cpu in ("", "unknown") and os.path.exists("/proc/cpuinfo"):
+        try:
+            with open("/proc/cpuinfo", encoding="utf-8") as fh:
+                for line in fh:
+                    if line.lower().startswith("model name"):
+                        cpu = line.split(":", 1)[1].strip()
+                        break
+        except OSError:
+            pass
     return {
         "os_build": f"{platform.system()} {platform.release()} ({platform.version()})",
-        "cpu_model": os.environ.get("PROCESSOR_IDENTIFIER", platform.processor() or "unknown"),
+        "cpu_model": cpu,
         "logical_cpus": os.cpu_count(),
         "ram_gb": ram,
         "disk_free_start_gb": free_space_gb(eos_runtime_root()),
@@ -316,6 +348,14 @@ def discover_tool(patterns: list[str]) -> str | None:
         hits = sorted(glob(os.path.join(vendor, "**", pattern), recursive=True))
         if hits:
             return hits[0]
+    # Container/Linux hosts use system tools (postgresql-client, openjdk) from PATH instead of the
+    # vendored Windows runtime; the frozen runner must not require the vendor tree there.
+    for pattern in patterns:
+        name = pattern.replace("\\", "/").split("/")[-1].replace(".exe", "")
+        if name and not any(ch in name for ch in "*?["):
+            found = shutil.which(name) or shutil.which(name + ".exe")
+            if found:
+                return found
     return None
 
 
@@ -345,6 +385,14 @@ def clock_sanity_probe() -> dict:
                  ".ToString('o')"],
                 capture_output=True, text=True, timeout=30)
             boot = (proc.stdout or "").strip() or None
+        elif os.path.exists("/proc/stat"):
+            with open("/proc/stat", encoding="utf-8") as fh:
+                for line in fh:
+                    if line.startswith("btime "):
+                        boot = datetime.fromtimestamp(
+                            int(line.split()[1]), tz=timezone.utc).isoformat().replace(
+                                "+00:00", "Z")
+                        break
     except Exception:  # noqa: BLE001
         boot = None
     return {"wall_utc": utc_iso(), "monotonic_s": mono1, "drift_ms": round(drift_ms, 3),
@@ -467,6 +515,11 @@ class Runner:
         else:
             if self.opts.stage == "pilot":
                 runs = [r for r in runs if r["stage"] == "pilot"]
+            elif self.opts.stage == "M7cal":
+                # Author-approved M7 calibration block (54 runs, 9 mechanisms x {10k,100k} x P6).
+                # It is a measurement block outside the confirmatory counts; see P2-GATE 3.
+                runs = [r for r in runs if r.get("stage") == "m7"
+                        or r.get("stage_label") == "M7"]
             elif self.opts.stage in ("A", "B", "C"):
                 runs = [r for r in runs if r["stage_label"] == self.opts.stage]
             elif self.opts.stage != "all":
@@ -639,12 +692,29 @@ class Runner:
         jar = os.path.join(self.repo, "artifact", "target", "wxeo-service.jar")
         harness = os.path.join(self.repo, "artifact", "harness", "native-stack.ps1")
         stack_state = os.path.join(eos_runtime_root(), "run", "stack-state.json")
+        docker = STACK.is_docker()
         kafka_home = discover_tool(["kafka_2.*/libs", "kafka/libs"]) or ""
         if kafka_home:
             kafka_home = os.path.dirname(kafka_home.rstrip("\\/"))
-        pg_bin = discover_tool(["pgsql/bin/psql.exe", "**/psql.exe"])
+        pg_bin = discover_tool(["pgsql/bin/psql.exe", "**/psql.exe", "psql"])
         toxiproxy = discover_tool(["toxiproxy-server*.exe"])
+        if docker:
+            return {
+                "stack_mode": "docker",
+                "service_jar": {"path": "artifact/target/wxeo-service.jar",
+                                "present": os.path.exists(jar)},
+                "compose": {"path": "deploy/docker/docker-compose.yml",
+                            "present": os.path.exists(STACK.compose_file())},
+                "docker_cli": {"present": STACK.docker_available()},
+                "kafka_home": kafka_home or None,
+                "psql": pg_bin,
+                "java": discover_java(),
+                "pwsh": discover_pwsh(),
+                "ready": bool(os.path.exists(jar) and os.path.exists(STACK.compose_file())
+                              and STACK.docker_available()),
+            }
         return {
+            "stack_mode": "native",
             "service_jar": {"path": "artifact/target/wxeo-service.jar",
                             "present": os.path.exists(jar)},
             "native_stack_ps1": {"path": "artifact/harness/native-stack.ps1",
@@ -969,13 +1039,25 @@ class Runner:
         """
         topics_before = self._live_topic_count()
         start_utc = utc_iso()
-        self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
-                           seed=run["data_seed"],
-                           command=f"[reset] reset-kafka ({reason})", exit_status="START")
-        rc_reset = self._harness_verb("reset-kafka", run, f"reset-kafka ({reason})", 900)
-        rc_pg = self._harness_verb("start-pg", run, "start-pg (after reset)", 300)
-        rc_toxi = self._harness_verb("start-toxiproxy", run, "start-toxiproxy (after reset)",
-                                     300)
+        if STACK.is_docker():
+            self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
+                               seed=run["data_seed"],
+                               command=f"[reset] docker compose down -v && up -d --wait ({reason})",
+                               exit_status="START")
+            result = STACK.docker_reset()
+            rc_reset = result["rc_down"]
+            rc_pg = result["rc_up"]
+            rc_toxi = 0
+            reset_action = "docker-compose-reset"
+        else:
+            self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
+                               seed=run["data_seed"],
+                               command=f"[reset] reset-kafka ({reason})", exit_status="START")
+            rc_reset = self._harness_verb("reset-kafka", run, f"reset-kafka ({reason})", 900)
+            rc_pg = self._harness_verb("start-pg", run, "start-pg (after reset)", 300)
+            rc_toxi = self._harness_verb("start-toxiproxy", run,
+                                         "start-toxiproxy (after reset)", 300)
+            reset_action = "reset-kafka"
         # verify liveness (retry up to 240 s)
         deadline = time.monotonic() + 240
         live = {"ok": False}
@@ -987,7 +1069,8 @@ class Runner:
         self._reset_epoch += 1
         self._block_id += 1
         info = {
-            "ts_utc": start_utc, "action": "reset-kafka", "reason": reason,
+            "ts_utc": start_utc, "action": reset_action, "stack_mode": STACK.stack_mode(),
+            "reason": reason,
             "epoch": self._reset_epoch, "block_id": self._block_id,
             "runs_since_last_reset": self._runs_since_reset,
             "cadence": reset_cadence_for(int(run["load_events"]),
@@ -1002,7 +1085,7 @@ class Runner:
             fh.write(json.dumps(pathsafe.scrub(info), separators=(",", ":")) + "\n")
         self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
                            seed=run["data_seed"],
-                           command=f"[reset] reset-kafka done (alive={info['alive_after']})",
+                           command=f"[reset] {reset_action} done (alive={info['alive_after']})",
                            exit_status=0,
                            outputs=f"epoch={self._reset_epoch} block={self._block_id}")
         self._runs_since_reset = 0
@@ -1306,7 +1389,17 @@ class LiveSequence:
         kafka_home = self.env.get("kafka_home") or ""
         failpoint_after = 1
         if self.run.get("fault_level") == "L2" and self.run.get("fault") in ("F4b",):
-            failpoint_after = INJ.seeded_failpoint_after(self._empty_ctx())
+            # The app failpoint counts EFFECT-TRANSACTION hits, not events: one batch is
+            # MAX_POLL_RECORDS events and the load is split over the consumer instances.  At 1k
+            # events this leaves a single effect transaction per instance, so any seeded threshold
+            # >=2 can never fire (observed: 300 s timeout, zero receipts, M16).  Scale the seeded
+            # window by the number of effect transactions and fall back to the deterministic first
+            # hit when only one exists (disclosed in amendment A4).
+            instances = max(1, int(self.run.get("consumer_instances") or 1))
+            expected_hits = expected_effect_transactions(int(self.run["load_events"]), instances)
+            failpoint_after = (1 if expected_hits <= 1 else
+                               INJ.seeded_failpoint_after(self._empty_ctx(),
+                                                          expected_hits=expected_hits))
         return INJ.InjectorContext(
             run_id=self.run_id,
             mechanism=self.run["mechanism"],
@@ -1703,7 +1796,7 @@ class LiveSequence:
     # -- load generator --------------------------------------------------------------------
     #: S4-owned injections whose fire time is marker-driven: they need a load window long enough
     #: for the progress probe (a few admin round-trips) to observe the marker mid-load.
-    MARKER_DRIVEN_FAULTS = frozenset({"K2", "K5", "F2", "F4a", "F6"})
+    MARKER_DRIVEN_FAULTS = frozenset({"F1", "F2", "F3", "F4a", "F5", "F6", "K2", "K5"})
 
     def _effective_rate(self) -> str:
         mode = self.run.get("load_mode")
@@ -2164,8 +2257,12 @@ class LiveSequence:
         return stub
 
     def _process_limits(self) -> dict:
+        # A3.1: the host commit limit forced -Xms512m/-Xmx1g for the service and -Xmx1g for the
+        # loader; the record must state what actually ran, not the original Appendix-C 2g values
+        # (S5 R13).  Resource limits are read from the artifact's effective config and the live
+        # process table so the same code works on Windows and Linux.
         limits = {
-            "jvm_xms": "2g", "jvm_xmx": "2g", "jvm_gc": "G1",
+            "jvm_xms": "512m", "jvm_xmx": "1g", "jvm_gc": "G1",
             "affinity_mask": None, "priority_class": None, "hikari_pool": None,
             "broker_heap": "512m", "pg_shared_buffers": "2GB",
         }
@@ -2180,17 +2277,32 @@ class LiveSequence:
         pids = list(self.consumer_pids.values())
         if pids:
             try:
-                proc = subprocess.run(
-                    [discover_pwsh(), "-NoProfile", "-Command",
-                     ";".join(f"(Get-Process -Id {pid} -ErrorAction SilentlyContinue | "
-                              f"Select-Object -ExpandProperty ProcessorAffinity)" for pid in pids)],
-                    capture_output=True, text=True, timeout=30)
-                limits["affinity_mask"] = (proc.stdout or "").strip() or None
-                proc2 = subprocess.run(
-                    [discover_pwsh(), "-NoProfile", "-Command",
-                     f"(Get-Process -Id {pids[0]}).PriorityClass"],
-                    capture_output=True, text=True, timeout=30)
-                limits["priority_class"] = (proc2.stdout or "").strip() or None
+                if os.name == "nt":
+                    proc = subprocess.run(
+                        [discover_pwsh(), "-NoProfile", "-Command",
+                         ";".join(f"(Get-Process -Id {pid} -ErrorAction SilentlyContinue | "
+                                  f"Select-Object -ExpandProperty ProcessorAffinity)"
+                                  for pid in pids)],
+                        capture_output=True, text=True, timeout=30)
+                    limits["affinity_mask"] = (proc.stdout or "").strip() or None
+                    proc2 = subprocess.run(
+                        [discover_pwsh(), "-NoProfile", "-Command",
+                         f"(Get-Process -Id {pids[0]}).PriorityClass"],
+                        capture_output=True, text=True, timeout=30)
+                    limits["priority_class"] = (proc2.stdout or "").strip() or None
+                else:
+                    masks = []
+                    for pid in pids:
+                        try:
+                            masks.append(str(os.sched_getaffinity(pid)))
+                        except Exception:  # noqa: BLE001
+                            pass
+                    limits["affinity_mask"] = ";".join(masks) if masks else None
+                    try:
+                        nice = os.getpriority(os.PRIO_PROCESS, pids[0])
+                        limits["priority_class"] = f"nice={nice}"
+                    except Exception:  # noqa: BLE001
+                        pass
             except Exception:  # noqa: BLE001
                 pass
         return limits
@@ -2484,7 +2596,8 @@ def _merge_hist_percentiles(paths: "RunnerPaths") -> dict | None:
 # --------------------------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="WXEO experiment runner")
-    p.add_argument("--stage", default="pilot", choices=["pilot", "A", "B", "C", "all"])
+    p.add_argument("--stage", default="pilot",
+                   choices=["pilot", "M7cal", "A", "B", "C", "all"])
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--run-id", default=None)
     p.add_argument("--dry-run", action="store_true")

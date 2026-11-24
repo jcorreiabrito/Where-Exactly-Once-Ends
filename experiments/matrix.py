@@ -181,6 +181,15 @@ def build_cells() -> list[dict]:
         add("C", "c", mech, "f0", "100k", 100_000, 6, 10,
             fault_level="none", ordering="strict", injector_mode="none",
             load_mode="saturation", block="C-capacity")
+    # ---- M7 calibration block (author-approved at P2): 9 mechanisms x {10k,100k} x P6 x N=3
+    # Fault-free capacity runs used ONLY to derive the fixed/saturation rates (R12).  It is a
+    # separate stage token ("cal") that does not collide with P/A/B/C, is included in the
+    # reserved list and run order, and is excluded from confirmatory hypothesis tables.
+    for mech in DES.MECHANISMS:
+        for load, events in (("10k", 10_000), ("100k", 100_000)):
+            add("M7", "m7", mech, "cal", load, events, 6, 3,
+                fault_level="none", ordering="strict", injector_mode="none",
+                load_mode="fixed-rate", block="M7-cal", extra={"calibration": True})
     return cells
 
 
@@ -393,7 +402,9 @@ def build_run_order(runs: list[dict]) -> list[dict]:
     stage_a = [r for r in runs if r["stage"] == "a"]
     stage_b = [r for r in runs if r["stage"] == "b"]
     stage_c = [r for r in runs if r["stage"] == "c"]
-    groups = [("pilot", pilot + validation), ("A", stage_a), ("B", stage_b), ("C", stage_c)]
+    stage_m7 = [r for r in runs if r["stage"] == "m7"]
+    groups = [("pilot", pilot + validation), ("A", stage_a), ("B", stage_b),
+              ("C", stage_c), ("M7", stage_m7)]
     base_int = int(ORDER_SEED, 16)
     order: list[dict] = []
     section_ranges: list[tuple[int, int]] = []
@@ -511,7 +522,16 @@ def accounts(cells: list[dict], validation: list[dict]) -> dict:
         "nominal_total_executable_plus_validation":
             sum(s["runs_executable"] for s in stages.values()) + len(validation),
     }
-    return {"stages": stages, "totals": totals}
+    calibration = {
+        "stage": "M7",
+        "block": "M7-cal",
+        "cells": sum(1 for c in cells if c["stage_label"] == "M7"),
+        "runs": sum(c["n_planned_slots"] for c in cells
+                    if c["stage_label"] == "M7" and c["executed"]),
+        "note": "author-approved P2 calibration block; separate from the 7,506/7,488 "
+                "confirmatory counts; used only to derive fixed/saturation rates (R12)",
+    }
+    return {"stages": stages, "totals": totals, "calibration": calibration}
 
 
 def _matrix_document(cells: list[dict], validation: list[dict], acc: dict) -> dict:
@@ -602,7 +622,8 @@ def write_outputs(out_dir: str) -> dict:
             raise AssertionError(
                 f"stage {stage}: planned/executable {got['runs_planned']}/"
                 f"{got['runs_executable']} != prereg {planned}/{executable}")
-    if len(order) != acc["totals"]["runs_executable"] + len(validation):
+    if len(order) != (acc["totals"]["runs_executable"] + len(validation)
+                      + acc["calibration"]["runs"]):
         raise AssertionError("run order length mismatch")
     # run ids must be unique, lower-case, Kafka-topic-legal
     import re
@@ -696,8 +717,12 @@ def check_outputs() -> dict:
     with open(ORDER_PATH, "r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
         rows = list(reader)
-    if len(rows) != acc["totals"]["runs_executable"] + acc["totals"]["validation_runs"]:
-        problems.append(f"run_order rows {len(rows)} != executable+validation")
+    calibration_runs = int((acc.get("calibration") or {}).get("runs") or 0)
+    if len(rows) != (acc["totals"]["runs_executable"] + acc["totals"]["validation_runs"]
+                     + calibration_runs):
+        problems.append(f"run_order rows {len(rows)} != executable+validation+calibration")
+    if calibration_runs != DES.M7_CAL_RUNS:
+        problems.append(f"M7 calibration runs {calibration_runs} != {DES.M7_CAL_RUNS}")
     with open(os.path.join(REPO, "experiments", "matrix.sha256"), encoding="utf-8") as fh:
         recorded = {line.split()[1]: line.split()[0]
                     for line in fh if line.strip()}

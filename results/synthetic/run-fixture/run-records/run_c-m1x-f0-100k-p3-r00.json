@@ -14,7 +14,7 @@
   "data_seed": "bda58e434b04c164",
   "injection_seed": "342d1aec95a0837d",
   "master_seed": "90650742b511adfb662272117444cf43",
-  "git_sha": "1873ab12b6df1d9856dc104792d4228cdabaf8e1",
+  "git_sha": "28d02aabb6151426bcb31315a3b644f9b59764bd",
   "host": {
     "os_build": "SYNTHETIC",
     "cpu_model": "SYNTHETIC",
@@ -85,6 +85,9 @@
     "lost_postings": 0,
     "lost_entries": 0,
     "imbalanced_entries": 0,
+    "structurally_malformed_entries": 0,
+    "imbalanced_sum_entries": 0,
+    "ledger_entries_total": 100000,
     "mutated_postings": 0,
     "spurious_postings": 0
   },
@@ -93,6 +96,7 @@
     "v2": false,
     "v3": false,
     "v4": false,
+    "v5": false,
     "violating_run": false
   },
   "publication": {

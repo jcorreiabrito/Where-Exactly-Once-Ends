@@ -1919,3 +1919,515 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# =============================================================================================
+# A2 analyzer (author-approved P2 amendment A2, 2026-11-24)
+# AC-1 = H5-A, AC-3b = pooled stratified exact sign test, AC-4 = one of M3/M4,
+# AC-5 = v5 is a violation, AC-6 = split I1a/I1b (P11 = v3 & not v1b), AC-8 = >20% censoring flag.
+# =============================================================================================
+A2_ALPHA = 0.05
+A2_QUALITY = {"min_valid": 20, "min_attested": 0.80, "max_exclusion": 0.20,
+              "max_censored": 0.20}
+A2_C1_CELLS = (("A", "K2"), ("B", "F1"), ("B", "F2"), ("B", "F3"))
+A2_H1_DIVERGENCE = (("A", "K2"), ("A", "K3"), ("B", "F1"), ("B", "F2"),
+                    ("B", "F3"), ("B", "F4a"), ("B", "F6"))
+A2_CANONICAL = {
+    "M0": (("A", "K1"), ("A", "K2"), ("A", "K3"), ("A", "K5"),
+           ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+           ("B", "F5"), ("B", "F6")),
+    "M1-kafka": (("A", "K1"), ("A", "K2"), ("B", "F0"), ("B", "F1"), ("B", "F2"),
+                 ("B", "F3")),
+    "M1x": (("A", "K1"), ("A", "K2"), ("A", "K3"), ("A", "K5"),
+            ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+            ("B", "F5"), ("B", "F6")),
+    "M2": (("A", "K1"), ("A", "K2"), ("A", "K3"), ("A", "K5"), ("A", "K7"),
+           ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+           ("B", "F5"), ("B", "F6")),
+    "M3": (("A", "K1"), ("A", "K2"), ("A", "K3"), ("A", "K5"),
+           ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+           ("B", "F5"), ("B", "F6")),
+    "M4": (("A", "K1"), ("A", "K2"), ("A", "K5"),
+           ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+           ("B", "F5"), ("B", "F6")),
+    "M2+M3": (("A", "K1"), ("A", "K2"), ("A", "K3"), ("A", "K5"), ("A", "K7"),
+              ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+              ("B", "F5"), ("B", "F6")),
+    "M4+M3": (("A", "K1"), ("A", "K2"), ("A", "K5"),
+              ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+              ("B", "F5"), ("B", "F6")),
+    "M1x+M3": (("A", "K1"), ("A", "K2"), ("A", "K3"), ("A", "K5"),
+               ("B", "F0"), ("B", "F1"), ("B", "F2"), ("B", "F3"), ("B", "F4a"),
+               ("B", "F5"), ("B", "F6")),
+}
+A2_PROBE = {"M0": (("A", "K4"), ("B", "F4b")), "M1x": (("A", "K4"), ("B", "F4b")),
+            "M2": (("A", "K4"), ("B", "F4b")), "M3": (("A", "K4"), ("B", "F4b")),
+            "M4": (("A", "K4"),), "M2+M3": (("A", "K4"), ("B", "F4b")),
+            "M4+M3": (("A", "K4"),), "M1x+M3": (("A", "K4"), ("B", "F4b"))}
+A2_RESIDUAL = {"M0": ("E1", "E3", "E4", "E5"), "M1x": ("E1", "E3", "E4"),
+               "M2": ("E5",), "M3": ("E5",), "M4": ("E3", "E5"),
+               "M2+M3": ("E5",), "M4+M3": ("E5",), "M1x+M3": ()}
+A2_DOMINANCE_DOMAIN = ("M0", "M1x", "M2", "M3", "M4", "M2+M3", "M4+M3", "M1x+M3")
+A2_K6_NOTE = ("K6 is n/a for every mechanism (zombie writer not realisable within T_max); "
+              "it is listed as n/a, never as missing evidence.")
+A2_P3_CONTRASTS = (("M2", "M3"), ("M4", "M2"), ("M4+M3", "M2"))
+A2_P3_FAULTS = ("F1", "F2", "F3", "F4a", "F5", "F6")
+
+
+def a2_derive_v1(rec: dict) -> tuple[bool, bool]:
+    """I1a/I1b derived from stored counts (AC-6); v1 itself is never recomputed."""
+    counts = rec.get("counts") or {}
+    v1a = int(counts.get("structurally_malformed_entries") or 0) > 0
+    v1b = int(counts.get("imbalanced_sum_entries") or 0) > 0
+    return v1a, v1b
+
+
+def a2_clean_fail(rec: dict) -> bool:
+    """outcome_clean_fail = violating_run OR censored (A2-2 §2.2)."""
+    violations = rec.get("violations") or {}
+    quiescence = rec.get("quiescence") or {}
+    return bool(violations.get("violating_run")) or bool(quiescence.get("censored"))
+
+
+def a2_cell(rec: dict) -> tuple[str, str]:
+    return (str(rec.get("stage") or "").upper(), str(rec.get("fault") or "").upper())
+
+
+def a2_cell_key(rec: dict) -> str:
+    stage, fault = a2_cell(rec)
+    return f"{stage}-{fault}"
+
+
+def a2_attested(rec: dict) -> bool:
+    """Single-source attested-receipt rule: injected classes need an attested receipt set."""
+    fault = str(rec.get("fault") or "F0").upper()
+    if fault in ("F0", "NONE", "CTRL"):
+        return True
+    try:
+        from experiments import matrix_design as MD
+        from experiments import receipts as RCPT
+        owner = MD.injector_ownership(fault)
+        failpoint = {"K1": "after_fetch", "K3": "after_effect_commit",
+                     "K4": "before_effect_commit", "K7": "before_relay_mark",
+                     "F4b": "before_effect_commit"}.get(fault)
+        mode = "failpoint" if owner == "app" else "external"
+        out = RCPT.validate_run_receipts(
+            rec.get("fault_receipts") or [], run_id=rec.get("run_id") or "",
+            injector_mode=mode, fault=fault, fault_level=rec.get("fault_level") or "L1",
+            failpoint=failpoint if owner == "app" else None,
+            action="crash" if owner == "app" else None)
+        return bool(out.get("attested"))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def a2_conf_quality(records: list[dict], mechanism: str | None = None) -> dict:
+    """Per-cell quality bars (N_valid, attested rate, exclusion, censoring) for the given set."""
+    by_cell: dict[str, list[dict]] = {}
+    for rec in records:
+        key = a2_cell_key(rec)
+        if mechanism is not None and rec.get("mechanism") != mechanism:
+            continue
+        by_cell.setdefault(key, []).append(rec)
+    table = {}
+    for key, recs in sorted(by_cell.items()):
+        valid = [r for r in recs if (r.get("validity") or {}).get("valid")]
+        excluded = [r for r in recs if (r.get("validity") or {}).get("excluded")]
+        censored = [r for r in valid if (r.get("quiescence") or {}).get("censored")]
+        injected = [r for r in valid if str(r.get("fault") or "").upper() not in
+                    ("F0", "NONE", "CTRL")]
+        attested = [r for r in injected if a2_attested(r)] if injected else []
+        n_valid = len(valid)
+        rate = (len(attested) / len(injected)) if injected else 1.0
+        table[key] = {
+            "n_records": len(recs), "n_valid": n_valid, "n_excluded": len(excluded),
+            "n_censored": len(censored),
+            "attested_rate": rate,
+            "exclusion_rate": len(excluded) / len(recs) if recs else 0.0,
+            "censored_rate": len(censored) / n_valid if n_valid else 0.0,
+            "usable": (n_valid >= A2_QUALITY["min_valid"]
+                       and rate >= A2_QUALITY["min_attested"]
+                       and (len(excluded) / len(recs) if recs else 0.0)
+                       <= A2_QUALITY["max_exclusion"]),
+            "fragile": (len(censored) / n_valid) > A2_QUALITY["max_censored"] if n_valid else False,
+        }
+    return table
+
+
+def a2_pooled_sign_test(pairs_by_cell: dict[str, list[tuple[bool, bool]]]) -> dict:
+    """AC-3b: pooled stratified exact one-sided sign test; cells unweighted, pairs weight 1."""
+    b_total = c_total = 0
+    contributing = 0
+    per_cell = {}
+    for cell, pairs in pairs_by_cell.items():
+        b = sum(1 for treatment_fails, control_clean in pairs
+                if treatment_fails and not control_clean)
+        c = sum(1 for treatment_fails, control_clean in pairs
+                if control_clean and not treatment_fails)
+        if b + c > 0:
+            contributing += 1
+        per_cell[cell] = {"pairs": len(pairs), "b": b, "c": c}
+        b_total += b
+        c_total += c
+    n = b_total + c_total
+    p = 1.0 if n == 0 else sum(
+        math.comb(n, k) for k in range(b_total, n + 1)) / (2 ** n)
+    return {"b": b_total, "c": c_total, "n": n, "p_one_sided": p,
+            "cells_contributing": contributing,
+            "analysable": contributing >= 2,
+            "significant": (contributing >= 2 and b_total > c_total and p < A2_ALPHA),
+            "per_cell": per_cell}
+
+
+def a2_h1(records: list[dict]) -> dict:
+    """A2 §1.3 H1 under AC-3b (pooled sign test over C1; per-cell tests descriptive)."""
+    m1x = [r for r in records if r.get("mechanism") == "M1x"]
+    m1k = [r for r in records if r.get("mechanism") == "M1-kafka"]
+    exposure_cells = [c for c in A2_H1_DIVERGENCE if c[0] == "A"]
+    exposure = [r for r in m1x
+                if a2_cell(r) in exposure_cells
+                and bool((r.get("violations") or {}).get("violating_run"))
+                and not bool((r.get("quiescence") or {}).get("censored"))]
+    # pair by (stage, fault, condition, load, partitions, rep) — D15 shared seeds
+    m1x_by_key = {_a2_pair_key(r): r for r in m1x}
+    m1k_by_key = {_a2_pair_key(r): r for r in m1k}
+    pairs_by_cell: dict[str, list[tuple[bool, bool]]] = {}
+    for stage, fault in A2_C1_CELLS:
+        cell = f"{stage}-{fault}"
+        pairs = []
+        for key, x in m1x_by_key.items():
+            if a2_cell(x) != (stage, fault) or key not in m1k_by_key:
+                continue
+            k = m1k_by_key[key]
+            pairs.append((a2_clean_fail(x), a2_clean_fail(k)))
+        pairs_by_cell[cell] = pairs
+    test = a2_pooled_sign_test(pairs_by_cell)
+    descriptive = {}
+    for cell, pairs in pairs_by_cell.items():
+        mc = mcnemar_exact([(not x, not k) for x, k in pairs]) if pairs else None
+        descriptive[cell] = mc
+    m1k_clean_fail = [r for r in m1k if a2_clean_fail(r)]
+    quality = a2_conf_quality(m1x)
+    bars_ok = all(quality.get(f"A-{f}", {}).get("usable", False)
+                  for f in ("K2", "K3"))
+    if m1k_clean_fail:
+        verdict = "refuted"
+    elif not exposure:
+        refuted_ok = bars_ok and test["analysable"] is False
+        verdict = "refuted" if refuted_ok else "inconclusive"
+    elif all((r.get("validity") or {}).get("valid") for r in exposure) and bars_ok:
+        verdict = "confirmed" if test["significant"] else "inconclusive"
+    else:
+        verdict = "inconclusive"
+    return {"hypothesis": "H1", "family": "C1 (AC-3b pooled stratified exact sign test)",
+            "exposure_observed": len(exposure), "m1_kafka_clean_fail": len(m1k_clean_fail),
+            "pooled": test, "per_cell_descriptive": descriptive,
+            "quality": quality, "verdict": verdict,
+            "deleted": ["old A-K3 McNemar", "C2", "C3"]}
+
+
+def _a2_pair_key(rec: dict) -> tuple:
+    return (rec.get("stage"), rec.get("condition") or rec.get("fault"),
+            rec.get("load_events"), rec.get("partitions"), rec.get("rep"))
+
+
+def a2_h2(records: list[dict], performance: dict | None = None) -> dict:
+    m2 = [r for r in records if r.get("mechanism") == "M2"]
+    canon = a2_conf_quality(m2)
+    failing = [r for r in m2 if a2_cell(r) in A2_CANONICAL["M2"] and a2_clean_fail(r)]
+    cost = _a2_cost_any_of(performance, "M2", ("M3", "M4")) if performance else None
+    correctness = len(failing) == 0 and bool(m2) and all(
+        canon.get(f"{s}-{f}", {}).get("usable", False)
+        for s, f in A2_CANONICAL["M2"])
+    if failing:
+        verdict = "refuted"
+    elif correctness and cost is not None:
+        verdict = "confirmed" if cost["confirmed"] else "partially confirmed"
+    elif correctness:
+        verdict = "inconclusive"
+    else:
+        verdict = "inconclusive"
+    return {"hypothesis": "H2", "correctness_confirmed": correctness,
+            "clean_fail": len(failing), "cost": cost, "verdict": verdict,
+            "probe_cells_excluded": True}
+
+
+def a2_h3(records: list[dict]) -> dict:
+    m3 = [r for r in records if r.get("mechanism") == "M3"]
+    executed = [r for r in m3 if a2_cell(r) in A2_CANONICAL["M3"]
+                or a2_cell(r) in A2_PROBE.get("M3", ())]
+    dup = [r for r in executed if bool((r.get("violations") or {}).get("v3"))]
+    probe = [r for r in m3 if a2_cell(r) in A2_PROBE.get("M3", ())
+             and r.get("ordering_variant") == "early"
+             and (r.get("validity") or {}).get("valid")
+             and not (r.get("quiescence") or {}).get("censored")
+             and bool((r.get("violations") or {}).get("v4"))]
+    quality = a2_conf_quality(m3)
+    probe_keys = [f"{s}-{f}" for s, f in A2_PROBE.get("M3", ())]
+    probe_ok = all(quality.get(k, {}).get("usable", False) for k in probe_keys)
+    if dup:
+        verdict = "refuted"
+    elif probe:
+        verdict = "confirmed"
+    elif m3 and probe_ok:
+        verdict = "refuted"
+    else:
+        verdict = "inconclusive"
+    return {"hypothesis": "H3", "duplicate_arm_fail": len(dup),
+            "loss_arm_observed": len(probe), "probe_quality": probe_ok,
+            "verdict": verdict, "deleted": ["family C2", "c2_sig"]}
+
+
+def a2_h4(records: list[dict], performance: dict | None = None) -> dict:
+    failing = []
+    for mech in ("M4", "M4+M3"):
+        failing.extend([r for r in records if r.get("mechanism") == mech
+                        and a2_cell(r) in A2_CANONICAL[mech] and a2_clean_fail(r)])
+    latency = _a2_latency(performance, "M4", "M2") if performance else None
+    correctness = not failing
+    if failing:
+        verdict = "refuted"
+    elif latency is not None:
+        verdict = "confirmed" if latency["confirmed"] else "partially confirmed"
+    else:
+        verdict = "inconclusive"
+    return {"hypothesis": "H4", "correctness_confirmed": correctness,
+            "clean_fail": len(failing), "latency": latency, "verdict": verdict,
+            "k6_clauses_removed": True, "k6_note": A2_K6_NOTE}
+
+
+def a2_h5a(records: list[dict], performance: dict | None = None) -> dict:
+    """AC-1 H5-A residual-closure dominance with non-vacuity guard."""
+    frontier = []
+    for mech in A2_DOMINANCE_DOMAIN:
+        recs = [r for r in records if r.get("mechanism") == mech]
+        canon_clean = (bool(recs) and not any(
+            a2_cell(r) in A2_CANONICAL[mech] and a2_clean_fail(r) for r in recs))
+        quality_ok = all(a2_conf_quality(recs).get(f"{s}-{f}", {}).get("usable", False)
+                         for s, f in A2_CANONICAL[mech])
+        perf_ok = _a2_non_inferior(performance, mech) if performance else None
+        residual = list(A2_RESIDUAL[mech])
+        dominates = bool(canon_clean and quality_ok and (perf_ok is True) and not residual)
+        frontier.append({"mechanism": mech, "canonical_clean": canon_clean,
+                         "quality_ok": quality_ok, "non_inferior": perf_ok,
+                         "residual": residual, "dominates": dominates})
+    adequate = [f for f in frontier if f["canonical_clean"] and f["quality_ok"]]
+    dominating = [f for f in frontier if f["dominates"]]
+    if dominating:
+        verdict = "refuted"
+    elif not adequate:
+        verdict = "inconclusive"
+    else:
+        verdict = "confirmed"
+    return {"hypothesis": "H5-A", "frontier": frontier, "adequate_power": len(adequate),
+            "dominating": [f["mechanism"] for f in dominating], "verdict": verdict,
+            "vacuity_guard": "confirmed requires >=1 canonical-clean mechanism with adequate "
+                             "power; otherwise inconclusive"}
+
+
+def _a2_cost_any_of(performance: dict, mech: str, others: tuple) -> dict:
+    tests = performance.get("P1", {}) if performance else {}
+    for other in others:
+        key = f"{mech}|{other}"
+        block = tests.get(key) or {}
+        if block.get("delta_better") is not None and block.get("p_holm") is not None:
+            if block["delta_better"] <= -0.33 and block["p_holm"] < A2_ALPHA:
+                return {"confirmed": True, "pair": key, "delta_better": block["delta_better"],
+                        "p_holm": block["p_holm"]}
+    return {"confirmed": False, "reason": "no pre-registered pair with delta<=-0.33 and "
+                                          "Holm-adjusted one-sided p<0.05"}
+
+
+def _a2_latency(performance: dict, mech: str, other: str) -> dict:
+    block = (performance.get("P2", {}) if performance else {}).get(f"{mech}|{other}") or {}
+    if block.get("delta_better") is None:
+        return None
+    return {"delta_better": block["delta_better"], "p_holm": block.get("p_holm"),
+            "blocks_present": block.get("blocks_present"),
+            "confirmed": bool(block["delta_better"] >= 0.33
+                              and (block.get("p_holm") or 1.0) < A2_ALPHA
+                              and (block.get("blocks_present") or 0) >= 4)}
+
+
+def _a2_non_inferior(performance: dict, mech: str) -> bool | None:
+    entry = (performance.get("noninferiority", {}) if performance else {}).get(mech)
+    if not entry:
+        return None
+    return bool(entry.get("throughput") and entry.get("p99"))
+
+
+def a2_p3(records: list[dict]) -> dict:
+    """A2 §1.8 P3: 3 pre-registered contrasts over canonical Stage-B fault cells, Fisher exact."""
+    out = {}
+    for a, b in A2_P3_CONTRASTS:
+        ra = [r for r in records if r.get("mechanism") == a
+              and a2_cell(r)[0] == "B" and a2_cell(r)[1] in A2_P3_FAULTS]
+        rb = [r for r in records if r.get("mechanism") == b
+              and a2_cell(r)[0] == "B" and a2_cell(r)[1] in A2_P3_FAULTS]
+        if not ra or not rb:
+            out[f"{a}|{b}"] = None
+            continue
+        qa = sum(1 for r in ra if (r.get("quiescence") or {}).get("consistent_within_tmax"))
+        qb = sum(1 for r in rb if (r.get("quiescence") or {}).get("consistent_within_tmax"))
+        out[f"{a}|{b}"] = {"consistent": [qa, qb], "n": [len(ra), len(rb)],
+                           "fisher": fisher_test([[qa, len(ra) - qa],
+                                                  [qb, len(rb) - qb]])}
+    pvals = {k: (v["fisher"]["p"] if v else None) for k, v in out.items()}
+    adjusted = holm(pvals)
+    for k, v in out.items():
+        if v:
+            v["p_holm"] = adjusted.get(k)
+    return {"family": "P3 (3 contrasts, Fisher exact two-sided, Holm m=3)",
+            "contrasts": out}
+
+
+def a2_p11(records: list[dict]) -> dict:
+    """Restated P11 (AC-6): v3=1 & v1b=0 — sum-to-zero blindness to balanced duplication."""
+    observed = []
+    for rec in records:
+        violations = rec.get("violations") or {}
+        v1a, v1b = a2_derive_v1(rec)
+        if bool(violations.get("v3")) and not v1b:
+            observed.append({"run_id": rec.get("run_id"), "v1a": v1a, "v1b": v1b})
+    return {"test": "v3=1 and v1b=0 (restated P11; AC-6)", "observations": len(observed),
+            "examples": observed[:3],
+            "confirmed": bool(observed)}
+
+
+def a2_classify_absence(records: list[dict]) -> dict:
+    """Evidence-class classifier: K6 has no rows -> n/a (not missing)."""
+    by_cell = {a2_cell(r) for r in records}
+    k6_rows = [r for r in records if a2_cell(r)[1] == "K6"]
+    k6 = {"rows": len(k6_rows), "status": "n/a (structurally unreachable)",
+          "reason": A2_K6_NOTE}
+    missing = [c for c in (("A", k) for k in ("K1", "K2", "K3", "K4", "K5", "K7"))
+               if c not in by_cell]
+    return {"k6": k6, "absent_cell_tokens": missing,
+            "pilot_validation_excluded": True}
+
+
+def a2_validate_records(records: list[dict]) -> dict:
+    """Re-validate every record against wxeo.run.v1 and the A2 cross-field equations."""
+    try:
+        from experiments import validate_record as VR
+    except ImportError:
+        VR = None
+    invalid = []
+    equations_bad = []
+    for rec in records:
+        errors = VR.validate_record(rec) if VR else []
+        if errors:
+            invalid.append({"run_id": rec.get("run_id"), "errors": errors[:3]})
+        violations = rec.get("violations") or {}
+        if violations:
+            v1a, v1b = a2_derive_v1(rec)
+            expected_v1 = v1a or v1b
+            expected_violating = any(bool(violations.get(k))
+                                     for k in ("v1", "v2", "v3", "v4", "v5"))
+            if bool(violations.get("v1")) != expected_v1 or \
+                    bool(violations.get("violating_run")) != expected_violating:
+                equations_bad.append({"run_id": rec.get("run_id"),
+                                      "v1_expected": expected_v1,
+                                      "violating_expected": expected_violating})
+    return {"n_records": len(records), "invalid": invalid,
+            "equation_violations": equations_bad,
+            "ok": not invalid and not equations_bad}
+
+
+def a2_item14_fixture() -> tuple[list[dict], dict]:
+    """A2 §6 item-14 acceptance fixture: six synthetic cases with N>=20 per cell."""
+    APP = {"K1", "K3", "K4", "K7", "F4B"}
+    APP_FP = {"K1": "after_fetch", "K3": "after_effect_commit",
+              "K4": "before_effect_commit", "K7": "before_relay_mark",
+              "F4B": "before_effect_commit"}
+    S4 = {"K2", "K5", "F1", "F2", "F3", "F4A", "F5", "F6"}
+
+    def rec(mech, stage, fault, rep=0, violating=False, v=None, counts=None,
+            censored=False, valid=True, ordering="strict"):
+        run_id = f"{stage}-{mech}-{fault}-r{rep:02d}"
+        receipts = []
+        fu = fault.upper()
+        if fu in APP:
+            receipts = [
+                {"run_id": run_id, "fault": APP_FP[fu], "event": "fired",
+                 "detail": "action=crash;instance=1"},
+                {"run_id": run_id, "fault": fault, "event": "restored", "source": "s4"}]
+        elif fu in S4:
+            receipts = [
+                {"run_id": run_id, "fault": fault, "event": "fired", "source": "s4",
+                 "action_verified": True,
+                 "phase": {"load_start_ms": 0, "load_end_ms": 1000, "fire_ms": 500,
+                           "consumers_alive": True}},
+                {"run_id": run_id, "fault": fault, "event": "restored", "source": "s4"}]
+        return {
+            "run_id": run_id, "stage": stage, "mechanism": mech, "fault": fault,
+            "fault_level": "L1" if stage == "A" else "L2",
+            "ordering_variant": ordering, "rep": rep,
+            "condition": fault.lower(), "load_events": 1000, "partitions": 3,
+            "validity": {"valid": valid, "excluded": not valid,
+                         "exclude_reason": None if valid else "application_did_not_start"},
+            "violations": {"v1": bool((counts or {}).get("v1", False)),
+                           "v2": False, "v3": bool(violating and v == "v3"),
+                           "v4": bool(violating and v == "v4"),
+                           "v5": bool(violating and v == "v5"),
+                           "violating_run": bool(violating)},
+            "counts": {"structurally_malformed_entries":
+                       int((counts or {}).get("v1a", 0)),
+                       "imbalanced_sum_entries": int((counts or {}).get("v1b", 0)),
+                       "spurious_postings": 1 if v == "v5" else 0},
+            "quiescence": {"censored": bool(censored),
+                           "consistent_within_tmax": not censored},
+            "fault_receipts": receipts,
+        }
+
+    records = []
+    # (i) divergence: A-K2 30 pairs (b=3), B-F1 30 pairs (b=2); M1-kafka clean throughout
+    for rep in range(30):
+        records.append(rec("M1x", "A", "K2", rep, violating=rep < 3, v="v3"))
+        records.append(rec("M1-kafka", "A", "K2", rep))
+        records.append(rec("M1x", "B", "F1", rep, violating=rep < 2, v="v3"))
+        records.append(rec("M1-kafka", "B", "F1", rep))
+        # M1x exposure cell A-K3 (quality bars): 1 spurious violation + clean rest
+        records.append(rec("M1x", "A", "K3", rep, violating=rep == 0, v="v5"))
+    # (ii) probe-only M3 loss: K4 early, v4, non-censored, attested (30 probe runs)
+    for rep in range(30):
+        records.append(rec("M3", "A", "K4", rep, violating=(rep == 0 and True) or False,
+                           v="v4" if rep == 0 else None, ordering="early"))
+    # (iii) canonical M2 clean with 2 censored runs (30 valid, censoring = clean fail)
+    for rep in range(30):
+        records.append(rec("M2", "A", "K1", rep, censored=(rep in (0, 1))))
+    # (iv) spurious-only case: v5 violation, I1 structural clean
+    records.append(rec("M1x", "A", "K3", 900, violating=True, v="v5"))
+    # (v) duplicate case v1a=1, v1b=0 (balanced whole-entry duplication)
+    records.append(rec("M0", "A", "K3", 0, violating=True, v="v3",
+                       counts={"v1": True, "v1a": 1, "v1b": 0}))
+    # (vi) K6 absent: no rows for K6 anywhere (classified n/a, never missing)
+    expected = {
+        "h1_verdict": "confirmed", "h1_pooled_b": 5, "h1_pooled_c": 0,
+        "h3_verdict": "confirmed",
+        "h2": {"censored_fails": 2},
+        "p11_confirmed": True,
+        "k6_status": "n/a (structurally unreachable)",
+        "spurious_is_violation": True,
+        "derived_v1a_v1b": (1, 0),
+    }
+    return records, expected
+
+
+def a2_analyze(records: list[dict], performance: dict | None = None,
+               matrix_pin_ok: bool = True) -> dict:
+    """Full A2 analysis: re-validation, classes, H1-H5-A, P3, P11; fail-closed on matrix pin."""
+    if not matrix_pin_ok:
+        raise SystemExit("A2 analyzer: matrix hash does not match the pinned/frozen matrix; "
+                         "refusing to classify evidence")
+    validation = a2_validate_records(records)
+    classes = a2_classify_absence(records)
+    return {
+        "amendment": "A2 (AC-1=H5-A, AC-3b, AC-4=one, AC-5=v5, AC-6=split, AC-8=20%)",
+        "record_validation": validation,
+        "evidence_classes": classes,
+        "H1": a2_h1(records), "H2": a2_h2(records, performance),
+        "H3": a2_h3(records), "H4": a2_h4(records, performance),
+        "H5": a2_h5a(records, performance), "P3": a2_p3(records),
+        "P11": a2_p11(records),
+    }
