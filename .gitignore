@@ -70,3 +70,6 @@ results/raw/artifacts/
 
 # archived Windows raw dumps stay local (host paths, reproducible); scrubbed records are committed
 results/windows-pilot/artifacts/
+
+# local legacy summary (absolute host error strings; superseded, never committed)
+results/**/*.local.csv
