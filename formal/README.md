@@ -44,7 +44,7 @@ The table states what the model **was expected** to demonstrate before checking,
 | dedup | T | F | F | F | I3Unique holds; I4 holds | M3, M2 |
 | atomic | F | T | F | F | all hold (W1/W2 unreachable) | M4 |
 | atomic+dedup | T | T | F | — | all hold | M4+M3, M2+M3 |
-| kafka-txn | F | T | T | — | all hold, stream complete | M1-kafka |
+| kafka-txn | F | T | T | — | all checked ledger invariants hold (publication-stream completeness is **not** a TLC-checked property) | M1-kafka |
 | txn-only | F | F | T | F | **I3Unique fails** (ledger duplicate; stream exactly-once) | M1x |
 | early probe | F | F | F | T | **I4CompleteWhenDone fails** (W2 loss); I3Unique holds | K4/F4b probe, H3 |
 | early+dedup | T | F | F | T | **I4CompleteWhenDone fails**, I3Unique holds → dedup cannot restore a never-written posting | M3-early, H3 |

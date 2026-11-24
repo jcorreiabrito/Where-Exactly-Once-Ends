@@ -1,17 +1,24 @@
-"""Frozen design constants for the WXEO experiment matrix.
+"""Frozen design constants for the WXEO experiment matrix (post-S5 revision).
 
-Every value here is transcribed from the frozen documents and must not be tuned:
+Transcribed from the frozen documents plus the S5 red-team fix pass rulings:
 
   * mechanisms and wire values — ``docs/CONTRACTS.md`` §7, ``docs/AMENDMENT-A1.md`` §1;
   * fault conditions — ``docs/prereg.md`` §2.1, ``docs/method.md`` §5.4;
-  * crash classes K1–K7 and the mechanism × crash-class reachability — ``docs/method.md`` §5.3;
-  * n/a cells — ``docs/prereg.md`` §2.2 (67 executed Stage-B fault cells of 72; 52 executed
-    Stage-A crash cells of 63) and ``docs/method.md`` §5.3 footnotes;
-  * repetitions, loads, partitions — ``docs/prereg.md`` §2.3–§2.6.
+  * crash classes K1–K7 and mechanism × crash-class reachability — ``docs/method.md`` §5.3 as
+    amended by the S5 findings (K6 structurally unrealisable inside the frozen
+    ``max.poll.interval.ms``/T_max window; M1-kafka has no external rewind without breaking the
+    D5 positive control);
+  * Stage-A tokens are canonical upper-case ``K1..K7`` in the run record; the lower-case form is
+    used only inside ``run_id``/``cell_id`` tokens (Kafka-topic legality).
 
 The generator (``experiments/matrix.py``) asserts the resulting counts against the prereg
-arithmetic; if a constant here is wrong the generator fails loudly rather than silently
-changing the design.
+arithmetic **as amended**; if a constant here is wrong the generator fails loudly rather than
+silently changing the design.
+
+S5-review accounting (recorded in results/DEVIATIONS.md and the P2 amendment):
+  pilot 216 planned / 198 executable; Stage A 1,530; Stage B 3,960; Stage C 1,800;
+  validation 26 (20 + 6 G1 gate-control runs).  Totals: 7,506 planned / 7,488 executable
+  + 26 validation.
 """
 
 from __future__ import annotations
@@ -20,21 +27,15 @@ MECHANISMS = [
     "M0", "M1-kafka", "M1x", "M2", "M3", "M4", "M2+M3", "M4+M3", "M1x+M3",
 ]
 
+#: wire values passed to the service (CONTRACTS §7)
+MECH_WIRE = {m: m for m in MECHANISMS}
+
 #: run_id mechanism tokens (docs/P2-RULINGS.md R2; no '+' because Kafka topic names allow
 #: only [a-zA-Z0-9._-])
 MECH_TOKEN = {
-    "M0": "m0",
-    "M1-kafka": "m1-kafka",
-    "M1x": "m1x",
-    "M2": "m2",
-    "M3": "m3",
-    "M4": "m4",
-    "M2+M3": "m2m3",
-    "M4+M3": "m4m3",
-    "M1x+M3": "m1xm3",
+    "M0": "m0", "M1-kafka": "m1-kafka", "M1x": "m1x", "M2": "m2", "M3": "m3", "M4": "m4",
+    "M2+M3": "m2m3", "M4+M3": "m4m3", "M1x+M3": "m1xm3",
 }
-
-MECHWIRE_TO_TOKEN = dict(MECH_TOKEN)
 
 FAULTS = ["F0", "F1", "F2", "F3", "F4a", "F4b", "F5", "F6"]
 
@@ -42,26 +43,32 @@ CRASH_CLASSES = ["K1", "K2", "K3", "K4", "K5", "K6", "K7"]
 
 CONSUMER_INSTANCES = 2
 
-#: Stage A executed crash classes per mechanism (docs/method.md §5.3): R + probe(K4).
-#: K4 is executed only under the ``ordering=early`` probe (D2); it is not "n/a" but "probe".
+#: Stage A executed crash classes per mechanism (docs/method.md §5.3 as revised by S5):
+#: K6 is not experimentally realisable inside the frozen configuration (a zombie writer needs the
+#: owner paused beyond max.poll.interval.ms = 300 s, which exceeds T_max); it is declared n/a for
+#: every mechanism with the reachability proof and reported as model-only in the paper.
+#: M1-kafka K5 is n/a: duplicate delivery without an external rewind cannot occur when effect and
+#: progress are one Kafka transaction, and the external rewind that would force it is excluded by
+#: D5 (it would duplicate the positive control's own ledger).  K4 is executed only under the
+#: ``ordering=early`` probe (D2), appended by :func:`crash_classes`.
 STAGE_A_REACHABLE = {
-    "M0": ["K1", "K2", "K3", "K5", "K6"],           # K4 probe appended below
-    "M1-kafka": ["K1", "K2", "K5", "K6"],           # K3, K4, K7 n/a (single-site atomic)
-    "M1x": ["K1", "K2", "K3", "K5", "K6"],
-    "M2": ["K1", "K2", "K3", "K5", "K6", "K7"],
-    "M3": ["K1", "K2", "K3", "K5", "K6"],
-    "M4": ["K1", "K2", "K5", "K6"],                 # K3, K7 n/a (atomic effect+progress)
-    "M2+M3": ["K1", "K2", "K3", "K5", "K6", "K7"],
-    "M4+M3": ["K1", "K2", "K5", "K6"],
-    "M1x+M3": ["K1", "K2", "K3", "K5", "K6"],
+    "M0": ["K1", "K2", "K3", "K5"],
+    "M1-kafka": ["K1", "K2"],
+    "M1x": ["K1", "K2", "K3", "K5"],
+    "M2": ["K1", "K2", "K3", "K5", "K7"],
+    "M3": ["K1", "K2", "K3", "K5"],
+    "M4": ["K1", "K2", "K5"],
+    "M2+M3": ["K1", "K2", "K3", "K5", "K7"],
+    "M4+M3": ["K1", "K2", "K5"],
+    "M1x+M3": ["K1", "K2", "K3", "K5"],
 }
 
-#: mechanisms for which the K4 W2 probe is reachable (all except M1-kafka: 8 cells)
+#: mechanisms for which the K4 W2 probe is reachable (all except M1-kafka: 8 probe cells)
 K4_PROBE = ["M0", "M1x", "M2", "M3", "M4", "M2+M3", "M4+M3", "M1x+M3"]
 
-#: Stage B / pilot n/a fault cells (docs/prereg.md §2.2: 5 n/a cells / 67 executed)
+#: pilot / Stage-B n/a fault cells (docs/prereg.md §2.2 + S5 F-E4: F6 is n/a for M1-kafka)
 PILOT_NA = {
-    "M1-kafka": {"F4a", "F4b", "F5"},
+    "M1-kafka": {"F4a", "F4b", "F5", "F6"},
     "M4": {"F4b"},
     "M4+M3": {"F4b"},
 }
@@ -73,24 +80,47 @@ NA_REASONS = {
     ("M1-kafka", "F4b"): "n/a: ordering probe needs two distinct commits; M1-kafka has one "
                          "Kafka transaction (docs/method.md §5.3 footnote 1, D2)",
     ("M1-kafka", "F5"): "n/a: no app-DB link to partition (docs/prereg.md §2.2)",
+    ("M1-kafka", "F6"): "n/a (S5 F-E4 / D5): protocol-level replay rewinds the committed offset, "
+                        "which for M1-kafka is its own ledger resume point; forcing reprocessing "
+                        "duplicates the positive control's ledger. External rewind is excluded by "
+                        "D5; reported as a threat, not measured.",
     ("M4", "F4b"): "n/a: effect+progress in one PostgreSQL transaction; early-ordering probe "
                    "is not the canonical M4 mechanism (docs/method.md §5.3 footnote 2, D2)",
     ("M4+M3", "F4b"): "n/a: effect+progress in one PostgreSQL transaction "
                       "(docs/method.md §5.3 footnote 2, D2)",
 }
 
-#: Stage A n/a crash classes per mechanism (for reporting; never executed)
+#: every mechanism × crash-class that is NOT executed, with the reachability reason
 STAGE_A_NA = {
-    "M0": ["K7"],
-    "M1-kafka": ["K3", "K4", "K7"],
-    "M1x": ["K7"],
-    "M2": [],
-    "M3": ["K7"],
-    "M4": ["K3", "K7"],
-    "M2+M3": [],
-    "M4+M3": ["K3", "K7"],
-    "M1x+M3": ["K7"],
+    "M0": {"K6": "K6 n/a: zombie writer not realisable within max.poll.interval.ms=300 s / "
+                  "T_max=300 s (S5 F-E2); model-only",
+           "K7": "K7 n/a: no publication relay for this mechanism"},
+    "M1-kafka": {"K3": "M1-kafka n/a: single-site atomic transaction (method §5.3 fn 1)",
+                 "K4": "M1-kafka n/a: one Kafka transaction, no two-commit ordering",
+                 "K5": "M1-kafka n/a: no external rewind without breaking D5 (S5 F-E1)",
+                 "K6": "K6 n/a: zombie writer not realisable (S5 F-E2)",
+                 "K7": "K7 n/a: M1-kafka publication stream is its ledger, no relay"},
+    "M1x": {"K6": "K6 n/a: zombie writer not realisable (S5 F-E2)",
+            "K7": "K7 n/a: publication written inside the Kafka transaction, no relay"},
+    "M2": {"K6": "K6 n/a: zombie writer not realisable (S5 F-E2)"},
+    "M3": {"K6": "K6 n/a: zombie writer not realisable (S5 F-E2)",
+           "K7": "K7 n/a: inline publication, no relay"},
+    "M4": {"K3": "M4 n/a: effect+progress in one PostgreSQL transaction (method §5.3 fn 2)",
+           "K6": "K6 n/a: zombie writer not realisable (S5 F-E2)",
+           "K7": "K7 n/a: inline publication, no relay"},
+    "M2+M3": {"K6": "K6 n/a: zombie writer not realisable (S5 F-E2)"},
+    "M4+M3": {"K3": "M4+M3 n/a: effect+progress in one PostgreSQL transaction",
+              "K6": "K6 n/a: zombie writer not realisable (S5 F-E2)",
+              "K7": "K7 n/a: inline publication, no relay"},
+    "M1x+M3": {"K6": "K6 n/a: zombie writer not realisable (S5 F-E2)",
+               "K7": "K7 n/a: publication written inside the Kafka transaction, no relay"},
 }
+
+#: crash classes S4 realises itself (no in-process failpoint)
+S4_REALISED_CLASSES = {"K2", "K5"}
+
+#: classes realised by an in-process app failpoint
+APP_FAILPOINT_CLASSES = {"K1", "K3", "K4", "K7"}
 
 
 def crash_classes(mechanism: str) -> list[str]:
@@ -98,44 +128,78 @@ def crash_classes(mechanism: str) -> list[str]:
     classes = list(STAGE_A_REACHABLE[mechanism])
     if mechanism in K4_PROBE:
         classes.append("K4")
-    # keep canonical K1..K7 order
     return [k for k in CRASH_CLASSES if k in classes]
 
 
-def condition_to_fault(condition: str) -> str:
-    """Map a matrix condition token to the run-record ``fault`` value.
+def n_stage_a_cells() -> int:
+    return sum(len(crash_classes(m)) for m in MECHANISMS)
 
-    Pilot/Stage-B conditions are lower-case fault tokens (``f1``), Stage-A conditions are crash
-    classes (``k3``) or ``ctrl``.  Run-record ``fault`` is the upper-case fault/class or ``none``.
-    """
-    c = condition.lower()
-    if c == "ctrl":
+
+def n_stage_b_cells() -> int:
+    return sum(len(FAULTS) - len(STAGE_B_NA.get(m, set())) for m in MECHANISMS)
+
+
+def record_stage(stage_label: str) -> str:
+    """Canonical run-record ``stage`` value from a matrix stage label (S5 F-RN1)."""
+    mapping = {"P": "pilot", "V": "pilot", "A": "A", "B": "B", "C": "C"}
+    if stage_label not in mapping:
+        raise ValueError(f"unknown stage label {stage_label!r}")
+    return mapping[stage_label]
+
+
+def record_fault(condition: str) -> str:
+    """Canonical run-record ``fault`` value from a matrix condition token (S5 F-P4/F-RN1)."""
+    token = str(condition)
+    upper = token.upper()
+    if upper == "CTRL":
         return "none"
-    if c.startswith("f") or c.startswith("k"):
-        return c[0].upper() + c[1:]
-    return condition
+    if upper in ("F4A", "F4B"):
+        return "F4a" if upper == "F4A" else "F4b"
+    if upper in FAULTS:
+        return upper
+    if upper in CRASH_CLASSES:
+        return upper
+    if upper == "NONE":
+        return "none"
+    raise ValueError(f"unknown condition token {condition!r}")
+
+
+def condition_to_fault(condition: str) -> str:
+    """Deprecated alias kept for callers; canonical mapping is :func:`record_fault`."""
+    return record_fault(condition)
 
 
 def validate_design() -> list[str]:
-    """Self-check the frozen design against the prereg arithmetic; returns problems."""
+    """Self-check the frozen design against the amended prereg arithmetic."""
     problems: list[str] = []
     if len(MECHANISMS) != 9:
         problems.append("expected 9 mechanisms")
     if len(FAULTS) != 8:
         problems.append("expected 8 fault conditions")
-    # executed Stage-B cells: 8 per mechanism minus n/a
-    b_cells = sum(len(FAULTS) - len(STAGE_B_NA.get(m, set())) for m in MECHANISMS)
-    if b_cells != 67:
-        problems.append(f"Stage-B executed fault cells {b_cells} != 67")
-    # Stage-A executed crash cells: reachable + K4 probe
-    a_cells = sum(len(crash_classes(m)) for m in MECHANISMS)
-    if a_cells != 52:
-        problems.append(f"Stage-A executed crash cells {a_cells} != 52")
-    # pilot planned: 9*8*3=216; n/a slots 5*3=15
+    if n_stage_b_cells() != 66:
+        problems.append(f"Stage-B executed fault cells {n_stage_b_cells()} != 66")
+    if n_stage_a_cells() != 42:
+        problems.append(f"Stage-A executed crash cells {n_stage_a_cells()} != 42")
     na_cells = sum(len(PILOT_NA.get(m, set())) for m in MECHANISMS)
-    if na_cells != 5:
-        problems.append(f"pilot n/a cells {na_cells} != 5")
+    if na_cells != 6:
+        problems.append(f"pilot n/a cells {na_cells} != 6")
+    for mechanism, classes in STAGE_A_NA.items():
+        reachable = set(crash_classes(mechanism))
+        if reachable & set(classes):
+            problems.append(f"{mechanism}: class both reachable and n/a: "
+                            f"{sorted(reachable & set(classes))}")
+        if (reachable | set(classes)) != set(CRASH_CLASSES):
+            problems.append(f"{mechanism}: crash classes not partitioned into R/n-a")
     return problems
+
+
+#: amended campaign arithmetic (asserted by experiments/matrix.py)
+PILOT_PLANNED = 216
+PILOT_EXECUTABLE = 198
+STAGE_A_RUNS = 42 * 30 + 9 * 30          # crash cells + controls = 1,530
+STAGE_B_RUNS = 66 * 30 + 66 * 10 + 66 * 2 * 10   # core + S1 + S2 = 3,960
+STAGE_C_RUNS = 1_800
+VALIDATION_RUNS = 26
 
 
 if validate_design():

@@ -56,7 +56,7 @@ try {
   $rules = @(
     @{ Name='AWS access key';       Regex='AKIA[0-9A-Z]{16}'; Scope='all' },
     @{ Name='AWS secret key';       Regex='(?i)aws_secret_access_key\s*[:=]\s*[A-Za-z0-9/+=]{40}'; Scope='all' },
-    @{ Name='AWS account id';       Regex='\b\d{12}\b'; Scope='prose' },
+    @{ Name='AWS account id';       Regex='(?i)(aws[_ -]?account|account[_ -]?id|aws_acct)[^0-9]{0,20}\d{12}'; Scope='prose' },
     @{ Name='Private key block';    Regex='-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'; Scope='all' },
     @{ Name='JWT';                  Regex='\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'; Scope='all' },
     @{ Name='GitHub token';         Regex='\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b'; Scope='all' },

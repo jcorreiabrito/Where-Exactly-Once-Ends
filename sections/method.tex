@@ -39,7 +39,10 @@ replaced by recorded process limits and SHA-256 digests of the vendored binaries
 the periodic full-stack restart every 50 runs bounds cross-run interference. Each run
 uses a fresh logical state --- new source and publication topics, a new consumer group,
 and a fresh database schema --- and the identities of every process are recorded so that
-an injector can target a specific one.
+an injector can target a specific one. All of this is recorded per run and released with
+the raw data, so that the deviation from a containerised deployment is inspectable
+rather than asserted: the repository contains the pinned versions, the harness that
+starts the stack, and the per-run configuration digest.
 
 \subsection{Fault injection}
 \label{sec:method:injection}
@@ -93,6 +96,12 @@ the expected multiset. Only when the first three checks pass is $\Omega$ well de
 and the run eligible for analysis. The oracle reads the sink through a read-only role
 and computes the invariants I1--I4 of Table~\ref{tab:invariants} and the verdict of
 Eq.~\eqref{eq:consistency} directly from the dumps.
+
+Writing ground truth before the effect is not a bookkeeping detail: it fixes the
+expected multiset independently of what the pipeline later does, so a run cannot be
+``verified'' against a state that the pipeline itself produced. The digest chain ---
+pre-send file, regenerated set, source dump --- turns any disagreement among the three
+into an invalid run rather than a mechanism verdict.
 
 Two properties of the oracle protect the conclusions. The first is independence: it is a
 separate program in a different language, with no shared code, and ground truth exists
@@ -162,6 +171,12 @@ unattended wall-clock budget of 8--24 hours; if the pilot projection exceeds the
 a fixed cut ladder is applied in order --- the large-load block first, then the partition
 sensitivity block, then repetitions down to the pre-registered floor for correctness
 cells; control cells are never cut.
+
+The execution order is a seeded random permutation with mechanisms interleaved, so that
+drift in the machine is spread across mechanisms rather than confounded with one of
+them, and the realised order is recorded. Repetition seeds are shared across mechanisms
+within a cell: the mechanisms then process the same events with the same injection
+schedule, which reduces variance and permits the paired tests used in the analysis.
 
 \begin{table*}[t]
 \centering

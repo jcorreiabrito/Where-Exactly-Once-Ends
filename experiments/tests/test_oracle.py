@@ -128,7 +128,7 @@ def test_clean_fixture_is_consistent(clean_fixture, tmp_path):
     desc, paths = clean_fixture
     ctx, result = _evaluate(paths, tmp_path)
     assert result["violations"] == {"v1": False, "v2": False, "v3": False, "v4": False,
-                                    "violating_run": False}
+                                    "v5": False, "violating_run": False}
     assert result["attribution"] == []
     assert result["counts"]["dup_postings"] == 0
     assert result["counts"]["lost_postings"] == 0
@@ -141,12 +141,12 @@ def test_clean_fixture_is_consistent(clean_fixture, tmp_path):
 
 
 @pytest.mark.parametrize("defect_class,primary,allowed", [
-    ("drop_row", "I4", {"I1"}),
+    ("drop_row", "I4", {"I1", "I1a"}),
     ("delete_event", "I4", set()),
-    ("duplicate_row", "I3", {"I1"}),
-    ("flip_leg_sign", "I2", {"I1"}),
-    ("update_row_value", "I2", {"I1"}),
-    ("insert_spurious_row", "SPURIOUS", {"I1"}),
+    ("duplicate_row", "I3", {"I1", "I1a"}),
+    ("flip_leg_sign", "I2", {"I1", "I1a", "I1b"}),
+    ("update_row_value", "I2", {"I1", "I1a", "I1b"}),
+    ("insert_spurious_row", "SPURIOUS", {"I1", "I1a"}),
 ])
 def test_single_defect_detected_and_attributed(clean_fixture, tmp_path, defect_class,
                                                primary, allowed):

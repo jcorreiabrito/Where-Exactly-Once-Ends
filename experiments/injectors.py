@@ -1,33 +1,44 @@
-"""F1–F6 fault injectors + fault-receipt protocol (S4-owned; docs/method.md §5.5, CONTRACTS §9).
+"""F1–F6 and Level-1 fault injectors (v2, post-S5 review).
 
 Every injection is a real action on real objects: a Windows process kill, a real Toxiproxy TCP
 cut/timeout, a real consumer-group offset rewind, or an in-process failpoint armed through the
-service CLI.  No simulation, no sleep-and-declare.
+service CLI. No simulation.
 
-Receipt protocol (append-only NDJSON in ``results/faults.log``, one line per *action*)
+Receipt protocol v2 — see :mod:`experiments.receipts` for the single source of truth
 -------------------------------------------------------------------------------------------
-* exactly **one** ``fired`` and **one** ``restored`` receipt per armed injection;
-* the terminal ``crash`` failpoint is the one exception: S3 writes only ``fired`` (then
-  ``Runtime.halt(99)``) and S4 writes the ``restored`` receipt after the instance is restarted —
-  the invariant of one fired + one restored per run still holds;
-* a **sham** run (injector armed, no action) writes ``armed`` + ``restored`` receipts and never a
-  ``fired``; the validator accepts this only for ``injector_mode == "sham"`` validation runs;
-* all timestamps are UTC ISO-8601 with milliseconds; the writer fsyncs each line.
+* **S4-owned** injections (external Level-2 F1/F2/F3/F4a/F5/F6 and the Level-1 classes K2/K5 that
+  are realised by S4 protocol/network actions): S4 writes exactly one ``fired`` **after verifying
+  that the action took effect** (with an ``action_verified`` flag and a ``phase`` block carrying
+  the load window and realised fire time) and exactly one ``restored``.
+* **App-owned** failpoints (K1/K3/K4/K7 and F4b): the Java service writes ``fired`` (and its own
+  ``restored`` for non-terminal actions). For the terminal ``crash`` action S4 writes the
+  matching ``restored`` receipt after the restart; S4 never duplicates a non-terminal restored.
+* **Sham** runs write ``armed`` + ``restored`` and no ``fired``.
 
-Toxiproxy is driven through its HTTP API (stdlib ``urllib`` only).  Proxy names follow S3's
-harness contract: ``kafka-produce`` (app→Kafka produce path), ``kafka-consume`` (app→Kafka
-consumer/offset path), ``db`` (app→PostgreSQL).
+Realisation table (S5 fix pass; recorded in results/DEVIATIONS.md and the P2 amendment):
 
-The injectors are constructed by ``experiments/runner.py`` with a :class:`InjectorContext` whose
-callbacks are the runner's logged operations; nothing here starts a raw JVM or talks to Kafka
-directly except through those documented callbacks.
+| class | realisation | owner |
+|---|---|---|
+| K1 | failpoint ``after_fetch`` crash (no durable trace) | app |
+| K2 | **unknown outcome** (C3/C9): seeded progress marker -> Toxiproxy ``timeout`` toxic on the effect link (DB for DB sinks, ``kafka-produce`` for M1-kafka); the in-flight commit times out with unknown outcome | S4 |
+| K3 | failpoint ``after_effect_commit`` crash (effect durable, progress behind) | app |
+| K4 | ``ordering=early`` probe + failpoint ``before_effect_commit`` crash (progress durable, effect absent) | app |
+| K5 | protocol-level duplicate delivery: stop consumers, rewind the mechanism's own resume point by k batches, restart (C6 without crash) | S4 |
+| K6 | **structurally not realisable** inside the frozen max.poll.interval.ms=300 s / T_max window -> declared n/a with proof, never executed (matrix never emits it) | — |
+| K7 | failpoint ``before_relay_mark`` crash (publication window) | app |
+
+M1-kafka role instantiation (D4, semantic-role targeting): M1-kafka has no separate effect hook;
+for K1 it uses ``after_fetch``; K2 is realised on its producer/transaction commit path with the
+``kafka-produce`` proxy. K3/K4/K5/K6/K7 are structurally n/a for M1-kafka (matrix).
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import random
+import shutil
 import subprocess
 import sys
 import time
@@ -37,7 +48,53 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+try:
+    from experiments import receipts as RCPT
+    from experiments import pathsafe
+except ImportError:  # script execution
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from experiments import receipts as RCPT  # type: ignore
+    from experiments import pathsafe  # type: ignore
+
 FAULTS = ["F0", "F1", "F2", "F3", "F4a", "F4b", "F5", "F6"]
+
+FAILPOINT_NAMES = [
+    "after_fetch", "before_effect_commit", "after_effect_commit", "before_progress_commit",
+    "after_progress_commit", "before_publish", "before_relay_mark",
+]
+
+#: Level-1 class -> app failpoint (canonical upper-case keys; tokens are normalised on input)
+CRASH_CLASS_FAILPOINT = {
+    "K1": {"name": "after_fetch", "action": "crash"},
+    "K3": {"name": "after_effect_commit", "action": "crash"},
+    "K4": {"name": "before_effect_commit", "action": "crash"},
+    "K7": {"name": "before_relay_mark", "action": "crash"},
+}
+
+#: classes realised by S4 external actions (no app failpoint)
+S4_REALISED_CLASSES = {"K2", "K5"}
+
+#: declared structurally unreachable crash classes with the reachability proof (S5 F-E2)
+STRUCTURALLY_UNREACHABLE = {
+    "K6": "zombie writer C7 requires the owner to be paused beyond max.poll.interval.ms = 300 s, "
+          "which exceeds T_max = 300 s and would violate the frozen shared configuration; "
+          "declared n/a with the reachability proof and reported as model-only in the paper",
+}
+
+#: M1-kafka semantic-role instantiation for Level-1 failpoints (D4)
+M1KAFKA_FAILPOINT = {
+    "K1": {"name": "after_fetch", "action": "crash"},
+}
+
+#: terminal failpoint actions
+TERMINAL_ACTIONS = RCPT.TERMINAL_ACTIONS
+
+TOXIPROXY_DEFAULT = "http://127.0.0.1:8474"
+MAX_POLL_RECORDS = 500   # docs/method.md §4.11 batch size (k-batch rewind unit)
+
+
+class InjectionNotVerified(RuntimeError):
+    """The injector action did not demonstrably take effect; no ``fired`` receipt is written."""
 
 
 # --------------------------------------------------------------------------------------------
@@ -52,39 +109,43 @@ def utc_now_ms() -> int:
 
 
 class ReceiptLog:
-    """Append-only NDJSON fault-receipt writer with per-line fsync."""
+    """Append-only NDJSON fault-receipt writer with per-line fsync (source-tagged)."""
 
     def __init__(self, path: str):
         self.path = os.path.abspath(path)
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
     def append(self, *, run_id: str, fault: str, event: str, detail: str,
-               level: str = "L2", seed: str | None = None, phase_marker: str | None = None,
-               scheduled_ms: int | None = None, actual_ms: int | None = None,
-               before: dict | None = None, after: dict | None = None,
-               target_role: str | None = None, target_id: str | None = None,
-               action: str | None = None, result: str | None = None,
-               notes: str | None = None) -> dict:
+               source: str = "s4", level: str = "L2", seed: str | None = None,
+               phase_marker: str | None = None, scheduled_ms: int | None = None,
+               actual_ms: int | None = None, before: dict | None = None,
+               after: dict | None = None, target_role: str | None = None,
+               target_id: str | None = None, action: str | None = None,
+               action_verified: bool | None = None, phase: dict | None = None,
+               result: str | None = None, notes: str | None = None) -> dict:
         record = {
             "ts_utc": utc_now_iso(),
             "run_id": run_id,
             "fault": fault,
             "level": level,
             "event": event,
+            "source": source,
             "target_role": target_role,
             "target_id": target_id,
             "phase_marker": phase_marker,
             "scheduled_ms": scheduled_ms,
             "actual_ms": actual_ms,
             "action": action,
-            "result": result or event,
+            "action_verified": action_verified,
+            "phase": phase,
             "before": before,
             "after": after,
             "seed": seed,
             "detail": detail,
+            "result": result or event,
             "notes": notes,
         }
-        line = json.dumps(record, separators=(",", ":")) + "\n"
+        line = json.dumps(pathsafe.scrub(record), separators=(",", ":")) + "\n"
         with open(self.path, "a", encoding="utf-8", newline="") as fh:
             fh.write(line)
             fh.flush()
@@ -93,7 +154,7 @@ class ReceiptLog:
 
 
 def read_receipts(path: str) -> list[dict]:
-    if not os.path.exists(path):
+    if not path or not os.path.exists(path):
         return []
     out = []
     with open(path, "r", encoding="utf-8") as fh:
@@ -107,33 +168,13 @@ def read_receipts(path: str) -> list[dict]:
     return out
 
 
-def validate_receipts(receipts: list[dict], *, run_id: str, injector_mode: str) -> dict:
-    """G4 attestation for one run: exactly one fired + one restored (sham: armed + restored).
-
-    Returns ``{attested, reason, fired, restored, sham, receipts}``.
-    """
-    mine = [r for r in receipts if r.get("run_id") == run_id and "malformed" not in r]
-    fired = [r for r in mine if r.get("event") == "fired"]
-    restored = [r for r in mine if r.get("event") == "restored"]
-    armed = [r for r in mine if r.get("event") == "armed"]
-    detail = {"fired": len(fired), "restored": len(restored), "armed": len(armed),
-              "receipts": len(mine)}
-    if injector_mode in ("none", "fixture"):
-        return {"attested": True, "reason": None, "sham": False, **detail}
-    if injector_mode == "sham":
-        ok = len(armed) == 1 and len(restored) == 1 and len(fired) == 0
-        return {
-            "attested": ok,
-            "reason": None if ok else "sham run must have exactly one armed + one restored "
-                                      "receipt and no fired receipt",
-            "sham": True, **detail,
-        }
-    ok = len(fired) == 1 and len(restored) == 1
-    reason = None
-    if not ok:
-        reason = (f"expected exactly one fired and one restored receipt, got "
-                  f"fired={len(fired)} restored={len(restored)}")
-    return {"attested": ok, "reason": reason, "sham": False, **detail}
+def validate_receipts(receipts: list[dict], *, run_id: str, injector_mode: str,
+                      fault: str = "", fault_level: str = "", failpoint: str | None = None,
+                      action: str | None = None) -> dict:
+    """Delegate to the single-source-of-truth protocol module."""
+    return RCPT.validate_run_receipts(
+        receipts, run_id=run_id, injector_mode=injector_mode, fault=fault,
+        fault_level=fault_level, failpoint=failpoint, action=action)
 
 
 # --------------------------------------------------------------------------------------------
@@ -162,11 +203,14 @@ def _http(method: str, url: str, payload: dict | None = None, timeout: float = 1
 
 
 class Toxiproxy:
-    def __init__(self, api_url: str = "http://127.0.0.1:8474"):
+    def __init__(self, api_url: str = TOXIPROXY_DEFAULT):
         self.api_url = api_url.rstrip("/")
 
     def proxies(self) -> dict:
         return _http("GET", f"{self.api_url}/proxies")
+
+    def get(self, proxy: str) -> dict:
+        return _http("GET", f"{self.api_url}/proxies/{proxy}")
 
     def set_enabled(self, proxy: str, enabled: bool) -> dict:
         return _http("POST", f"{self.api_url}/proxies/{proxy}", {"enabled": enabled})
@@ -180,12 +224,20 @@ class Toxiproxy:
     def toxics(self, proxy: str) -> list:
         return _http("GET", f"{self.api_url}/proxies/{proxy}/toxics")
 
+    def toxic_present(self, proxy: str, name: str) -> bool:
+        try:
+            return any(t.get("name") == name for t in self.toxics(proxy))
+        except ToxiproxyError:
+            return False
+
+    def is_enabled(self, proxy: str) -> bool:
+        return bool(self.get(proxy).get("enabled", True))
+
     def wait_healthy(self, proxy: str, timeout_s: float = 30.0) -> bool:
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             try:
-                info = _http("GET", f"{self.api_url}/proxies/{proxy}")
-                if info.get("enabled", True):
+                if self.is_enabled(proxy):
                     return True
             except ToxiproxyError:
                 pass
@@ -194,36 +246,43 @@ class Toxiproxy:
 
 
 # --------------------------------------------------------------------------------------------
-# context handed in by the runner
+# runner-provided context
 # --------------------------------------------------------------------------------------------
 @dataclass
 class InjectorContext:
-    """Everything an injector may touch; all operations are the runner's logged commands."""
+    """Everything an injector may touch; all stack operations are runner-provided callables."""
 
     run_id: str
     mechanism: str
     ordering_variant: str
-    fault: str
-    fault_level: str            # L1 | L2 | none
-    injector_mode: str          # live | sham | failpoint | selftest | fixture | none
+    fault: str                    # canonical token (K3, F1, ...) or lower-case matrix token
+    fault_level: str              # L1 | L2 | none
+    injector_mode: str            # live | sham | failpoint | selftest | fixture | none
     seed_hex: str
     scratch_dir: str
     faults_log: str
     bootstrap: str
-    toxiproxy_api: str = "http://127.0.0.1:8474"
+    toxiproxy_api: str = TOXIPROXY_DEFAULT
     stack_state_path: str = ""
     native_stack_ps1: str = ""
     kafka_home: str = ""
     java_exe: str = "java"
     db_dsn: str = ""
+    admin_dsn: str = ""
     run_log: Callable[..., Any] = lambda *a, **k: None
-    call: Callable[..., subprocess.CompletedProcess] = None  # runner's logged subprocess runner
+    call: Callable[..., subprocess.CompletedProcess] = None  # type: ignore[assignment]
     restart_service: Callable[..., int] | None = None
     stop_consumers: Callable[..., None] | None = None
     start_consumers: Callable[..., None] | None = None
     wait_group_stable: Callable[..., bool] | None = None
     wait_isr: Callable[..., bool] | None = None
+    progress_probe: Callable[[], int] | None = None        # committed progress marker
+    rewind_progress: Callable[[int], dict] | None = None   # k-batch rewind for K5/F6
+    verify_broker_count: Callable[[], int] | None = None
     consumer_pids: dict[int, int] = field(default_factory=dict)
+    # phase bookkeeping set by the runner while the load generator runs
+    load_start_ms: int | None = None
+    load_end_ms: int | None = None
     extra: dict = field(default_factory=dict)
 
 
@@ -234,30 +293,47 @@ class Injector:
     fault = "?"
     level = "L2"
     description = ""
+    owns_receipts = True     # False for app-failpoint watchers (app owns fired)
 
     def __init__(self, ctx: InjectorContext):
         self.ctx = ctx
         self.receipts = ReceiptLog(ctx.faults_log)
         self.rng = random.Random(int.from_bytes(
-            __import__("hashlib").sha256(
-                f"inj|{ctx.seed_hex}|{ctx.fault}|{ctx.mechanism}".encode()).digest()[:8], "big"))
+            hashlib.sha256(f"inj|{ctx.seed_hex}|{ctx.fault}|{ctx.mechanism}".encode()).digest()[:8],
+            "big"))
         self.state: dict = {}
         self._fired = False
         self._restored = False
         self.scheduled_ms: int | None = None
         self.actual_ms: int | None = None
+        self.canonical_fault = _canonical_fault(ctx.fault)
 
     # -- receipt helpers ------------------------------------------------------------------
     def _receipt(self, event: str, detail: str, **kw) -> dict:
         return self.receipts.append(
-            run_id=self.ctx.run_id, fault=self.fault, event=event, detail=detail,
-            level=self.level, seed=self.ctx.seed_hex, scheduled_ms=self.scheduled_ms,
-            actual_ms=self.actual_ms, **kw,
-        )
+            run_id=self.ctx.run_id, fault=kw.pop("fault", self.canonical_fault),
+            event=event, detail=detail, level=self.level, seed=self.ctx.seed_hex,
+            scheduled_ms=kw.pop("scheduled_ms", self.scheduled_ms),
+            actual_ms=kw.pop("actual_ms", self.actual_ms), **kw)
+
+    def _phase(self) -> dict:
+        fire = utc_now_ms()
+        start = self.ctx.load_start_ms
+        end = self.ctx.load_end_ms
+        outside = None
+        if isinstance(start, int) and isinstance(end, int):
+            outside = not (start <= fire <= end)
+        return {
+            "load_start_ms": start,
+            "load_end_ms": end,
+            "fire_ms": fire,
+            "consumers_alive": self.ctx.extra.get("consumers_alive", True),
+            "progress_marker": self.ctx.extra.get("progress_marker"),
+            "outside_window": outside,
+        }
 
     # -- interface ------------------------------------------------------------------------
     def arm(self) -> "Injector":
-        """Prepare the injection (record target, optional sham no-op); no action yet."""
         if self.ctx.injector_mode == "sham":
             self._receipt("armed", "sham: injector armed, no action (validation run)",
                           target_role=self.target_role(), result="armed", action="sham-arm")
@@ -266,28 +342,41 @@ class Injector:
         self._arm()
         return self
 
-    def trigger_and_fire(self, *, wait: Callable[[], bool] | None = None) -> dict:
-        """Wait for the trigger (if any) then perform the injection; writes the fired receipt."""
+    def fire(self) -> dict:
+        """Perform and verify the injection, then write exactly one ``fired`` receipt."""
         if self.ctx.injector_mode == "sham":
             return {"fired": False, "sham": True}
-        if wait is not None:
-            wait()
         self.scheduled_ms = utc_now_ms()
         detail, before, after = self._fire()
         self.actual_ms = utc_now_ms()
+        verified, verify_detail = self._verify(before, after)
+        if not verified:
+            raise InjectionNotVerified(
+                f"{self.canonical_fault}: action not verified ({verify_detail}); "
+                f"no fired receipt written")
+        phase = self._phase()
         self._fired = True
-        self._restore_after_fire()
-        return {"fired": True, "detail": detail, "before": before, "after": after}
+        receipt = self._receipt(
+            "fired", detail, target_role=self.target_role(), target_id=self.state.get("target_id"),
+            before=before, after=after, action=self.action_name(),
+            action_verified=True, phase=phase, result="fired",
+            notes=(None if phase.get("outside_window") in (None, False)
+                   else "fire outside the load window: uninformative_fire_outside_window"),
+        )
+        self._after_fire()
+        return {"fired": True, "receipt": receipt, "phase": phase, "verified": verify_detail}
+
+    def wait_for_app_fired(self, timeout_s: float = 180.0) -> dict:
+        """Wait for the app-owned ``fired`` receipt (used by failpoint watchers)."""
+        raise NotImplementedError
 
     def restore(self) -> dict:
-        """Restore the system and write the restored receipt (idempotent)."""
         if self.ctx.injector_mode == "sham":
             receipt = self._receipt("restored", "sham: disarmed, system untouched",
                                     target_role=self.target_role(), result="restored",
                                     action="sham-disarm")
             return {"restored": True, "sham": True, "receipt": receipt}
         if not self._fired:
-            # armed but never fired: system was never touched; still close the injection
             self._receipt("restored", "injection never fired; nothing to restore",
                           target_role=self.target_role(), result="restored",
                           action="no-op-restore")
@@ -297,14 +386,16 @@ class Injector:
             return {"restored": True, "already": True}
         detail, after = self._restore()
         receipt = self._receipt("restored", detail, target_role=self.target_role(),
-                                result="restored", action=self.restore_action(),
-                                after=after)
+                                after=after, result="restored", action=self.restore_action())
         self._restored = True
         return {"restored": True, "receipt": receipt}
 
     # -- subclass hooks -------------------------------------------------------------------
     def target_role(self) -> str:
         return "unknown"
+
+    def action_name(self) -> str:
+        return self.fault
 
     def restore_action(self) -> str:
         return "restore"
@@ -315,63 +406,90 @@ class Injector:
     def _fire(self) -> tuple[str, dict | None, dict | None]:
         raise NotImplementedError
 
+    def _verify(self, before, after) -> tuple[bool, dict]:
+        return True, {"note": "no explicit verification for this action"}
+
+    def _after_fire(self) -> None:
+        return None
+
     def _restore(self) -> tuple[str, dict | None]:
         raise NotImplementedError
 
-    def _restore_after_fire(self) -> None:
-        """Actions that must be performed immediately after firing (before final restore)."""
-        return None
+
+def _canonical_fault(fault: str) -> str:
+    token = str(fault or "").strip()
+    upper = token.upper()
+    for prefix in ("F", "K"):
+        if upper.startswith(prefix) and upper not in ("",):
+            # F4a/F4b keep their letter suffix
+            if upper in ("F0", "F1", "F2", "F3", "F4A", "F4B", "F5", "F6"):
+                return upper.replace("F4A", "F4a").replace("F4B", "F4b")
+            if upper in ("K1", "K2", "K3", "K4", "K5", "K6", "K7"):
+                return upper
+    return token
 
 
 # --------------------------------------------------------------------------------------------
-# F1 — Kafka broker killed mid-produce
+# F1 — broker killed mid-produce (verified dead; restore waits brokers=3 and ISR=3)
 # --------------------------------------------------------------------------------------------
 class F1BrokerKill(Injector):
     fault = "F1"
-    description = "kill one Kafka broker process mid-produce; restart it; wait ISR=3"
+    description = "kill one Kafka broker process mid-produce; restart it; wait brokers=3, ISR=3"
 
     def target_role(self) -> str:
         return "broker"
 
+    def action_name(self) -> str:
+        return "taskkill /F (broker)"
+
     def _arm(self) -> None:
-        state = _read_json(self.ctx.stack_state_path)
-        brokers = state.get("brokers") or state.get("kafka") or []
+        state = _read_json(self.ctx.stack_state_path) or {}
+        brokers = ((state.get("components") or {}).get("kafka") or {}).get("nodes") or []
         if not brokers:
-            raise RuntimeError("stack-state.json has no broker pids; cannot arm F1")
+            raise RuntimeError("stack-state.json has no running Kafka nodes; cannot arm F1")
         target = self.rng.choice(brokers)
-        self.state["target"] = target
-        self.state["broker_count_before"] = len(brokers)
+        self.state.update(target=target, target_id=str(target.get("id")))
 
     def _fire(self):
         target = self.state["target"]
         pid = int(target["pid"])
-        node_id = target.get("node_id", target.get("nodeId"))
-        before = {"node_id": node_id, "pid": pid, "brokers": self.state["broker_count_before"]}
-        cmd = ["taskkill", "/F", "/PID", str(pid)]
-        self.ctx.call(cmd, check=False)
-        deadline = time.monotonic() + 30
-        while time.monotonic() < deadline and _pid_alive(pid):
-            time.sleep(0.2)
-        return (f"killed broker node {node_id} pid {pid}", before,
-                {"pid_alive_after": _pid_alive(pid)})
+        before = {"node_id": target.get("id"), "pid": pid,
+                  "broker_count": self._broker_count()}
+        self.ctx.call(["taskkill", "/F", "/PID", str(pid)], check=False)
+        self.state["after_kill_count"] = self._broker_count()
+        return (f"killed broker node {target.get('id')} pid {pid}", before,
+                {"broker_count": self.state["after_kill_count"]})
+
+    def _broker_count(self) -> int:
+        if self.ctx.verify_broker_count is not None:
+            try:
+                return int(self.ctx.verify_broker_count())
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            state = _read_json(self.ctx.stack_state_path) or {}
+            return len(((state.get("components") or {}).get("kafka") or {}).get("nodes") or [])
+        except Exception:  # noqa: BLE001
+            return 0
+
+    def _verify(self, before, after):
+        pid = int(self.state["target"]["pid"])
+        dead = not _pid_alive(pid)
+        reduced = self._broker_count() < int(before.get("broker_count") or 3)
+        return (dead and reduced), {"pid_dead": dead, "broker_count": self._broker_count()}
 
     def _restore(self):
-        self.ctx.run_log("restore F1: start-kafka + wait ISR=3")
+        self.ctx.run_log("restore F1: start-kafka + brokers=3 + ISR=3")
         self.ctx.call([self.ctx.native_stack_ps1, "start-kafka"], check=False)
         ok_count = _wait(lambda: self._broker_count() >= 3, timeout=120)
         ok_isr = True
         source_topic = self.ctx.extra.get("source_topic")
         if source_topic and self.ctx.wait_isr:
             ok_isr = self.ctx.wait_isr(source_topic, 3, timeout=120)
-        return (f"broker restarted; brokers>=3={ok_count} isr=3={ok_isr}",
+        if not (ok_count and ok_isr):
+            raise RuntimeError(f"F1 restore failed: brokers>=3={ok_count} isr3={ok_isr}")
+        return (f"broker restarted; brokers=3={ok_count} isr=3={ok_isr}",
                 {"brokers": self._broker_count(), "isr_ok": ok_isr})
-
-    def _broker_count(self) -> int:
-        try:
-            state = _read_json(self.ctx.stack_state_path)
-            return len(state.get("brokers") or state.get("kafka") or [])
-        except Exception:  # noqa: BLE001 - liveness probe
-            return 0
 
 
 # --------------------------------------------------------------------------------------------
@@ -384,23 +502,26 @@ class F2ConsumerKill(Injector):
     def target_role(self) -> str:
         return "consumer"
 
+    def action_name(self) -> str:
+        return "taskkill /F (consumer)"
+
     def _arm(self) -> None:
         pids = dict(self.ctx.consumer_pids)
         if not pids:
             raise RuntimeError("no consumer pids available; cannot arm F2")
         victim = self.rng.choice(sorted(pids))
-        self.state["victim"] = victim
-        self.state["pid"] = pids[victim]
+        self.state.update(victim=victim, pid=int(pids[victim]), target_id=str(victim))
 
     def _fire(self):
         victim = self.state["victim"]
         pid = int(self.state["pid"])
-        before = {"instance": victim, "pid": pid}
         self.ctx.call(["taskkill", "/F", "/PID", str(pid)], check=False)
-        deadline = time.monotonic() + 30
-        while time.monotonic() < deadline and _pid_alive(pid):
-            time.sleep(0.2)
-        return f"killed consumer instance {victim} pid {pid}", before, {"pid_alive": _pid_alive(pid)}
+        return f"killed consumer instance {victim} pid {pid}", {"instance": victim, "pid": pid}, {
+            "pid_alive": _pid_alive(pid)}
+
+    def _verify(self, before, after):
+        dead = not _pid_alive(int(self.state["pid"]))
+        return dead, {"pid_dead": dead, "instance": self.state["victim"]}
 
     def _restore(self):
         victim = self.state["victim"]
@@ -408,17 +529,19 @@ class F2ConsumerKill(Injector):
             raise RuntimeError("runner did not provide restart_service for F2")
         new_pid = self.ctx.restart_service(victim)
         stable = self.ctx.wait_group_stable(timeout=120) if self.ctx.wait_group_stable else True
+        if not stable:
+            raise RuntimeError("F2 restore: consumer group did not stabilise")
         return (f"consumer instance {victim} restarted pid={new_pid} group_stable={stable}",
                 {"instance": victim, "new_pid": new_pid, "group_stable": stable})
 
 
 # --------------------------------------------------------------------------------------------
-# F3 — produce timeout / unknown outcome (Toxiproxy timeout toxic on app->Kafka produce path)
+# F3 — produce timeout with unknown outcome (timeout toxic on the produce path)
 # --------------------------------------------------------------------------------------------
 class F3ProduceTimeout(Injector):
     fault = "F3"
-    description = "timeout toxic on the produce path so produce/commit outcome is unknown"
-    T_HOLD_S = 5.0
+    description = "timeout toxic on the produce path so the produce/commit outcome is unknown"
+    T_HOLD_S = 3.0
 
     def __init__(self, ctx: InjectorContext):
         super().__init__(ctx)
@@ -427,22 +550,27 @@ class F3ProduceTimeout(Injector):
     def target_role(self) -> str:
         return "app-kafka-produce-link"
 
+    def action_name(self) -> str:
+        return "toxiproxy timeout toxic (produce)"
+
     def _arm(self) -> None:
-        self.state["proxy"] = self.ctx.extra.get("produce_proxy", "kafka-produce")
-        self.state["toxic_name"] = f"wxeo-f3-{self.ctx.run_id}"
-        self.state["timeout_ms"] = 5000
+        self.state.update(proxy=self.ctx.extra.get("produce_proxy", "kafka-produce"),
+                          toxic_name=f"wxeo-f3-{self.ctx.run_id}", timeout_ms=5000,
+                          target_id=self.ctx.extra.get("produce_proxy", "kafka-produce"))
 
     def _fire(self):
-        toxic = {
-            "name": self.state["toxic_name"],
-            "type": "timeout",
-            "stream": "downstream",
-            "attributes": {"timeout": self.state["timeout_ms"]},
-        }
+        toxic = {"name": self.state["toxic_name"], "type": "timeout", "stream": "downstream",
+                 "attributes": {"timeout": self.state["timeout_ms"]}}
         self.toxiproxy.add_toxic(self.state["proxy"], toxic)
-        return (f"added timeout toxic {self.state['toxic_name']} to "
-                f"{self.state['proxy']} (timeout={self.state['timeout_ms']}ms)",
+        return (f"added timeout toxic {self.state['toxic_name']} on {self.state['proxy']}",
                 {"proxy": self.state["proxy"]}, {"toxic": toxic})
+
+    def _verify(self, before, after):
+        present = self.toxiproxy.toxic_present(self.state["proxy"], self.state["toxic_name"])
+        return present, {"toxic_present": present}
+
+    def _after_fire(self) -> None:
+        time.sleep(self.T_HOLD_S)
 
     def restore_action(self) -> str:
         return "remove toxic + verify proxy health"
@@ -450,16 +578,18 @@ class F3ProduceTimeout(Injector):
     def _restore(self):
         try:
             self.toxiproxy.remove_toxic(self.state["proxy"], self.state["toxic_name"])
-        except ToxiproxyError as exc:
+        except ToxiproxyError as exc:  # pragma: no cover
             if "404" not in str(exc):
                 raise
         healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
+        if not healthy:
+            raise RuntimeError("F3 restore: proxy did not become healthy")
         return (f"removed toxic; proxy healthy={healthy}",
                 {"proxy_healthy": healthy, "toxics": self.toxiproxy.toxics(self.state["proxy"])})
 
 
 # --------------------------------------------------------------------------------------------
-# F4a — DB commit succeeded + offset commit failed (cut app->Kafka consumer link)
+# F4a — effect durable + offset commit cannot persist (cut app->Kafka consumer link)
 # --------------------------------------------------------------------------------------------
 class F4aOffsetCommitFailure(Injector):
     fault = "F4a"
@@ -473,83 +603,43 @@ class F4aOffsetCommitFailure(Injector):
     def target_role(self) -> str:
         return "app-kafka-consume-link"
 
+    def action_name(self) -> str:
+        return "toxiproxy disable (consumer link)"
+
     def _arm(self) -> None:
-        self.state["proxy"] = self.ctx.extra.get("consume_proxy", "kafka-consume")
+        self.state.update(proxy=self.ctx.extra.get("consume_proxy", "kafka-consume"),
+                          target_id=self.ctx.extra.get("consume_proxy", "kafka-consume"))
 
     def _fire(self):
         self.toxiproxy.set_enabled(self.state["proxy"], False)
-        return (f"disabled proxy {self.state['proxy']} (offset commits cannot persist)",
-                {"proxy_enabled": True}, {"proxy_enabled": False})
+        return (f"disabled proxy {self.state['proxy']}", {"enabled": True}, {"enabled": False})
 
-    def _restore_after_fire(self) -> None:
-        time.sleep(self.T_HOLD_S)  # bounded cut window per docs/method.md §5.5
+    def _verify(self, before, after):
+        disabled = not self.toxiproxy.is_enabled(self.state["proxy"])
+        return disabled, {"proxy_enabled": not disabled}
+
+    def _after_fire(self) -> None:
+        time.sleep(self.T_HOLD_S)
 
     def restore_action(self) -> str:
-        return "enable link + verify proxy health + wait offset retry"
+        return "enable link + verify health + wait group stable"
 
     def _restore(self):
         self.toxiproxy.set_enabled(self.state["proxy"], True)
         healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
         stable = self.ctx.wait_group_stable(timeout=60) if self.ctx.wait_group_stable else True
+        if not healthy:
+            raise RuntimeError("F4a restore: proxy did not become healthy")
         return (f"re-enabled {self.state['proxy']}; healthy={healthy} group_stable={stable}",
                 {"proxy_enabled": True, "proxy_healthy": healthy, "group_stable": stable})
 
 
 # --------------------------------------------------------------------------------------------
-# F4b — ordering probe (early ordering) + effect-commit failure (Level 1, via S3 failpoint)
-# --------------------------------------------------------------------------------------------
-class F4bOrderingProbe(Injector):
-    fault = "F4b"
-    description = ("ordering=early probe: progress committed before effect; the effect commit is "
-                   "aborted by the S3 failpoint before_effect_commit (crash/abort_txn)")
-    level = "L1"
-
-    def target_role(self) -> str:
-        return "app-failpoint"
-
-    def _arm(self) -> None:
-        if self.ctx.ordering_variant != "early":
-            raise RuntimeError("F4b requires ordering=early (armed at service start)")
-        self.state["failpoint"] = "before_effect_commit"
-        self.state["action"] = self.ctx.extra.get("failpoint_action", "crash")
-        self.state["after"] = int(self.ctx.extra.get("failpoint_after", 1))
-
-    def _fire(self):
-        """The failpoint fires inside the service; S4 waits for the S3-fired receipt."""
-        deadline = time.monotonic() + float(self.ctx.extra.get("failpoint_timeout_s", 120))
-        found = None
-        while time.monotonic() < deadline:
-            for receipt in read_receipts(self.ctx.faults_log):
-                if (receipt.get("run_id") == self.ctx.run_id
-                        and receipt.get("fault") == self.state["failpoint"]
-                        and receipt.get("event") == "fired"):
-                    found = receipt
-                    break
-            if found:
-                break
-            time.sleep(0.1)
-        if not found:
-            raise RuntimeError("F4b failpoint did not fire (no S3 receipt within timeout)")
-        return (f"failpoint {self.state['failpoint']} fired with action {self.state['action']}",
-                None, {"failpoint_receipt": found})
-
-    def _restore(self):
-        stable = True
-        if self.ctx.restart_service is not None:
-            self.ctx.restart_service(1)
-            self.ctx.restart_service(2)
-        if self.ctx.wait_group_stable:
-            stable = self.ctx.wait_group_stable(timeout=120)
-        return (f"instances restarted after failpoint; group_stable={stable}",
-                {"group_stable": stable})
-
-
-# --------------------------------------------------------------------------------------------
-# F5 — network partition app<->DB (Toxiproxy disable on the db proxy)
+# F5 — network partition app<->DB
 # --------------------------------------------------------------------------------------------
 class F5DbPartition(Injector):
     fault = "F5"
-    description = "blackhole the app->PostgreSQL link during a commit, then restore it"
+    description = "blackhole the app->PostgreSQL link, then restore it"
     T_HOLD_S = 3.0
 
     def __init__(self, ctx: InjectorContext):
@@ -559,23 +649,33 @@ class F5DbPartition(Injector):
     def target_role(self) -> str:
         return "app-db-link"
 
+    def action_name(self) -> str:
+        return "toxiproxy disable (db link)"
+
     def _arm(self) -> None:
-        self.state["proxy"] = self.ctx.extra.get("db_proxy", "db")
+        self.state.update(proxy=self.ctx.extra.get("db_proxy", "db"),
+                          target_id=self.ctx.extra.get("db_proxy", "db"))
 
     def _fire(self):
         self.toxiproxy.set_enabled(self.state["proxy"], False)
-        return (f"disabled db proxy {self.state['proxy']} (app<->PostgreSQL partition)",
-                {"proxy_enabled": True}, {"proxy_enabled": False})
+        return (f"disabled db proxy {self.state['proxy']}", {"enabled": True},
+                {"enabled": False})
 
-    def _restore_after_fire(self) -> None:
+    def _verify(self, before, after):
+        disabled = not self.toxiproxy.is_enabled(self.state["proxy"])
+        return disabled, {"proxy_enabled": not disabled}
+
+    def _after_fire(self) -> None:
         time.sleep(self.T_HOLD_S)
 
     def restore_action(self) -> str:
-        return "enable db link + wait health + readiness probe"
+        return "enable db link + wait health"
 
     def _restore(self):
         self.toxiproxy.set_enabled(self.state["proxy"], True)
         healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
+        if not healthy:
+            raise RuntimeError("F5 restore: db proxy did not become healthy")
         return (f"db link re-enabled; healthy={healthy}",
                 {"proxy_enabled": True, "proxy_healthy": healthy})
 
@@ -586,196 +686,399 @@ class F5DbPartition(Injector):
 class F6DuplicateRedelivery(Injector):
     fault = "F6"
     description = ("stop consumers, rewind the mechanism's own resume point by k batches, "
-                   "restart -> duplicate redelivery of already-processed records (protocol-level "
-                   "only; D5)")
+                   "restart -> duplicate redelivery of already-processed records (D5, "
+                   "protocol-level only; n/a for M1-kafka)")
 
     def target_role(self) -> str:
         return "consumer-progress"
 
+    def action_name(self) -> str:
+        return "k-batch progress rewind (write-capable admin role)"
+
     def _arm(self) -> None:
-        self.state["k"] = int(self.ctx.extra.get("rewind_batches", 2))
-        self.state["mechanism_is_m4"] = self.ctx.mechanism in ("M4", "M4+M3")
+        if self.ctx.mechanism == "M1-kafka":
+            raise RuntimeError("F6 is n/a for M1-kafka (D5): external rewind would duplicate the "
+                               "positive control's own ledger; the matrix never emits this cell")
+        self.state["k_batches"] = int(self.ctx.extra.get("rewind_batches", 2))
+        self.state["target_id"] = self.ctx.mechanism
 
     def _fire(self):
-        if self.ctx.stop_consumers is None:
-            raise RuntimeError("runner did not provide stop_consumers for F6")
+        if self.ctx.stop_consumers is None or self.ctx.rewind_progress is None:
+            raise RuntimeError("runner did not provide stop_consumers/rewind_progress for F6")
         self.ctx.stop_consumers()
-        before = {"k_batches": self.state["k"]}
-        if self.state["mechanism_is_m4"]:
-            # M4 family: the resume point is the DB progress table
-            sql = ("UPDATE consumer_progress SET next_offset = GREATEST(0, next_offset - "
-                   f"{int(self.state['k'])})")
-            self.ctx.call([self.ctx.extra["psql"], "-d", self.ctx.extra["db_dsn"], "-c", sql],
-                          check=True)
-            before["progress_update"] = sql
-        else:
-            cmd = [
-                self.ctx.java_exe, "-cp", os.path.join(self.ctx.kafka_home, "libs", "*"),
-                "kafka.admin.ConsumerGroupCommand",
-                "--bootstrap-server", self.ctx.bootstrap,
-                "--group", self.ctx.extra["consumer_group"],
-                "--reset-offsets", "--shift-by", f"-{int(self.state['k'])}",
-                "--all-topics", "--execute",
-            ]
-            self.ctx.call(cmd, check=True)
-            before["offset_rewind"] = " ".join(cmd)
-        return (f"consumers stopped; resume point rewound by {self.state['k']} batches",
-                before, None)
+        before = {"next_offsets_or_progress": self._progress_snapshot()}
+        rewind = self.ctx.rewind_progress(int(self.state["k_batches"]))
+        after = self._progress_snapshot()
+        self.state["rewind"] = rewind
+        return (f"consumers stopped; resume point rewound by {self.state['k_batches']} batches "
+                f"({int(self.state['k_batches']) * MAX_POLL_RECORDS} events)", before, after)
+
+    def _progress_snapshot(self):
+        if self.ctx.progress_probe is None:
+            return None
+        try:
+            return int(self.ctx.progress_probe())
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _verify(self, before, after):
+        ok = bool(self.state.get("rewind", {}).get("moved"))
+        return ok, {"rewind": self.state.get("rewind"), "after": after}
 
     def _restore(self):
         if self.ctx.start_consumers is not None:
             self.ctx.start_consumers()
         stable = self.ctx.wait_group_stable(timeout=120) if self.ctx.wait_group_stable else True
-        return (f"consumers restarted; group_stable={stable}", {"group_stable": stable})
+        if not stable:
+            raise RuntimeError("F6 restore: consumer group did not stabilise")
+        return f"consumers restarted; group_stable={stable}", {"group_stable": stable}
 
 
 # --------------------------------------------------------------------------------------------
-# Level-1 deterministic crash points armed through S3 failpoints
+# K2 — unknown outcome (C3/C9): timeout toxic on the effect path after a progress marker
 # --------------------------------------------------------------------------------------------
-FAILPOINT_NAMES = [
-    "after_fetch", "before_effect_commit", "after_effect_commit", "before_progress_commit",
-    "after_progress_commit", "before_publish", "before_relay_mark",
-]
+class K2UnknownOutcome(Injector):
+    fault = "K2"
+    level = "L1"
+    description = ("unknown-outcome injection: at a seeded committed-progress marker, a Toxiproxy "
+                   "timeout toxic makes the in-flight effect commit time out with an unknown "
+                   "outcome (DB link for DB sinks, produce/transaction link for M1-kafka)")
+    T_HOLD_S = 2.0
 
-#: map Stage-A crash class -> the failpoint that realises it deterministically
-CRASH_CLASS_FAILPOINT = {
-    "K1": {"name": "after_fetch", "action": "crash"},
-    "K2": {"name": "after_effect_commit", "action": "crash"},
-    "K3": {"name": "after_effect_commit", "action": "crash"},       # replay after effect durable
-    "K5": {"name": "before_effect_commit", "action": "pause:200"},
-    "K6": {"name": "after_effect_commit", "action": "pause:200"},   # zombie writer window
-    "K7": {"name": "before_relay_mark", "action": "crash"},
+    def __init__(self, ctx: InjectorContext):
+        super().__init__(ctx)
+        self.toxiproxy = Toxiproxy(ctx.toxiproxy_api)
+
+    def target_role(self) -> str:
+        return "app-effect-commit-link"
+
+    def action_name(self) -> str:
+        return "toxiproxy timeout toxic (effect commit)"
+
+    def _arm(self) -> None:
+        if self.ctx.mechanism == "M1-kafka":
+            proxy = self.ctx.extra.get("produce_proxy", "kafka-produce")
+        else:
+            proxy = self.ctx.extra.get("db_proxy", "db")
+        events = int(self.ctx.extra.get("load_events") or 1000)
+        lo, hi = int(events * 0.25), int(events * 0.60)
+        marker_rng = random.Random(int.from_bytes(
+            hashlib.sha256(f"k2|{self.ctx.seed_hex}".encode()).digest()[:8], "big"))
+        marker = marker_rng.randint(max(1, lo), max(lo + 1, hi))
+        self.state.update(proxy=proxy, toxic_name=f"wxeo-k2-{self.ctx.run_id}",
+                          marker=marker, timeout_ms=5000, target_id=proxy)
+        self.ctx.extra["progress_marker"] = marker
+
+    def _wait_for_marker(self) -> None:
+        if self.ctx.progress_probe is None:
+            raise RuntimeError("runner did not provide progress_probe for K2")
+        deadline = time.monotonic() + float(self.ctx.extra.get("marker_timeout_s", 180))
+        while time.monotonic() < deadline:
+            progress = int(self.ctx.progress_probe())
+            if progress >= int(self.state["marker"]):
+                self.ctx.extra["progress_at_fire"] = progress
+                return
+            time.sleep(0.05)
+        raise InjectionNotVerified(
+            f"K2 progress marker {self.state['marker']} never reached; no unknown-outcome "
+            f"state created")
+
+    def _fire(self):
+        self._wait_for_marker()
+        toxic = {"name": self.state["toxic_name"], "type": "timeout", "stream": "downstream",
+                 "attributes": {"timeout": self.state["timeout_ms"]}}
+        self.toxiproxy.add_toxic(self.state["proxy"], toxic)
+        before = {"marker": self.state["marker"],
+                  "progress_at_fire": self.ctx.extra.get("progress_at_fire")}
+        return (f"added timeout toxic {self.state['toxic_name']} on {self.state['proxy']} at "
+                f"progress {before['progress_at_fire']} (marker {self.state['marker']})",
+                before, {"toxic": toxic})
+
+    def _verify(self, before, after):
+        present = self.toxiproxy.toxic_present(self.state["proxy"], self.state["toxic_name"])
+        return present, {"toxic_present": present,
+                         "marker": self.state["marker"],
+                         "progress_at_fire": before.get("progress_at_fire")}
+
+    def _after_fire(self) -> None:
+        time.sleep(self.T_HOLD_S)
+
+    def restore_action(self) -> str:
+        return "remove timeout toxic + verify proxy health"
+
+    def _restore(self):
+        try:
+            self.toxiproxy.remove_toxic(self.state["proxy"], self.state["toxic_name"])
+        except ToxiproxyError as exc:  # pragma: no cover
+            if "404" not in str(exc):
+                raise
+        healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
+        if not healthy:
+            raise RuntimeError("K2 restore: proxy did not become healthy")
+        return (f"removed K2 toxic; proxy healthy={healthy}",
+                {"proxy_healthy": healthy})
+
+
+# --------------------------------------------------------------------------------------------
+# K5 — duplicate delivery without a crash (protocol-level replay, C6)
+# --------------------------------------------------------------------------------------------
+class K5DuplicateDelivery(Injector):
+    fault = "K5"
+    level = "L1"
+    description = ("duplicate delivery without a crash (C6): stop consumers, rewind the "
+                   "mechanism's own resume point by k batches, restart")
+
+    def target_role(self) -> str:
+        return "consumer-progress"
+
+    def action_name(self) -> str:
+        return "k-batch progress rewind (no crash)"
+
+    def _arm(self) -> None:
+        if self.ctx.mechanism == "M1-kafka":
+            raise RuntimeError("K5 is n/a for M1-kafka (no external rewind, D5)")
+        self.state["k_batches"] = int(self.ctx.extra.get("rewind_batches", 2))
+        self.state["target_id"] = self.ctx.mechanism
+
+    def _fire(self):
+        if self.ctx.stop_consumers is None or self.ctx.rewind_progress is None:
+            raise RuntimeError("runner did not provide stop_consumers/rewind_progress for K5")
+        self.ctx.stop_consumers()
+        before = {"progress": self._snapshot()}
+        rewind = self.ctx.rewind_progress(int(self.state["k_batches"]))
+        self.state["rewind"] = rewind
+        after = {"progress": self._snapshot()}
+        return (f"consumers stopped; resume point rewound by {self.state['k_batches']} batches",
+                before, after)
+
+    def _snapshot(self):
+        if self.ctx.progress_probe is None:
+            return None
+        try:
+            return int(self.ctx.progress_probe())
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _verify(self, before, after):
+        return bool(self.state.get("rewind", {}).get("moved")), {
+            "rewind": self.state.get("rewind")}
+
+    def _restore(self):
+        if self.ctx.start_consumers is not None:
+            self.ctx.start_consumers()
+        stable = self.ctx.wait_group_stable(timeout=120) if self.ctx.wait_group_stable else True
+        if not stable:
+            raise RuntimeError("K5 restore: consumer group did not stabilise")
+        return f"consumers restarted; group_stable={stable}", {"group_stable": stable}
+
+
+# --------------------------------------------------------------------------------------------
+# app-failpoint watcher (K1/K3/K4/K7 and F4b)
+# --------------------------------------------------------------------------------------------
+FAILPOINT_ROLE_MAP = {
+    # M1-kafka has no separate effect hook; only progress hooks exist (D4 role instantiation)
+    "M1-kafka": M1KAFKA_FAILPOINT,
 }
 
 
 def failpoint_config_for_run(ctx: InjectorContext) -> dict | None:
-    """Return service failpoint args for a run, or None when no L1 failpoint is armed.
-
-    * Stage-A crash-class runs: the class maps to the documented failpoint/action
-      (docs/method.md §5.4 Level-1 realisations, CONTRACTS §7).
-    * F4b runs: ordering=early + ``before_effect_commit`` crash/abort_txn.
-    * Everything else: no in-process failpoint.
-    """
-    if ctx.fault_level != "L1" and ctx.fault != "F4b":
-        return None
+    """Service failpoint args for a run, or None when no in-process failpoint is armed."""
+    fault = _canonical_fault(ctx.fault)
     if ctx.injector_mode in ("none", "fixture"):
         return None
-    if ctx.fault == "F4b":
+    if fault in ("F0", "F1", "F2", "F3", "F4a", "F5", "F6"):
+        return None  # external S4 injections (F4b handled below before this branch)
+    if fault == "F4b":
         return {"enabled": True, "name": "before_effect_commit",
-                "action": ctx.extra.get("failpoint_action", "crash"), "after": 1}
-    klass = ctx.fault
-    spec = CRASH_CLASS_FAILPOINT.get(klass)
+                "action": ctx.extra.get("failpoint_action", "crash"),
+                "after": int(ctx.extra.get("failpoint_after", 1))}
+    if fault in S4_REALISED_CLASSES:
+        return None
+    if fault in STRUCTURALLY_UNREACHABLE:
+        raise RuntimeError(f"{fault} is declared structurally unreachable: "
+                           f"{STRUCTURALLY_UNREACHABLE[fault]}")
+    role_map = FAILPOINT_ROLE_MAP.get(ctx.mechanism, CRASH_CLASS_FAILPOINT)
+    spec = role_map.get(fault)
     if spec is None:
-        return {"enabled": False}
+        raise RuntimeError(f"no failpoint realisation for {ctx.mechanism}/{fault}")
     return {"enabled": True, "name": spec["name"], "action": spec["action"],
             "after": int(ctx.extra.get("failpoint_after", 1))}
 
 
 class FailpointWatch(Injector):
-    """Non-firing arm for L1 failpoints: validates the S3 receipt and writes the restored receipt.
-
-    The injection action itself is inside the service; S4's job is to (a) arm it through the
-    service CLI, (b) wait for the S3 ``fired`` receipt, and (c) after restart write the
-    ``restored`` receipt (the terminal crash failpoint is fired-only by design).
-    """
+    """App-owned failpoint: wait for the S3 ``fired`` receipt, verify the action, restore."""
 
     level = "L1"
+    owns_receipts = False
 
     def __init__(self, ctx: InjectorContext):
         super().__init__(ctx)
-        self.fault = ctx.fault
+        self.fault = _canonical_fault(ctx.fault)
 
     def target_role(self) -> str:
         return "app-failpoint"
 
-    def _arm(self) -> None:
-        self.state["config"] = failpoint_config_for_run(self.ctx) or {"enabled": False}
-        if not self.state["config"].get("enabled"):
-            raise RuntimeError(f"no L1 failpoint available for {self.ctx.fault}")
+    def action_name(self) -> str:
+        cfg = self.state.get("config") or {}
+        return f"failpoint {cfg.get('name')} ({cfg.get('action')})"
 
-    def _fire(self):
+    def _arm(self) -> None:
+        self.state["config"] = failpoint_config_for_run(self.ctx)
+        if not self.state["config"] or not self.state["config"].get("enabled"):
+            raise RuntimeError(f"no in-process failpoint available for "
+                               f"{self.ctx.mechanism}/{self.fault}")
+
+    def _fire(self):  # pragma: no cover - overridden by wait_for_app_fired
+        raise NotImplementedError("app-owned failpoints are driven by the service receipt")
+
+    def wait_for_app_fired(self, timeout_s: float = 180.0) -> dict:
         name = self.state["config"]["name"]
-        deadline = time.monotonic() + float(self.ctx.extra.get("failpoint_timeout_s", 180))
+        expected_action = self.state["config"]["action"]
+        deadline = time.monotonic() + timeout_s
         found = None
         while time.monotonic() < deadline:
             for receipt in read_receipts(self.ctx.faults_log):
                 if (receipt.get("run_id") == self.ctx.run_id
                         and receipt.get("fault") == name
-                        and receipt.get("event") == "fired"):
+                        and receipt.get("event") == "fired"
+                        and RCPT.classify(receipt) == "app"):
                     found = receipt
                     break
             if found:
                 break
             time.sleep(0.1)
         if not found:
-            raise RuntimeError(f"L1 failpoint {name} did not fire (no S3 receipt)")
-        return f"failpoint {name} fired", None, {"failpoint_receipt": found}
+            raise InjectionNotVerified(
+                f"app failpoint {name} did not fire within {timeout_s}s (no service receipt); "
+                f"run is uninformative")
+        phase = self._phase()
+        verified = self._verify_app_action(expected_action)
+        if not verified:
+            raise InjectionNotVerified(
+                f"app failpoint {name} fired but action {expected_action!r} not verified")
+        self._fired = True
+        self.actual_ms = utc_now_ms()
+        self.receipts.append(
+            run_id=self.ctx.run_id, fault=self.fault, event="fired", source="s4",
+            level=self.level, seed=self.ctx.seed_hex,
+            detail=(f"observed app failpoint receipt {name}; action={expected_action} "
+                    f"phase_ok={not phase.get('outside_window')}"),
+            target_role="app-failpoint", action=expected_action, action_verified=True,
+            phase=phase, result="fired",
+            notes=("S4 companion receipt: records that the app fired AND the action was verified; "
+                   "the app's own receipt is the in-process evidence"),
+        )
+        return {"fired": True, "app_receipt": found, "phase": phase}
 
-    def _restore(self):
+    def _verify_app_action(self, action: str) -> bool:
+        if action in TERMINAL_ACTIONS:
+            pid = self.ctx.consumer_pids.get(1)
+            if pid is not None:
+                return _wait(lambda: not _pid_alive(int(pid)), timeout=60)
+            return True
+        return True
+
+    def restore(self) -> dict:
+        if not self._fired:
+            self.receipts.append(run_id=self.ctx.run_id, fault=self.fault, event="restored",
+                                 source="s4", level=self.level, seed=self.ctx.seed_hex,
+                                 detail="injection never fired; nothing to restore",
+                                 target_role="app-failpoint", result="restored",
+                                 action="no-op-restore")
+            self._restored = True
+            return {"restored": True, "noop": True}
+        if self._restored:
+            return {"restored": True, "already": True}
+        # restart the instances that the crash could have hit, wait for the group
         stable = True
         if self.ctx.restart_service is not None:
-            self.ctx.restart_service(1)
+            for instance in (1, 2):
+                self.ctx.restart_service(instance)
         if self.ctx.wait_group_stable:
             stable = self.ctx.wait_group_stable(timeout=180)
-        return f"instance restarted after failpoint; group_stable={stable}", {"group_stable": stable}
+        if not stable:
+            raise RuntimeError("failpoint restore: group did not stabilise")
+        receipt = self.receipts.append(
+            run_id=self.ctx.run_id, fault=self.fault, event="restored", source="s4",
+            level=self.level, seed=self.ctx.seed_hex,
+            detail=f"instances restarted after failpoint; group_stable={stable}",
+            target_role="app-failpoint", result="restored", action="restart+stable")
+        self._restored = True
+        return {"restored": True, "receipt": receipt}
 
 
 # --------------------------------------------------------------------------------------------
-# factory + trigger scheduling
+# factory
 # --------------------------------------------------------------------------------------------
 INJECTOR_TYPES = {
     "F1": F1BrokerKill,
     "F2": F2ConsumerKill,
     "F3": F3ProduceTimeout,
     "F4a": F4aOffsetCommitFailure,
-    "F4b": F4bOrderingProbe,
     "F5": F5DbPartition,
     "F6": F6DuplicateRedelivery,
+    "K2": K2UnknownOutcome,
+    "K5": K5DuplicateDelivery,
 }
 
 
 def make_injector(ctx: InjectorContext) -> Injector | None:
-    """Create the injector for a run: Level-1 failpoint watch, Level-2 fault, or None."""
-    if ctx.injector_mode in ("none", "fixture"):
+    """Create the injector for a run (app failpoint watcher, S4 injector, sham, or None)."""
+    if ctx.injector_mode in ("none", "fixture") or _canonical_fault(ctx.fault) in ("F0", "none"):
         return None
+    fault = _canonical_fault(ctx.fault)
     if ctx.injector_mode == "sham":
-        # a sham run arms the cell's injector but performs no action
-        cls = INJECTOR_TYPES.get(ctx.fault)
+        cls = INJECTOR_TYPES.get(fault)
         if cls is None:
-            # F0 sham: a no-op injector
             inst = Injector(ctx)
-            inst.fault = ctx.fault or "F0"
+            inst.canonical_fault = fault
             return inst
         return cls(ctx)
-    if ctx.fault_level == "L1" or ctx.fault == "F4b":
+    if fault == "F4b":
         return FailpointWatch(ctx)
-    cls = INJECTOR_TYPES.get(ctx.fault)
-    if cls is None:
-        raise ValueError(f"no injector for fault {ctx.fault!r}")
-    return cls(ctx)
+    if fault in S4_REALISED_CLASSES:
+        cls = INJECTOR_TYPES[fault]
+        return cls(ctx)
+    if fault in CRASH_CLASS_FAILPOINT:
+        return FailpointWatch(ctx)
+    raise ValueError(f"no injector for fault {ctx.fault!r}")
 
 
 def level2_trigger_time(ctx: InjectorContext, *, load_duration_s: float,
                         window_fraction: tuple[float, float] = (0.25, 0.75)) -> float:
-    """Seeded Level-2 fire time (seconds after load start), uniformly inside the window.
-
-    Recorded per run (``scheduled_ms``) so the realised time is reproducible from the seed.
-    """
+    """Seeded Level-2 fire time (seconds after load start) inside the processing window."""
     lo, hi = window_fraction
     rng = random.Random(int.from_bytes(
-        __import__("hashlib").sha256(f"trigger|{ctx.seed_hex}".encode()).digest()[:8], "big"))
+        hashlib.sha256(f"trigger|{ctx.seed_hex}".encode()).digest()[:8], "big"))
     return load_duration_s * rng.uniform(lo, hi)
+
+
+def seeded_failpoint_after(ctx: InjectorContext, *, expected_hits: int = 200,
+                           window_fraction: tuple[float, float] = (0.25, 0.75)) -> int:
+    """Seeded ``--wxeo.failpoint.after=N`` for a stochastic (Level-2) app failpoint."""
+    lo = max(1, int(expected_hits * window_fraction[0]))
+    hi = max(lo + 1, int(expected_hits * window_fraction[1]))
+    rng = random.Random(int.from_bytes(
+        hashlib.sha256(f"failpoint-after|{ctx.seed_hex}".encode()).digest()[:8], "big"))
+    return rng.randint(lo, hi)
 
 
 # --------------------------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------------------------
 def _read_json(path: str):
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
     if os.name == "nt":  # pragma: no cover - Windows live path
         try:
             out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"],
@@ -790,7 +1093,7 @@ def _pid_alive(pid: int) -> bool:
         return False
 
 
-def _wait(predicate: Callable[[], bool], timeout: float, interval: float = 0.5) -> bool:
+def _wait(predicate: Callable[[], bool], timeout: float, interval: float = 0.2) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
@@ -804,6 +1107,12 @@ def _wait(predicate: Callable[[], bool], timeout: float, interval: float = 0.5) 
 
 __all__ = [
     "FAULTS",
+    "FAILPOINT_NAMES",
+    "CRASH_CLASS_FAILPOINT",
+    "S4_REALISED_CLASSES",
+    "STRUCTURALLY_UNREACHABLE",
+    "M1KAFKA_FAILPOINT",
+    "InjectionNotVerified",
     "ReceiptLog",
     "read_receipts",
     "validate_receipts",
@@ -815,15 +1124,15 @@ __all__ = [
     "F2ConsumerKill",
     "F3ProduceTimeout",
     "F4aOffsetCommitFailure",
-    "F4bOrderingProbe",
     "F5DbPartition",
     "F6DuplicateRedelivery",
+    "K2UnknownOutcome",
+    "K5DuplicateDelivery",
     "FailpointWatch",
-    "FAILPOINT_NAMES",
-    "CRASH_CLASS_FAILPOINT",
     "failpoint_config_for_run",
     "make_injector",
     "level2_trigger_time",
+    "seeded_failpoint_after",
     "utc_now_iso",
     "utc_now_ms",
 ]

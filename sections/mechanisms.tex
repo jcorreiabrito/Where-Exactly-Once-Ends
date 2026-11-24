@@ -17,6 +17,13 @@ recoverable. The six mechanisms and three combinations below are exactly the poi
 that design space that practitioners deploy; the naive and the Kafka-internal variants
 are controls.
 
+Read this way, the mechanisms are not a list of tricks but the points of a small design
+space defined by two binary choices --- is the effect idempotent, and is it atomic with
+progress --- plus one choice about publication. The naive and Kafka-internal mechanisms
+are the endpoints of that space; the combinations close the remaining exposures at a
+cost. The experiment measures both the correctness consequence and the cost, which is
+what RQ2 asks for.
+
 Throughout, $B$ denotes a poll batch, $\Pi(e)$ the expected posting pair of event $e$,
 $\mathit{insert\_plain}$ a plain \texttt{INSERT}, and $\mathit{insert\_idem}$ an insert
 that is a no-op when $(\mathit{event\_id},\mathit{leg\_no})$ already exists
@@ -60,7 +67,11 @@ are one atomic Kafka commit, and no external store is involved. In \emph{M1x} th
 transaction wraps the stream appends, but the ledger rows are written by a separate,
 non-atomic database commit between the produce step and the transaction commit. This
 is the deployment the paper is about: practitioners keep Kafka's exactly-once for the
-internal stream and assume it covers the external write as well.
+internal stream and assume it covers the external write as well. The variant is not a
+straw man. Keeping the transaction is the documented way to obtain exactly-once for the
+internal stream, and the external write is typically added as an ordinary database call
+in the same method --- which is precisely the non-atomic ordering of
+Algorithm~\ref{alg:m1}.
 
 \begin{algorithm}[t]
 \caption{M1 family: Kafka transaction (M1-kafka and M1x)}
@@ -166,6 +177,13 @@ recovery. No de-duplication index is needed for the crash points that keep progr
 behind the effect, because a durable effect implies a durable progress row; the open
 case is a second writer of the same partition (crash point $C_7$).
 
+The seek on assignment is what makes M4 recoverable. The group protocol can move a
+partition at any moment \cite{kip429}, and a mechanism whose recovery point is a Kafka
+offset cannot know whether the transaction that wrote the last batch also advanced that
+offset. M4 sidesteps the question by making the database transaction the only recovery
+point, and the monotone guard on the progress update prevents a late writer from moving
+the offset backwards.
+
 \begin{algorithm}[t]
 \caption{M4: offsets stored in the posting transaction}
 \label{alg:m4}
@@ -249,6 +267,13 @@ mechanism's definition because they determine whether an unknown commit outcome 
 re-established by re-execution or by checking the de-duplication state; a mechanism is
 not compared against another that uses a different transparency policy.
 
+The table is deliberately explicit about unknown outcomes because they are the
+situations in which mechanisms differ. A retry after a definite failure is safe for
+every mechanism; a retry after an unknown outcome is safe only when the mechanism can
+re-establish the outcome from its de-duplication state or its stored progress. Making the
+policy part of the mechanism definition prevents a comparison in which one mechanism
+benefits from a more optimistic retry rule than another.
+
 \begin{table*}[t]
 \centering
 \small
@@ -270,9 +295,9 @@ Fenced transaction (M1) & abort and restart instance & --- & --- & --- \\
 \end{table*}
 
 \paragraph{Fairness contract.}
-All mechanisms run under identical consumer, producer, JDBC, broker, database and JVM
-settings; the configuration is hashed per run and an audit rejects any run whose shared
-part differs (Section~\ref{sec:method}). The only permitted differences are the
+All mechanisms share the same client, broker, database and JVM settings; the
+configuration is hashed per run and an audit rejects any run whose shared part differs
+(Section~\ref{sec:method}). The only permitted differences are the
 mechanism-intrinsic components: the transactional producer of M1, the inbox/outbox tables
 and relay thread of M2, the posting unique index of the de-duplicating mechanisms, and
 the progress table and assignment-time seek of M4. No mechanism receives per-mechanism

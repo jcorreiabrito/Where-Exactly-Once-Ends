@@ -198,7 +198,106 @@ def _load_records(records_dir: str) -> list[dict]:
     return records
 
 
-def _cell_plan(matrix: dict) -> dict[str, dict]:
+def compute_fire_rates(faults_log_path: str, records: list[dict],
+                       reserved: list[dict] | None = None) -> dict:
+    """F-I5: fire-rate / exclusion accounting per mechanism × fault (S5 review).
+
+    Denominators are **reserved** runs (the frozen matrix plan), never the surviving records:
+    a fault that never fired must stay visible as a missing receipt, not vanish.  Returns
+    ``{"by_cell": [...], "totals": {...}}``; rows are suitable for a CSV table.
+    """
+    receipts = []
+    if faults_log_path and os.path.exists(faults_log_path):
+        with open(faults_log_path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    try:
+                        receipts.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+    by_run: dict[str, dict] = defaultdict(lambda: {"fired": 0, "restored": 0,
+                                                   "armed": 0, "app": 0, "s4": 0})
+    for receipt in receipts:
+        run_id = receipt.get("run_id")
+        if not run_id:
+            continue
+        entry = by_run[run_id]
+        event = receipt.get("event")
+        if event in ("fired", "restored", "armed"):
+            entry[event] = entry.get(event, 0) + 1
+        source = receipt.get("source") or ("app" if receipt.get("fault") in {
+            "after_fetch", "before_effect_commit", "after_effect_commit",
+            "before_progress_commit", "after_progress_commit", "before_publish",
+            "before_relay_mark"} else "s4")
+        entry[source] = entry.get(source, 0) + 1
+    # reserved denominators from the frozen plan (fallback: existing records)
+    plan_index = {}
+    for row in (reserved or []):
+        plan_index.setdefault((row.get("mechanism"), row.get("fault"), row.get("stage_label")),
+                              0)
+        plan_index[(row.get("mechanism"), row.get("fault"), row.get("stage_label"))] += 1
+    cells: dict[tuple, dict] = {}
+    for rec in records:
+        key = (rec.get("mechanism"), rec.get("fault"),
+               {"pilot": "P", "A": "A", "B": "B", "C": "C"}.get(rec.get("stage"),
+                                                                  rec.get("stage")))
+        cell = cells.setdefault(key, {"reserved": plan_index.get(key, 0),
+                                      "valid": 0, "excluded": 0, "fired": 0,
+                                      "restored": 0, "armed": 0,
+                                      "no_receipt": 0, "reasons": Counter()})
+        validity = rec.get("validity") or {}
+        if validity.get("excluded"):
+            cell["excluded"] += 1
+            cell["reasons"][str(validity.get("exclude_reason") or "unknown")] += 1
+        elif validity.get("valid"):
+            cell["valid"] += 1
+        mine = by_run.get(rec.get("run_id"), {})
+        cell["fired"] += int(mine.get("fired", 0) > 0)
+        cell["restored"] += int(mine.get("restored", 0) > 0)
+        cell["armed"] += int(mine.get("armed", 0) > 0)
+        if not mine.get("fired") and rec.get("fault_level") in ("L1", "L2") \
+                and rec.get("fault") not in ("F0", "none", "ctrl"):
+            cell["no_receipt"] += 1
+    rows = []
+    for (mechanism, fault, stage), cell in sorted(cells.items()):
+        executed = cell["valid"] + cell["excluded"]
+        rows.append({
+            "stage": stage, "mechanism": mechanism, "fault": fault,
+            "reserved": cell["reserved"], "executed": executed,
+            "valid": cell["valid"], "excluded": cell["excluded"],
+            "fired": cell["fired"], "restored": cell["restored"], "armed": cell["armed"],
+            "missing_receipt": cell["no_receipt"],
+            "fire_rate": (cell["fired"] / executed) if executed else None,
+            "restore_rate": (cell["restored"] / cell["fired"]) if cell["fired"] else None,
+            "exclusion_rate": (cell["excluded"] / executed) if executed else None,
+            "exclude_reasons": "; ".join(f"{k} x{v}" for k, v in
+                                         sorted(cell["reasons"].items())),
+        })
+    injected = [r for r in rows if r["fault"] not in ("F0", "none", "ctrl")]
+    totals = {
+        "injected_cell_reports": len(injected),
+        "executed_injected": sum(r["executed"] for r in injected),
+        "fired": sum(r["fired"] for r in injected),
+        "missing_receipt": sum(r["missing_receipt"] for r in injected),
+        "excluded": sum(r["excluded"] for r in injected),
+        "fire_rate": (sum(r["fired"] for r in injected)
+                      / max(1, sum(r["executed"] for r in injected))),
+        "exclusion_rate": (sum(r["excluded"] for r in injected)
+                           / max(1, sum(r["executed"] for r in injected))),
+    }
+    return {"by_cell": rows, "totals": totals}
+
+
+def _load_reserved(summaries_dir: str) -> list[dict]:
+    path = os.path.join(summaries_dir, "reserved-runs.csv")
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+
     """cell_id -> {stage, mechanism, condition, rep count, n/a} from matrix.yaml."""
     out: dict[str, dict] = {}
     for cell in matrix.get("cells", []):

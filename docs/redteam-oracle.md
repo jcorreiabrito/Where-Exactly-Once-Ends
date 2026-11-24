@@ -1362,10 +1362,10 @@ are not evidence of a wrong design:
 # snapshot / hashes
 Get-FileHash experiments/*.py tools/*.py docs/prereg-freeze.json -Algorithm SHA256
 # matrix/order/seeds/constraints
-python C:\Users\jvtri\AppData\Local\Temp\wxeo-s5\check_matrix.py
-python C:\Users\jvtri\AppData\Local\Temp\wxeo-s5\blast_radius.py
+python <tmp>\wxeo-s5\check_matrix.py
+python <tmp>\wxeo-s5\blast_radius.py
 # oracle adversarial tests (T1–T14; script text contains every synthetic input)
-python C:\Users\jvtri\AppData\Local\Temp\wxeo-s5\attack_oracle.py
+python <tmp>\wxeo-s5\attack_oracle.py
 # oracle unit tests
 python -m pytest experiments/tests -q                      # → 14 passed
 # dry-run records validate

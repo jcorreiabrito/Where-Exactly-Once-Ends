@@ -22,6 +22,12 @@ import os
 import re
 import sys
 
+try:
+    from experiments import pathsafe
+except ImportError:  # script execution
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from experiments import pathsafe  # type: ignore
+
 SCHEMA_VERSION = "wxeo.run.v1"
 STAGES = {"pilot", "A", "B", "C", "D"}
 MECHANISMS = {"M0", "M1-kafka", "M1x", "M2", "M3", "M4", "M2+M3", "M4+M3", "M1x+M3"}
@@ -36,9 +42,12 @@ HEX64 = re.compile(r"^[0-9a-f]{64}$")
 COUNTS_KEYS = {
     "produced", "consumed_estimate", "expected_postings", "observed_postings",
     "dup_postings", "dup_entries", "lost_postings", "lost_entries", "imbalanced_entries",
+    "structurally_malformed_entries", "imbalanced_sum_entries", "ledger_entries_total",
     "mutated_postings", "spurious_postings",
 }
-VIOLATION_KEYS = {"v1", "v2", "v3", "v4", "violating_run"}
+#: v5 (spurious/fabricated postings) and the I1a/I1b split are the S5-review additions ratified
+#: through the P2 amendment A2 before the freeze (see results/DEVIATIONS.md).
+VIOLATION_KEYS = {"v1", "v2", "v3", "v4", "v5", "violating_run"}
 PUBLICATION_KEYS = {"pub_records", "dup_records", "lost_records", "divergence"}
 ORACLE_KEYS = {"gt_sha256", "expected_sha256", "source_integrity", "oracle_script_sha256",
                "result_sha256"}
@@ -60,6 +69,11 @@ TOP_REQUIRED = {
     "publication", "oracle", "fault_receipts", "validity", "artifacts", "stdout_path",
     "stderr_path", "exit_status",
 }
+
+
+def path_violations(rec: dict) -> list[str]:
+    """Reject absolute local paths / local username in a run record (lead P0 path hygiene)."""
+    return pathsafe.find_violations(rec, "run-record")
 
 
 def _is_int(v) -> bool:
@@ -205,6 +219,8 @@ def validate_record(rec: dict, *, path: str = "") -> list[str]:
             err("source-integrity failure must exclude the run (prereg §8.2 item 2)")
         if violations.get("violating_run") and validity.get("valid") is False and not excluded:
             err("invalid run must be excluded or rerun (prereg §8.2)")
+    for violation in path_violations(rec):
+        err(f"path hygiene: {violation}")
     return errors
 
 

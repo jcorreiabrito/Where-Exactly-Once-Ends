@@ -99,7 +99,7 @@ def build_cells() -> list[dict]:
             "stage_label": stage_label,
             "mechanism": mechanism,
             "condition": condition,
-            "fault": DES.condition_to_fault(condition) if stage_label != "A" else condition,
+            "fault": DES.record_fault(condition),
             "fault_level": fault_level,
             "load_token": load,
             "load_events": events,
@@ -231,8 +231,16 @@ def build_validation_runs() -> list[dict]:
     for defect in ("clean", "loss", "duplicate", "mutation"):
         add("oracle", i, "M2", "F0",
             notes=f"oracle fixture integration: {defect} (synthetic; G3/G5 end-to-end)"); i += 1
-    if len(runs) != 20:
-        raise AssertionError(f"validation run composition must be 20, got {len(runs)}")
+    # G1 pre-Stage-A gate control (S5 F-E5): deterministic M0 K3 and K5 runs with attested
+    # injections, so G1 can be decided before Stage-A data is analysed.
+    for klass in ("K3", "K5"):
+        for rep in range(3):
+            add(f"g1{klass.lower()}", i, "M0", klass,
+                notes=f"G1 gate control: M0 {klass} with attested injection (pre-Stage-A)")
+            i += 1
+    if len(runs) != DES.VALIDATION_RUNS:
+        raise AssertionError(f"validation run composition must be {DES.VALIDATION_RUNS}, "
+                             f"got {len(runs)}")
     return runs
 
 
@@ -535,6 +543,13 @@ def _matrix_document(cells: list[dict], validation: list[dict], acc: dict) -> di
         },
         "reachability": {
             "stage_a_crash_classes": {m: DES.crash_classes(m) for m in DES.MECHANISMS},
+            "stage_a_na_classes": {m: DES.STAGE_A_NA.get(m, {}) for m in DES.MECHANISMS},
+            "stage_a_s4_realised": sorted(DES.S4_REALISED_CLASSES),
+            "stage_a_app_failpoint": sorted(DES.APP_FAILPOINT_CLASSES),
+            "k6_policy": "K6 (zombie writer C7) is structurally not realisable inside the frozen "
+                         "max.poll.interval.ms=300 s / T_max=300 s configuration (S5 F-E2); it is "
+                         "declared n/a for every mechanism and the M4/C7 claim is model-only in "
+                         "the paper (recorded deviation).",
             "pilot_fault_na": {m: sorted(DES.PILOT_NA.get(m, set())) for m in DES.MECHANISMS},
             "stage_b_fault_na": {m: sorted(DES.STAGE_B_NA.get(m, set()))
                                  for m in DES.MECHANISMS},
@@ -564,7 +579,12 @@ def write_outputs(out_dir: str) -> dict:
     acc = accounts(cells, validation)
 
     # integrity assertions against the prereg arithmetic (fail loudly, never silently)
-    expected = {"pilot": (216, 201), "A": (1830, 1830), "B": (4020, 4020), "C": (1800, 1800)}
+    expected = {
+        "pilot": (DES.PILOT_PLANNED, DES.PILOT_EXECUTABLE),
+        "A": (DES.STAGE_A_RUNS, DES.STAGE_A_RUNS),
+        "B": (DES.STAGE_B_RUNS, DES.STAGE_B_RUNS),
+        "C": (DES.STAGE_C_RUNS, DES.STAGE_C_RUNS),
+    }
     for stage, (planned, executable) in expected.items():
         got = acc["stages"][stage]
         if (got["runs_planned"], got["runs_executable"]) != (planned, executable):
@@ -650,7 +670,12 @@ def check_outputs() -> dict:
     with open(MATRIX_PATH, "r", encoding="utf-8") as fh:
         doc = yaml.safe_load(fh)
     acc = doc["accounting"]
-    expected = {"pilot": (216, 201), "A": (1830, 1830), "B": (4020, 4020), "C": (1800, 1800)}
+    expected = {
+        "pilot": (DES.PILOT_PLANNED, DES.PILOT_EXECUTABLE),
+        "A": (DES.STAGE_A_RUNS, DES.STAGE_A_RUNS),
+        "B": (DES.STAGE_B_RUNS, DES.STAGE_B_RUNS),
+        "C": (DES.STAGE_C_RUNS, DES.STAGE_C_RUNS),
+    }
     problems = []
     for stage, (planned, executable) in expected.items():
         got = acc["stages"][stage]

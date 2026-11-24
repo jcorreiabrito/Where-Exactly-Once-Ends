@@ -65,24 +65,33 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 from collections import Counter
 from datetime import datetime, timezone
 
 try:  # package-relative when imported, plain when executed as a script
     from . import derive as D
-except ImportError:  # pragma: no cover - script execution path
+    from .. import pathsafe
+except (ImportError, ValueError):  # pragma: no cover - script execution path
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import derive as D  # type: ignore
+    _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if _REPO_ROOT not in sys.path:
+        sys.path.insert(0, _REPO_ROOT)
+    from experiments import pathsafe  # type: ignore
 
 ORACLE_VERSION = "wxeo.oracle.v1"
 DEFAULT_SHARDS = D.DEFAULT_SHARDS
 
 # --- verdict rule text (also written into every oracle JSON for auditability) -----------------
 VERDICT_RULE = (
-    "violating_run = v1|v2|v3|v4|(spurious_postings>0); "
-    "v1=imbalanced_entries>0; v2=(mutated_postings>0 or append-only attestation fails); "
-    "v3=dup_postings>0; v4=lost_postings>0; per docs/method.md §2.5 with the §2.4 spurious "
-    "clause and the §2.6 V2 attestation clause (recorded interpretation)."
+    "violating_run = v1|v2|v3|v4|v5; "
+    "v1=imbalanced_entries>0 (I1a structural or I1b signed-sum); "
+    "v2=(mutated_postings>0 or append-only attestation fails); v3=dup_postings>0; "
+    "v4=lost_postings>0; v5=spurious_postings>0 (fabricated/fabricated-balanced postings). "
+    "The I1a/I1b split and v5 are recorded for the author-approved P2 amendment A2; analysis "
+    "reads violations.violating_run verbatim and never recomputes it. "
+    "Recorded interpretation per docs/P2-RULINGS.md and results/DEVIATIONS.md."
 )
 
 
@@ -469,11 +478,16 @@ def _expand_publication_to_postings(pub_path: str, out_dir: str, shards: int) ->
     return stats
 
 
-def _shard_publication_eids(pub_path: str, out_dir: str, shards: int) -> dict:
-    """Shard publication-stream event ids for DB-sink mechanisms (secondary metrics)."""
+def _shard_publication_content(pub_path: str, out_dir: str, shards: int) -> dict:
+    """Shard publication-stream records *with their content* (S5 F-O5).
+
+    The old implementation reduced publication records to event ids, so corrupted legs/amounts
+    were invisible for DB-sink mechanisms.  This writes the full decoded entry per record so the
+    evaluator can validate content against the regenerated expected entry.
+    """
     os.makedirs(out_dir, exist_ok=True)
     handles: dict[int, object] = {}
-    stats = {"records": 0, "parse_errors": 0}
+    stats = {"records": 0, "parse_errors": 0, "error_samples": []}
     try:
         for _ln, obj in _iter_ndjson(pub_path):
             stats["records"] += 1
@@ -483,10 +497,15 @@ def _shard_publication_eids(pub_path: str, out_dir: str, shards: int) -> dict:
                     value = json.loads(value)
                 except json.JSONDecodeError:
                     stats["parse_errors"] += 1
+                    if len(stats["error_samples"]) < 5:
+                        stats["error_samples"].append({"line": _ln,
+                                                       "error": "invalid JSON value"})
                     continue
             eid = value.get("event_id") if isinstance(value, dict) else None
             if not eid:
                 stats["parse_errors"] += 1
+                if len(stats["error_samples"]) < 5:
+                    stats["error_samples"].append({"line": _ln, "error": "missing event_id"})
                 continue
             b = D.eid_bucket(eid, shards)
             h = handles.get(b)
@@ -494,7 +513,14 @@ def _shard_publication_eids(pub_path: str, out_dir: str, shards: int) -> dict:
                 h = open(os.path.join(out_dir, f"pub-{b:03d}.ndjson"), "w", encoding="utf-8",
                          newline="")
                 handles[b] = h
-            h.write(json.dumps({"event_id": eid}, separators=(",", ":")) + "\n")
+            record = {
+                "event_id": eid,
+                "partition": obj.get("partition"),
+                "offset": obj.get("offset"),
+                "value_sha256": obj.get("value_sha256"),
+                "entry": value,
+            }
+            h.write(json.dumps(record, separators=(",", ":")) + "\n")
     finally:
         for h in handles.values():
             h.close()
@@ -535,8 +561,16 @@ def evaluate_observed(
     observed_dir: str,
     pub_events_dir: str | None = None,
     samples: int = 5,
+    expected_sink_rows: int | None = None,
+    observed_source: str = "sink dump",
 ) -> dict:
-    """Evaluate the observed multiset bucket by bucket against the regenerated expected set."""
+    """Evaluate the observed multiset bucket by bucket against the regenerated expected set.
+
+    S5 fixes: I1a/I1b are reported separately (F-O3); a fabricated (even perfectly balanced) entry
+    is the explicit clause ``v5`` (F-O4); publication-stream *content* is validated and
+    ``divergence`` is the documented signed difference (F-O5); a malformed observed row is a hard
+    error (F-O7); an independent sink row-count is cross-checked when supplied (F-O7).
+    """
     totals = {
         "expected_postings": regen["n_lines"],
         "expected_entries": regen["n_events"],
@@ -547,15 +581,21 @@ def evaluate_observed(
         "dup_entries": 0,
         "dup_entry_events": 0,
         "imbalanced_entries": 0,
+        "structurally_malformed_entries": 0,
+        "imbalanced_sum_entries": 0,
         "mutated_postings": 0,
         "lost_postings": 0,
         "lost_entries": 0,
         "spurious_postings": 0,
         "observed_expected_events": 0,
         "complete_entries": 0,
+        "ledger_entries_total": 0,
         "pub_records": None,
+        "pub_matched_records": None,
         "pub_dup_records": None,
         "pub_lost_records": None,
+        "pub_mutated_records": None,
+        "pub_unknown_records": None,
         "pub_divergence": None,
     }
     diag = {
@@ -563,10 +603,12 @@ def evaluate_observed(
         "lost_key_samples": [],
         "mutated_key_samples": [],
         "imbalanced_eid_samples": [],
+        "structural_eid_samples": [],
         "spurious_key_samples": [],
         "lost_entry_samples": [],
         "pub_dup_eid_samples": [],
         "pub_lost_eid_samples": [],
+        "pub_mutated_samples": [],
         "pub_divergence_eid_samples": [],
     }
     pub_paths = None
@@ -576,6 +618,7 @@ def evaluate_observed(
     for b in range(shards):
         exp: dict[tuple, tuple] = {}
         exp_eids: set = set()
+        exp_events: dict[str, dict] = {}
         exp_path = regen["shard_paths"][b]
         if os.path.exists(exp_path):
             with open(exp_path, "r", encoding="utf-8") as fh:
@@ -589,6 +632,15 @@ def evaluate_observed(
                         obj["account_id"], obj["side"], int(obj["amount_minor"]), obj["currency"],
                     )
                     exp_eids.add(eid)
+        # expected event index (seq/accounts) for publication content validation
+        event_index_path = (regen.get("event_shard_paths") or [None] * shards)[b]
+        if event_index_path and os.path.exists(event_index_path):
+            with open(event_index_path, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line:
+                        event = json.loads(line)
+                        exp_events[event["event_id"]] = event
 
         obs_rows = _parse_observed_shard(os.path.join(observed_dir, f"obs-{b:03d}.csv"))
 
@@ -596,19 +648,23 @@ def evaluate_observed(
         obs_key_value: dict[tuple, tuple] = {}
         obs_eid_counts: Counter = Counter()
         obs_eid_rows: dict[str, list] = {}
-        malformed = 0
+
+        # ---- observed rows: a malformed row is a hard provenance failure (F-O7) --------------
+        malformed = [row for row in obs_rows if row and row[0] == "MALFORMED"]
+        if malformed:
+            raise ValueError(
+                f"{observed_source}: malformed observed row(s) in shard {b}: "
+                f"{len(malformed)} (first: {malformed[0][1][:120]!r}). A corrupted/partial sink "
+                f"dump can hide a duplicate or mutation; the run is invalid (F-O7).")
         for row in obs_rows:
-            if row and row[0] == "MALFORMED":
-                malformed += 1
-                continue
             eid, leg_no, account, side, amount, currency = row
             key = (eid, leg_no)
             obs_key_counts[key] += 1
             obs_key_value.setdefault(key, (account, side, amount, currency))
             obs_eid_counts[eid] += 1
             obs_eid_rows.setdefault(eid, []).append((leg_no, account, side, amount, currency))
-        totals["observed_postings"] += len(obs_rows) - malformed
-        totals["observed_malformed_rows"] += malformed
+        totals["observed_postings"] += len(obs_rows)
+        totals["ledger_entries_total"] += sum(count // 2 for count in obs_eid_counts.values())
 
         # ---- I3: duplicate postings / duplicate entries -------------------------------------
         for key, count in obs_key_counts.items():
@@ -623,38 +679,50 @@ def evaluate_observed(
                 totals["dup_entries"] += (count // 2) - 1
                 totals["dup_entry_events"] += 1
 
-        # ---- I1a + I1b: structural well-formedness and signed sum ---------------------------
+        # ---- I1a (structural) + I1b (signed sum), reported separately (F-O3) ----------------
         for eid, rows in obs_eid_rows.items():
-            bad = False
+            structural_bad = False
+            sum_bad = False
             if len(rows) != 2:
-                bad = True
+                structural_bad = True
+                # net is still meaningful for reporting but a malformed entry is structural
+                net = 0
+                for r in rows:
+                    net += r[3] if r[2] == "D" else -r[3]
+                sum_bad = net != 0
             else:
                 sides = [r[2] for r in rows]
                 amounts = [r[3] for r in rows]
                 currencies = {r[4] for r in rows}
-                if sorted(sides) != ["C", "D"]:
-                    bad = True
-                elif len(currencies) != 1 or next(iter(currencies)) != D.CURRENCY:
-                    bad = True
-                elif not all(isinstance(a, int) and a > 0 for a in amounts):
-                    bad = True
-                elif amounts[0] != amounts[1]:
-                    bad = True
-                else:
-                    net = 0
-                    for r in rows:
-                        net += r[3] if r[2] == "D" else -r[3]
-                    if net != 0:
-                        bad = True
-                # leg_no must be exactly {1,2}
                 leg_nos = sorted(r[0] for r in rows)
+                if sorted(sides) != ["C", "D"]:
+                    structural_bad = True
+                if len(currencies) != 1 or next(iter(currencies)) != D.CURRENCY:
+                    structural_bad = True
+                if not all(isinstance(a, int) and a > 0 for a in amounts):
+                    structural_bad = True
                 if leg_nos != [1, 2]:
-                    bad = True
-            if bad:
+                    structural_bad = True
+                if amounts[0] != amounts[1]:
+                    structural_bad = True
+                net = 0
+                for r in rows:
+                    net += r[3] if r[2] == "D" else -r[3]
+                if net != 0:
+                    sum_bad = True
+            if structural_bad:
+                totals["structurally_malformed_entries"] += 1
+                if len(diag["structural_eid_samples"]) < samples:
+                    diag["structural_eid_samples"].append(
+                        {"event_id": eid, "postings": len(rows)})
+            if sum_bad:
+                totals["imbalanced_sum_entries"] += 1
+            if structural_bad or sum_bad:
                 totals["imbalanced_entries"] += 1
                 if len(diag["imbalanced_eid_samples"]) < samples:
                     diag["imbalanced_eid_samples"].append(
-                        {"event_id": eid, "postings": len(rows)}
+                        {"event_id": eid, "postings": len(rows),
+                         "structural": structural_bad, "sum": sum_bad}
                     )
 
         # ---- I2 (content) / I4 (loss) / spurious -------------------------------------------
@@ -697,61 +765,101 @@ def evaluate_observed(
                 if len(diag["lost_entry_samples"]) < samples:
                     diag["lost_entry_samples"].append({"event_id": eid})
 
-        # ---- publication-stream secondary metrics (DB-sink mechanisms only) ----------------
+        # ---- publication-stream content + secondary metrics (S5 F-O5) ----------------------
         if pub_paths is not None and os.path.exists(pub_paths[b]):
+            if totals["pub_records"] is None:
+                totals["pub_records"] = 0
+                totals["pub_matched_records"] = 0
+                totals["pub_dup_records"] = 0
+                totals["pub_lost_records"] = 0
+                totals["pub_mutated_records"] = 0
+                totals["pub_unknown_records"] = 0
             pub_counter: Counter = Counter()
             for _ln, obj in _iter_ndjson(pub_paths[b]):
                 pub_counter[obj["event_id"]] += 1
-            if totals["pub_records"] is None:
-                totals["pub_records"] = 0
-                totals["pub_dup_records"] = 0
-                totals["pub_lost_records"] = 0
-                totals["pub_divergence"] = 0
-            totals["pub_records"] += sum(pub_counter.values())
+                totals["pub_records"] += 1
+                eid = obj["event_id"]
+                entry = obj.get("entry") or {}
+                if eid in exp_eids:
+                    totals["pub_matched_records"] += 1
+                    expected_event = exp_events.get(eid)
+                    ok = True
+                    if entry.get("spec") != D.ENTRY_SPEC:
+                        ok = False
+                    if expected_event is None:
+                        ok = False
+                    else:
+                        expected_legs = [
+                            {"account_id": expected_event["account_d"], "side": "D",
+                             "amount_minor": expected_event["amount_minor"]},
+                            {"account_id": expected_event["account_c"], "side": "C",
+                             "amount_minor": expected_event["amount_minor"]},
+                        ]
+                        if entry.get("seq") != expected_event.get("seq"):
+                            ok = False
+                        if entry.get("legs") != expected_legs:
+                            ok = False
+                    if not ok:
+                        totals["pub_mutated_records"] += 1
+                        if len(diag["pub_mutated_samples"]) < samples:
+                            diag["pub_mutated_samples"].append(
+                                {"event_id": eid, "entry": entry})
+                else:
+                    totals["pub_unknown_records"] += 1
             for eid, count in pub_counter.items():
                 if count > 1:
                     totals["pub_dup_records"] += count - 1
                     if len(diag["pub_dup_eid_samples"]) < samples:
                         diag["pub_dup_eid_samples"].append({"event_id": eid, "multiplicity": count})
-                if eid not in obs_eid_rows or ((eid, 1) not in obs_key_counts) or (
-                    (eid, 2) not in obs_key_counts
-                ) or obs_key_value.get((eid, 1)) != exp.get((eid, 1)) or (
-                    obs_key_value.get((eid, 2)) != exp.get((eid, 2))
-                ):
-                    # consumed by the publication stream but not complete in the ledger
-                    if eid in exp_eids:
-                        totals["pub_divergence"] += 1
-                        if len(diag["pub_divergence_eid_samples"]) < samples:
-                            diag["pub_divergence_eid_samples"].append({"event_id": eid})
             for eid in exp_eids:
                 if eid not in pub_counter:
                     totals["pub_lost_records"] += 1
                     if len(diag["pub_lost_eid_samples"]) < samples:
                         diag["pub_lost_eid_samples"].append({"event_id": eid})
 
-    # ---- violation vector (method §2.5 + documented verdict rule) ----------------------------
+    # ---- malformed observed rows / row-count cross-check (F-O7) ----------------------------
+    if totals["observed_malformed_rows"]:
+        raise ValueError(f"{observed_source}: {totals['observed_malformed_rows']} malformed "
+                         f"row(s); run invalid (F-O7)")
+    if expected_sink_rows is not None and totals["observed_postings"] != int(expected_sink_rows):
+        raise ValueError(
+            f"{observed_source}: dump contains {totals['observed_postings']} posting rows but "
+            f"the independent DB count is {expected_sink_rows}; the dump is incomplete or the "
+            f"observation raced with a write (run invalid, F-O7)")
+    if totals["pub_records"] is not None:
+        # documented metric (method §7.1): signed difference of stream records vs ledger entries,
+        # where ledger entries count whole entries incl. duplicates (Σ floor(mult/2))
+        totals["pub_divergence"] = int(
+            (totals["pub_matched_records"] or 0) - totals["ledger_entries_total"])
+
+    # ---- violation vector (method §2.5 + A2 amendment clause v5) ----------------------------
     v1 = totals["imbalanced_entries"] > 0
     v2 = totals["mutated_postings"] > 0
     v3 = totals["dup_postings"] > 0
     v4 = totals["lost_postings"] > 0
-    spurious_bad = totals["spurious_postings"] > 0
+    v5 = totals["spurious_postings"] > 0
     attribution = []
     if v1:
         attribution.append("I1")
+    if totals["structurally_malformed_entries"]:
+        attribution.append("I1a")
+    if totals["imbalanced_sum_entries"]:
+        attribution.append("I1b")
     if v2:
         attribution.append("I2")
     if v3:
         attribution.append("I3")
     if v4:
         attribution.append("I4")
-    if spurious_bad:
+    if v5:
         attribution.append("SPURIOUS")
 
     return {
         "totals": totals,
         "violations": {
             "v1": bool(v1), "v2": bool(v2), "v3": bool(v3), "v4": bool(v4),
-            "violating_run": bool(v1 or v2 or v3 or v4 or spurious_bad),
+            "v5": bool(v5),
+            "violating_run": bool(v1 or v2 or v3 or v4 or v5),
         },
         "attribution": attribution,
         "diagnostics": diag,
@@ -761,17 +869,26 @@ def evaluate_observed(
 # --------------------------------------------------------------------------------------------
 # attestation (method §2.5 P8 / Appendix A.3)
 # --------------------------------------------------------------------------------------------
-def evaluate_attestation(attestation: dict | None) -> dict:
-    """Return {can_update, can_delete, posting_triggers, failed, note}."""
+def evaluate_attestation(attestation: dict | None, *, required: bool = False) -> dict:
+    """Return {can_update, can_delete, posting_triggers, failed, note}.
+
+    ``required=True`` (DB-sink runs) makes an absent attestation a **failure** — I2(a) is then
+    unverified and the run must not be scored clean (S5 F-O2).
+    """
     if attestation is None:
         return {"present": False, "can_update": None, "can_delete": None,
-                "posting_triggers": None, "failed": None, "note": "no attestation supplied"}
+                "posting_triggers": None,
+                "failed": True if required else None,
+                "note": ("append-only attestation missing: I2(a) unverified (run violates I2)"
+                         if required else "no attestation supplied (not required)")}
     can_update = attestation.get("can_update")
     can_delete = attestation.get("can_delete")
     triggers = attestation.get("posting_triggers", attestation.get("trigger_count"))
     failed = None
     if can_update is not None and can_delete is not None and triggers is not None:
         failed = bool(can_update) or bool(can_delete) or int(triggers) < 1
+    elif required:
+        failed = True
     return {
         "present": True,
         "can_update": can_update,
@@ -780,6 +897,8 @@ def evaluate_attestation(attestation: dict | None) -> dict:
         "failed": failed,
         "note": attestation.get("note"),
         "source": attestation.get("source"),
+        "app_role": attestation.get("app_role"),
+        "posting_rows": attestation.get("posting_rows"),
     }
 
 
@@ -832,26 +951,34 @@ class OracleContext:
                 pub_dir = _ensure_dir(os.path.join(self.workdir, "publication"))
                 for name in os.listdir(pub_dir):
                     os.remove(os.path.join(pub_dir, name))
-                pub_stats = _shard_publication_eids(publication_dump_path, pub_dir, self.shards)
+                pub_stats = _shard_publication_content(publication_dump_path, pub_dir,
+                                                       self.shards)
 
+        # attestation is required for DB sinks (F-O2): a missing attestation is an I2 violation,
+        # never a clean run.  The independent DB row count (if the attestation carries it) is used
+        # to cross-check the dump (F-O7).
+        att = evaluate_attestation(attestation, required=(sink_kind == "db"))
+        expected_rows = None
+        if sink_kind == "db" and attestation:
+            rowcount = attestation.get("posting_rows", attestation.get("row_count"))
+            if isinstance(rowcount, int):
+                expected_rows = rowcount
         evaluation = evaluate_observed(
             regen=self.regen, shards=self.shards, observed_dir=obs_dir,
-            pub_events_dir=pub_dir,
+            pub_events_dir=pub_dir, expected_sink_rows=expected_rows,
+            observed_source=f"{sink_kind} dump",
         )
-        att = evaluate_attestation(attestation)
         totals = evaluation["totals"]
         violations = dict(evaluation["violations"])
         attribution = list(evaluation["attribution"])
         warnings: list[str] = []
 
-        # I2 attestation clause (method §2.6)
+        # I2 attestation clause (method §2.6): failure OR absence is a violation for DB sinks
         if att["failed"]:
             violations["v2"] = True
             violations["violating_run"] = True
             attribution.append("ATTESTATION")
-            warnings.append("append-only attestation failed")
-        if att["failed"] is None and sink_kind == "db":
-            warnings.append("append-only attestation missing (I2 enforcement clause unverified)")
+            warnings.append("append-only attestation failed/unavailable: I2(a) unverified")
 
         src = self.source_detail or {}
         source_integrity = bool(src.get("source_integrity", False))
@@ -876,8 +1003,11 @@ class OracleContext:
             "lost_postings": totals["lost_postings"],
             "lost_entries": totals["lost_entries"],
             "imbalanced_entries": totals["imbalanced_entries"],
+            "structurally_malformed_entries": totals["structurally_malformed_entries"],
+            "imbalanced_sum_entries": totals["imbalanced_sum_entries"],
             "mutated_postings": totals["mutated_postings"],
             "spurious_postings": totals["spurious_postings"],
+            "ledger_entries_total": totals["ledger_entries_total"],
         }
         if sink_kind == "db":
             publication = {
@@ -885,9 +1015,14 @@ class OracleContext:
                 "dup_records": totals["pub_dup_records"],
                 "lost_records": totals["pub_lost_records"],
                 "divergence": totals["pub_divergence"],
+                "pub_mutated_records": totals["pub_mutated_records"],
+                "pub_unknown_records": totals["pub_unknown_records"],
                 "notes": (None if pub_dir is not None else
                           "no publication-stream dump supplied for this run"),
             }
+            if pub_stats and pub_stats.get("parse_errors"):
+                warnings.append(f"publication parse errors={pub_stats['parse_errors']}")
+                publication["pub_parse_errors"] = pub_stats["parse_errors"]
         else:
             publication = {
                 "pub_records": None,
@@ -926,7 +1061,8 @@ class OracleContext:
     def inputs_block(self, paths: dict) -> dict:
         block = {}
         for name, path in paths.items():
-            entry = {"path": path, "sha256": None, "bytes": None}
+            # path hygiene: committed artefacts carry repo-relative paths or <scratch> placeholders
+            entry = {"path": pathsafe.repo_rel(path), "sha256": None, "bytes": None}
             if path and os.path.exists(path):
                 entry["sha256"] = D.sha256_file(path)
                 entry["bytes"] = os.path.getsize(path)
@@ -944,6 +1080,7 @@ def finalise_result(result: dict, *, regen: dict, source_detail: dict | None, in
         "oracle_script_sha256": oracle_script_sha256(),
         "result_sha256": None,
     }
+    result = pathsafe.scrub(result)
     payload = json.dumps(result, sort_keys=True, separators=(",", ":")).encode("utf-8")
     result["oracle"]["result_sha256"] = _sha256_bytes(payload)
     return result
@@ -1027,14 +1164,21 @@ def _safe_ident(name: str) -> str:
     return name
 
 
-def dump_pg(*, pg_dsn: str, schema: str, out_csv: str, attestation_out: str | None = None) -> dict:
+def dump_pg(*, pg_dsn: str, schema: str, out_csv: str, attestation_out: str | None = None,
+            app_role: str = "wxeo_app") -> dict:
     """Dump the ledger ``posting`` table of one run schema with a READ ONLY transaction.
 
     ``pg_dsn`` example: ``host=127.0.0.1 port=5433 dbname=wxeo user=wxeo_read``.
+
+    S5 F-O2 fix: the I2 append-only *privilege* attestation queries the privileges of the
+    **application role** (``app_role``, default ``wxeo_app``) via ``information_schema`` rather than
+    the oracle's own read-only role, and records the independent row count used to cross-check the
+    dump completeness (F-O7).
     """
     import psycopg2  # imported lazily: the predicate code stays dependency-free
 
     schema = _safe_ident(schema)
+    _safe_ident(app_role)
     conn = psycopg2.connect(pg_dsn)
     try:
         conn.set_session(readonly=True, autocommit=False)
@@ -1048,14 +1192,24 @@ def dump_pg(*, pg_dsn: str, schema: str, out_csv: str, attestation_out: str | No
         )
         with open(out_csv, "w", encoding="utf-8", newline="") as fh:
             cur.copy_expert(copy_sql, fh)
-        info = {"csv": out_csv, "sha256": D.sha256_file(out_csv),
-                "rows": _count_lines(out_csv)}
+        cur.execute(f"SELECT count(*) FROM {schema}.posting")
+        posting_rows = int(cur.fetchone()[0])
+        csv_rows = _count_lines(out_csv)
+        info = {"csv": pathsafe.repo_rel(out_csv), "sha256": D.sha256_file(out_csv),
+                "rows": csv_rows, "db_rows": posting_rows,
+                "rowcount_match": csv_rows == posting_rows}
         if attestation_out:
+            # privileges of the APPLICATION role (not the oracle's read-only role): an UPDATE or
+            # DELETE grant to the app role (or a missing deny-trigger) is an I2(a) enforcement
+            # failure, independent of end-state content.
             cur.execute(
-                f"SELECT has_table_privilege(current_user, '{schema}.posting', 'UPDATE'), "
-                f"has_table_privilege(current_user, '{schema}.posting', 'DELETE')"
+                "SELECT privilege_type FROM information_schema.role_table_grants "
+                "WHERE table_schema = %s AND table_name = 'posting' AND grantee = %s",
+                (schema, app_role),
             )
-            can_update, can_delete = cur.fetchone()
+            granted = {row[0].upper() for row in cur.fetchall()}
+            can_update = "UPDATE" in granted
+            can_delete = "DELETE" in granted
             cur.execute(
                 "SELECT count(*) FROM pg_trigger WHERE tgrelid = %s::regclass AND NOT tgisinternal",
                 (f"{schema}.posting",),
@@ -1065,11 +1219,15 @@ def dump_pg(*, pg_dsn: str, schema: str, out_csv: str, attestation_out: str | No
                 "can_update": bool(can_update),
                 "can_delete": bool(can_delete),
                 "posting_triggers": triggers,
+                "posting_rows": posting_rows,
+                "app_role": app_role,
                 "source": "live:dump_pg",
                 "schema": schema,
-                "note": "read via read-only role; presence of UPDATE/DELETE privilege or a "
-                        "missing BEFORE UPDATE OR DELETE trigger is an I2 enforcement failure",
+                "note": "queries the APPLICATION role's privileges via information_schema "
+                        "(read-only oracle role cannot modify the sink); a missing BEFORE "
+                        "UPDATE/DELETE trigger or any UPDATE/DELETE grant is an I2(a) failure",
             }
+            att = pathsafe.scrub(att)
             with open(attestation_out, "w", encoding="utf-8", newline="") as fh:
                 json.dump(att, fh, indent=2)
                 fh.write("\n")
@@ -1110,9 +1268,14 @@ def _kafka_consumer(bootstrap: str, group: str, isolation: str, auto_commit=Fals
 
 
 def dump_source_topic(*, bootstrap: str, topic: str, out_ndjson: str, group: str,
-                      timeout_s: float = 120.0) -> dict:
-    """Independent dump of the source topic -> {partition,offset,event_id,value_sha256}."""
-    consumer = _kafka_consumer(bootstrap, group, "read_committed")
+                      timeout_s: float = 120.0, consumer_factory=None) -> dict:
+    """Independent dump of the source topic -> {partition,offset,event_id,value_sha256}.
+
+    ``consumer_factory`` allows an injectable client (used by the live-dump smoke test so the
+    code path is actually exercised without a broker; F-O1).
+    """
+    consumer = (consumer_factory() if consumer_factory
+                else _kafka_consumer(bootstrap, group, "read_committed"))
     from confluent_kafka import TopicPartition, KafkaException  # lazy
 
     md = consumer.list_topics(topic, timeout=30)
@@ -1161,14 +1324,16 @@ def dump_source_topic(*, bootstrap: str, topic: str, out_ndjson: str, group: str
             row = dict(row)
             row.pop("value", None)  # source dump contract: value_sha256 only
             fh.write(json.dumps(row, separators=(",", ":")) + "\n")
-    return {"path": out_ndjson, "sha256": D.sha256_file(out_ndjson), "records": len(rows),
-            "partitions": parts}
+    return {"path": pathsafe.repo_rel(out_ndjson), "sha256": D.sha256_file(out_ndjson),
+            "records": len(rows), "partitions": parts}
 
 
 def dump_kafka_topic(*, bootstrap: str, topic: str, out_ndjson: str, group: str,
-                     isolation: str = "read_committed", timeout_s: float = 120.0) -> dict:
+                     isolation: str = "read_committed", timeout_s: float = 120.0,
+                     consumer_factory=None) -> dict:
     """Dump the publication/sink stream (decoded entry value + value_sha256)."""
-    consumer = _kafka_consumer(bootstrap, group, isolation)
+    consumer = (consumer_factory() if consumer_factory
+                else _kafka_consumer(bootstrap, group, isolation))
     from confluent_kafka import TopicPartition, KafkaException  # lazy
 
     md = consumer.list_topics(topic, timeout=30)
@@ -1207,8 +1372,8 @@ def dump_kafka_topic(*, bootstrap: str, topic: str, out_ndjson: str, group: str,
     with open(out_ndjson, "w", encoding="utf-8", newline="") as fh:
         for row in rows:
             fh.write(json.dumps(row, separators=(",", ":")) + "\n")
-    return {"path": out_ndjson, "sha256": D.sha256_file(out_ndjson), "records": len(rows),
-            "partitions": parts, "isolation": isolation}
+    return {"path": pathsafe.repo_rel(out_ndjson), "sha256": D.sha256_file(out_ndjson),
+            "records": len(rows), "partitions": parts, "isolation": isolation}
 
 
 # --------------------------------------------------------------------------------------------

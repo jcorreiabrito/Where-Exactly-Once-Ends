@@ -336,13 +336,14 @@ does not preserve completeness.
 \centering
 \footnotesize
 \caption{Bounded TLC check (TLC~2.19, tla2tools~v1.7.4, Java~21; checked
-2026-11-24T12:47:30Z). Bounds: $N=3$ events, batch size~2, one partition. Columns
+2026-11-24T12:51:13Z). Bounds: $N=3$ events, batch size~2, one partition. Columns
 D/A/T/E are the model's de-duplication, atomic effect+progress, Kafka-transaction and
 early-ordering booleans. ``Outcome'' is the invariant whose counterexample TLC found,
 with the number of distinct states explored before the run ended (a violating
 configuration stops at the first counterexample, so its count varies slightly with
-worker scheduling); ``ok'' means no violation. All eight rows matched the pre-registered
-expectation.}
+worker scheduling; the authoritative counts are in the committed
+\texttt{tlc-summary.json}); ``ok'' means no violation. All eight rows matched the
+pre-registered expectation.}
 \label{tab:tlc}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
@@ -353,8 +354,8 @@ dedup        & T & F & F & F & ok (18) \\
 atomic       & F & T & F & F & ok (8) \\
 atomic+dedup & T & T & F & F & ok (8) \\
 kafka-txn    & F & T & T & F & ok (8) \\
-txn-only     & F & F & T & F & I3 (36) \\
-early probe  & F & F & F & T & I4 (21) \\
+txn-only     & F & F & T & F & I3 (39) \\
+early probe  & F & F & F & T & I4 (22) \\
 early+dedup  & T & F & F & T & I4 (21) \\
 \bottomrule
 \end{tabular}
@@ -363,12 +364,21 @@ early+dedup  & T & F & F & T & I4 (21) \\
 Three qualifications bound the claim. First, the model is a \emph{bounded witness}:
 it explores a finite state space, so it demonstrates that the two windows are reachable
 and that the closure conditions hold for the modelled protocols at those bounds; it is
-not an unbounded proof of Lemma~\ref{lem:closure}. Second, the model abstracts away
-multi-partition scheduling, rebalancing, the zombie writer and the relay path
-(Section~\ref{sec:model:assumptions}); those cells rest on the pen-and-paper argument and
-on the deterministic injections of Section~\ref{sec:method}. Third, the encoding is a
-model of the protocols, not of the Java implementation: it can refute an incorrect
-closure claim, but it cannot establish that the artifact implements the modelled protocol
---- that is the role of the independent oracle and the harness-validation gates. The
-model, the eight configurations, the TLC invocation and the logs are archived with the
-artifact, and the bounded results are reported as such in the paper.
+not an unbounded proof of Lemma~\ref{lem:closure}. Second, the checked scope is exactly
+the mechanism family's W1/W2 closure argument: the four booleans abstract the de-duplication
+claim, the atomic effect+progress commit, the Kafka transaction and the early-ordering
+probe, and the invariants checked are \code{I1Balance}, \code{I3Unique} and
+\code{I4CompleteWhenDone} (a state invariant at termination). The following are
+\emph{not} modelled and therefore not machine-checked: rebalancing and the concurrent
+(zombie) writer (C6/C7), append-only mutation (I2), liveness under fair recovery,
+publication-stream invariants (\code{StreamCompleteWhenDone} is defined but not in any
+TLC configuration), partial-batch durability (C11/C12) and multi-partition scheduling.
+The zombie-writer claims (P9, exposure E3 and the M4+M3 rationale) therefore rest on the
+pen-and-paper argument and on the deterministic K6 experiments, not on TLC;
+\code{StrictProgressBound} is a tautology of the encoding and is not counted as evidence.
+Third, the encoding is a model of the protocols, not of the Java implementation: it can
+refute an incorrect closure claim, but it cannot establish that the artifact implements
+the modelled protocol --- that is the role of the independent oracle and the
+harness-validation gates. The model, the eight configurations, the TLC invocation and the
+logs are archived with the artifact, and the bounded results are reported as such in the
+paper.

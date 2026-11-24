@@ -1,0 +1,94 @@
+{
+  "schema": "wxeo.stack.v1",
+  "name": "where-exactly-once-ends native stack (Windows, no Docker)",
+  "runtimeRootEnvVar": "EOS_RUNTIME_ROOT",
+  "runtimeRootDefault": "%LOCALAPPDATA%\\eos-runtime",
+  "vendorRoot": "vendor",
+  "runRoot": "run",
+  "statePath": "run/stack-state.json",
+  "expectedVersions": {
+    "jdk": "21.0.13.1",
+    "maven": "3.9.9",
+    "kafka": "3.7.2",
+    "postgresql": "16.11",
+    "toxiproxy": "2.9.0"
+  },
+  "toolchainVersionsFile": "../../tools/TOOLCHAIN-VERSIONS.txt",
+  "kafka": {
+    "clusterIdFile": "run/kafka/cluster.id",
+    "logDir": "run/logs/kafka",
+    "jvmArgs": ["-Xms256m", "-Xmx512m"],
+    "bootTimeoutSec": 150,
+    "nodes": [
+      { "id": 1, "brokerPort": 9091, "controllerPort": 9192, "dir": "run/kafka/node1" },
+      { "id": 2, "brokerPort": 9092, "controllerPort": 9193, "dir": "run/kafka/node2" },
+      { "id": 3, "brokerPort": 9093, "controllerPort": 9194, "dir": "run/kafka/node3" }
+    ],
+    "controllerQuorumVoters": "1@127.0.0.1:9192,2@127.0.0.1:9193,3@127.0.0.1:9194",
+    "settings": {
+      "process.roles": "broker,controller",
+      "num.partitions": "6",
+      "default.replication.factor": "3",
+      "min.insync.replicas": "2",
+      "unclean.leader.election.enable": "false",
+      "transaction.state.log.replication.factor": "3",
+      "transaction.state.log.min.isr": "2",
+      "offsets.topic.replication.factor": "3",
+      "auto.create.topics.enable": "false",
+      "num.network.threads": "3",
+      "num.io.threads": "8",
+      "group.initial.rebalance.delay.ms": "0",
+      "log.retention.hours": "1",
+      "log.segment.bytes": "67108864",
+      "socket.send.buffer.bytes": "1048576",
+      "socket.receive.buffer.bytes": "1048576",
+      "socket.request.max.bytes": "104857600"
+    }
+  },
+  "postgres": {
+    "port": 5433,
+    "host": "127.0.0.1",
+    "dataDir": "run/pg/data",
+    "logFile": "run/pg/data/logs/postgres.log",
+    "database": "wxeo",
+    "roles": { "admin": "postgres", "app": "wxeo_app", "read": "wxeo_read", "fault": "wxeo_fault" },
+    "bootTimeoutSec": 90,
+    "settings": {
+      "listen_addresses": "'127.0.0.1'",
+      "port": "5433",
+      "shared_buffers": "2GB",
+      "work_mem": "32MB",
+      "maintenance_work_mem": "512MB",
+      "max_connections": "100",
+      "fsync": "on",
+      "synchronous_commit": "on",
+      "full_page_writes": "on",
+      "wal_level": "replica",
+      "max_wal_size": "4GB",
+      "checkpoint_timeout": "15min",
+      "autovacuum": "on",
+      "track_commit_timestamp": "on",
+      "logging_collector": "on",
+      "log_directory": "\u0027logs\u0027",
+      "log_filename": "\u0027postgres.log\u0027",
+      "log_rotation_age": "\u00271d\u0027",
+      "random_page_cost": "1.1",
+      "effective_cache_size": "4GB",
+      "log_line_prefix": "'%m [%p] '",
+      "logging_collector": "off"
+    }
+  },
+  "toxiproxy": {
+    "apiHost": "127.0.0.1",
+    "apiPort": 8474,
+    "serverExe": "bin/toxiproxy-server-windows-amd64.exe",
+    "cliExe": "bin/toxiproxy-cli-windows-amd64.exe",
+    "bootTimeoutSec": 30,
+    "proxies": [
+      { "name": "kafka", "listen": "127.0.0.1:19092", "upstream": "127.0.0.1:9092", "role": "contract app<->Kafka link" },
+      { "name": "db", "listen": "127.0.0.1:15433", "upstream": "127.0.0.1:5433", "role": "contract app<->PostgreSQL link" },
+      { "name": "kafka-produce", "listen": "127.0.0.1:19093", "upstream": "127.0.0.1:9092", "role": "extension: producer-only link for F3" },
+      { "name": "kafka-consume", "listen": "127.0.0.1:19094", "upstream": "127.0.0.1:9092", "role": "extension: consumer/offset-commit link for F4a" }
+    ]
+  }
+}

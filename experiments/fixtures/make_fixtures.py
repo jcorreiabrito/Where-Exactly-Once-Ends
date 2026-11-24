@@ -218,13 +218,17 @@ def mutate_rows(rows: list[list[str]], defect_class: str, rng: random.Random,
                 expected_event_ids: set[str] | None = None) -> tuple[list[list[str]], dict]:
     """Apply exactly one synthetic defect of ``defect_class``; returns (rows, mutation_info).
 
-    Defect classes (docs/method.md §7.6, gate G3):
-      ``drop_row``         — remove one existing posting row            (expect I4 / loss)
-      ``delete_event``     — remove both legs of one event              (expect I4 / loss)
-      ``duplicate_row``    — insert an exact copy of an existing row    (expect I3 / duplicate)
-      ``flip_leg_sign``    — swap the side of one row (D <-> C)         (expect I2 / mutation)
-      ``update_row_value`` — change account_id or amount of one row     (expect I2 / mutation)
-      ``insert_spurious_row`` — insert a posting for a nonexistent event (expect SPURIOUS)
+    Defect classes (docs/method.md §7.6 gate G3, extended after the S5 review):
+      ``drop_row``             — remove one existing posting row            (I4 loss)
+      ``delete_event``         — remove both legs of one event              (I4 loss)
+      ``duplicate_row``        — insert an exact copy of one posting row    (I3 dup)
+      ``duplicate_entry``      — duplicate the whole balanced entry         (I3 + I1a)  [F-O3/O6]
+      ``flip_leg_sign``        — swap the side of one row (D <-> C)         (I2 mutation)
+      ``update_row_value``     — change account_id or amount of one row     (I2 mutation)
+      ``insert_spurious_row``  — insert one unbalanced fabricated posting   (v5 SPURIOUS)
+      ``balanced_spurious_entry`` — insert a balanced fabricated entry      (v5 SPURIOUS) [F-O4]
+      ``currency_mix``         — mix currencies inside one entry            (I1a/I2)     [F-O6]
+      ``negative_amount``      — negative amount on both legs (sum zero)    (I1a/I2)     [F-O6]
     """
     out = [list(r) for r in rows]
     info: dict = {"defect_class": defect_class}
@@ -244,6 +248,16 @@ def mutate_rows(rows: list[list[str]], defect_class: str, rng: random.Random,
         pos = rng.randrange(len(out) + 1)
         out.insert(pos, copy)
         info.update(source_index=idx, inserted_at=pos, row=copy)
+    elif defect_class == "duplicate_entry":
+        eids = sorted({r[0] for r in out})
+        eid = rng.choice(eids)
+        legs = [list(r) for r in out if r[0] == eid]
+        baseline = len(out)
+        # insert the duplicate pair right after the original entry's last row
+        insert_at = max(i for i, r in enumerate(out) if r[0] == eid) + 1
+        for offset, leg in enumerate(legs):
+            out.insert(insert_at + offset, list(leg))
+        info.update(event_id=eid, duplicated_rows=len(legs), baseline_rows=baseline)
     elif defect_class == "flip_leg_sign":
         idx = rng.randrange(len(out))
         row = out[idx]
@@ -259,37 +273,176 @@ def mutate_rows(rows: list[list[str]], defect_class: str, rng: random.Random,
             row[4] = str(int(row[4]) + rng.randrange(1, 1000))
         info.update(row_index=idx, field=field, row=row)
     elif defect_class == "insert_spurious_row":
-        eid = "%032x" % rng.getrandbits(128)
-        if expected_event_ids:
-            while eid in expected_event_ids:
-                eid = "%032x" % rng.getrandbits(128)
+        eid = _fresh_eid(rng, expected_event_ids)
         row = [eid, "1", "acct:" + "%012x" % rng.getrandbits(48), "D",
                str(rng.randrange(1, 100000)), D.CURRENCY]
         pos = rng.randrange(len(out) + 1)
         out.insert(pos, row)
         info.update(inserted_at=pos, row=row)
+    elif defect_class == "balanced_spurious_entry":
+        eid = _fresh_eid(rng, expected_event_ids)
+        amount = rng.randrange(1, 100000)
+        debit = [eid, "1", "acct:" + "%012x" % rng.getrandbits(48), "D", str(amount),
+                 D.CURRENCY]
+        credit = [eid, "2", "acct:" + "%012x" % rng.getrandbits(48), "C", str(amount),
+                  D.CURRENCY]
+        pos = rng.randrange(len(out) + 1)
+        out.insert(pos, debit)
+        out.insert(pos + 1, credit)
+        info.update(inserted_at=pos, event_id=eid, amount=amount)
+    elif defect_class == "currency_mix":
+        eids = sorted({r[0] for r in out})
+        eid = rng.choice(eids)
+        legs = [r for r in out if r[0] == eid]
+        other = rng.choice(["USD", "EUR"])
+        target = legs[rng.randrange(len(legs))]
+        target[5] = other
+        info.update(event_id=eid, currency=other)
+    elif defect_class == "negative_amount":
+        eids = sorted({r[0] for r in out})
+        eid = rng.choice(eids)
+        for row in out:
+            if row[0] == eid:
+                row[4] = str(-abs(int(row[4])))
+        info.update(event_id=eid, mutated="negative amounts, sum still zero")
     else:
         raise ValueError(f"unknown defect class {defect_class!r}")
     return out, info
 
 
+def _fresh_eid(rng: random.Random, expected_event_ids: set[str] | None) -> str:
+    eid = "%032x" % rng.getrandbits(128)
+    if expected_event_ids:
+        while eid in expected_event_ids:
+            eid = "%032x" % rng.getrandbits(128)
+    return eid
+
+
+def mutate_publication_records(records: list[dict], defect_class: str, rng: random.Random,
+                               expected_event_ids: set[str] | None = None
+                               ) -> tuple[list[dict], dict]:
+    """Mutate the publication stream (used for the M1-kafka ledger corpus and pub metrics).
+
+    Classes: ``duplicate_publication_record`` (I3), ``drop_publication_record`` (I4),
+    ``mutate_publication_leg`` (I2/I1a), ``insert_balanced_publication_record`` (v5 SPURIOUS).
+    """
+    out = [json.loads(json.dumps(rec)) for rec in records]
+    info: dict = {"defect_class": defect_class}
+    if defect_class == "duplicate_publication_record":
+        idx = rng.randrange(len(out))
+        out.insert(rng.randrange(len(out) + 1), json.loads(json.dumps(out[idx])))
+        info.update(source_index=idx)
+    elif defect_class == "drop_publication_record":
+        idx = rng.randrange(len(out))
+        info.update(dropped_index=idx, event_id=out[idx].get("event_id"))
+        del out[idx]
+    elif defect_class == "mutate_publication_leg":
+        idx = rng.randrange(len(out))
+        rec = out[idx]
+        entry = rec.get("entry") or {}
+        legs = entry.get("legs") or []
+        if not legs:
+            raise ValueError("publication record has no legs")
+        leg = legs[rng.randrange(len(legs))]
+        field = rng.choice(["account_id", "amount_minor"])
+        if field == "account_id":
+            leg["account_id"] = "acct:" + "%012x" % rng.getrandbits(48)
+        else:
+            leg["amount_minor"] = int(leg.get("amount_minor") or 1) + rng.randrange(1, 1000)
+        rec["entry"] = entry
+        info.update(record_index=idx, event_id=rec.get("event_id"), field=field)
+    elif defect_class == "insert_balanced_publication_record":
+        eid = _fresh_eid(rng, expected_event_ids)
+        amount = rng.randrange(1, 100000)
+        entry = {
+            "spec": D.ENTRY_SPEC, "event_id": eid, "seq": -1,
+            "legs": [
+                {"account_id": "acct:" + "%012x" % rng.getrandbits(48), "side": "D",
+                 "amount_minor": amount},
+                {"account_id": "acct:" + "%012x" % rng.getrandbits(48), "side": "C",
+                 "amount_minor": amount},
+            ],
+        }
+        record = {"partition": 0, "offset": -1, "key": eid, "value_sha256": None,
+                  "value": json.dumps(entry, separators=(",", ":"))}
+        out.insert(rng.randrange(len(out) + 1), record)
+        info.update(event_id=eid, amount=amount)
+    else:
+        raise ValueError(f"unknown publication defect class {defect_class!r}")
+    return out, info
+
+
+def write_publication_records(path: str, records: list[dict]) -> None:
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        for rec in records:
+            fh.write(json.dumps(rec, separators=(",", ":")) + "\n")
+
+
+def load_publication_records(path: str) -> list[dict]:
+    records = []
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                records.append(json.loads(line))
+    return records
+
+
+#: DB-sink defect classes and their expected primary invariant attribution.
+#: ``kind=publication`` classes are secondary metrics (method §2.7) and are checked by an
+#: explicit metric predicate instead of the run verdict.
 DEFECT_CLASSES = (
     "drop_row",
     "delete_event",
     "duplicate_row",
+    "duplicate_entry",
     "flip_leg_sign",
     "update_row_value",
     "insert_spurious_row",
+    "balanced_spurious_entry",
+    "currency_mix",
+    "negative_amount",
 )
 
-#: primary invariant attribution expected for each class (co-occurring structural I1 is allowed)
 EXPECTED_ATTRIBUTION = {
-    "drop_row": {"primary": "I4", "allowed_extra": {"I1"}},
+    "drop_row": {"primary": "I4", "allowed_extra": {"I1", "I1a"}},
     "delete_event": {"primary": "I4", "allowed_extra": set()},
-    "duplicate_row": {"primary": "I3", "allowed_extra": {"I1"}},
-    "flip_leg_sign": {"primary": "I2", "allowed_extra": {"I1"}},
-    "update_row_value": {"primary": "I2", "allowed_extra": {"I1"}},
-    "insert_spurious_row": {"primary": "SPURIOUS", "allowed_extra": {"I1"}},
+    "duplicate_row": {"primary": "I3", "allowed_extra": {"I1", "I1a"}},
+    "duplicate_entry": {"primary": "I3", "allowed_extra": {"I1", "I1a"}},
+    "flip_leg_sign": {"primary": "I2", "allowed_extra": {"I1", "I1a", "I1b"}},
+    "update_row_value": {"primary": "I2", "allowed_extra": {"I1", "I1a", "I1b"}},
+    "insert_spurious_row": {"primary": "SPURIOUS", "allowed_extra": {"I1", "I1a"}},
+    "balanced_spurious_entry": {"primary": "SPURIOUS", "allowed_extra": set()},
+    "currency_mix": {"primary": "I1", "allowed_extra": {"I1a", "I2"}},
+    "negative_amount": {"primary": "I1", "allowed_extra": {"I1a", "I2"}},
+}
+
+#: attestation defect classes (oracle-level, no sink mutation)
+ATTESTATION_CLASSES = ("attestation_granted", "attestation_missing")
+ATTESTATION_EXPECTED = {
+    "attestation_granted": {"primary": "I2", "allowed_extra": set()},
+    "attestation_missing": {"primary": "I2", "allowed_extra": set()},
+}
+
+#: publication-stream defect classes (secondary metrics; detection predicate, not verdict)
+PUBLICATION_CLASSES = ("pub_record_lost", "pub_content_corrupt")
+PUBLICATION_EXPECTED = {
+    "pub_record_lost": "lost_records>=1 and divergence<0",
+    "pub_content_corrupt": "pub_mutated_records>=1",
+}
+
+#: M1-kafka ledger corpus: mutations applied to the publication stream, which IS the ledger
+KAFKA_CLASSES = (
+    "duplicate_publication_record",
+    "drop_publication_record",
+    "mutate_publication_leg",
+    "insert_balanced_publication_record",
+)
+KAFKA_EXPECTED = {
+    "duplicate_publication_record": {"primary": "I3", "allowed_extra": {"I1", "I1a"}},
+    "drop_publication_record": {"primary": "I4", "allowed_extra": {"I1", "I1a"}},
+    "mutate_publication_leg": {"primary": "I2", "allowed_extra": {"I1", "I1a", "I1b"}},
+    "insert_balanced_publication_record": {"primary": "SPURIOUS", "allowed_extra": set()},
 }
 
 
