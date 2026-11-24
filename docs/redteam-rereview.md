@@ -10,6 +10,14 @@ suite, the S3 acceptance evidence, and the corrected oracle/runner/injector/anal
 **Write scope:** this file only. No code, matrix, results or other docs were modified. Throwaway
 scripts live under `%TEMP%\wxeo-s5-rereview\`. No git command, no stack start/stop/format.
 
+> **STATUS UPDATE — final focused re-review (2026-11-24, ~19:24–20:35Z), see §10 below.**
+> §0–§9 below are the **historical** 14:53Z re-review (verdict BLOCK for the *launch* of the pilot).
+> **Superseding verdict for the pilot gate: `PASS-WITH-CONDITIONS`** (retroactive launch accepted;
+> no bare PASS). **Stage A/B/C remain `BLOCK`ed** pending the five conditions in §10.5
+> (author approvals + M7, R10 analyzer, R12 rates, evidence/provenance close-out, re-freeze/S5
+> re-verify). Read §10 for the final adjudication, verified hashes, evidence pointers and the
+> residual list.
+
 ---
 
 ## 0. Verdict
@@ -809,3 +817,208 @@ they are recorded as **pre-Stage-A conditions** (not pilot conditions). Reasons,
 *End of re-review. The fixes that were made are real and measurable; the production path that turns
 them into valid records is not. Re-run the §6 conditions (a)–(f) plus R5/R6/R7/R8 on the next
 snapshot before the pilot is declared green. §9 is the command-level checklist for that final pass.*
+
+---
+
+## 10. FINAL FOCUSED RE-REVIEW — pilot gate & Stage-A conditions (2026-11-24, ~19:24–20:35Z)
+
+**Reviewer:** S5. **Task:** final verdict for (a) the **PILOT gate** = R1–R9 + R11 + live evidence, and
+(b) the **Stage-A conditions** (R10 analyzer + R12 rates confirmed deferred; anything else?).
+**Method:** read-only inspection of the repository at the evidence commit; no harness/runner/stack
+command was executed and no run was started/stopped. Pure-Python checks were limited to constructor/
+validator/receipt functions (no stack). Git was used read-only (`log`/`show`/`diff`, `status`).
+Throwaway checks: `%TEMP%\wxeo-s5-final\{check_final,code_checks,agg_check}.py`.
+
+### 10.0 Verdict
+
+> # PILOT GATE: **PASS-WITH-CONDITIONS** — retroactive acceptance of the pilot launch.
+> # STAGE A/B/C: **BLOCK** (unchanged; five conditions in §10.5).
+>
+> This is **not a bare PASS**. R1–R9 + R11 are verified green on the committed tree, the live
+> evidence is genuine and independently re-validated, and the pilot is running under the frozen
+> pipeline. The conditions are (i) evidence/freeze provenance does not yet bind the committed
+> live-smoke bundle, (ii) two pre-approval Stage-A executions must be quarantined, (iii) the
+> in-flight pilot still owes the g1k5 / post-freeze app-owned / F1-F5 injector evidence (G1, R6,
+> R7), plus the five Stage-A conditions.
+>
+> **Adjudication (i) — pilot launched before the R1–R9+R11 verdict.** **Acceptable retroactively**
+> because (a) this verdict on R1–R9+R11 is PASS, (b) the pilot was launched **after** the committed
+> freeze (`frozen_at 19:14:26Z`; first pilot record 19:15:20Z; run-record `git_sha` equals freeze
+> `git_sha` `5f6f181`, i.e. the frozen pipeline), (c) it is a gate-calibration pilot (A3.4, not a
+> confirmatory sample), and (d) Stage A/B/C remain hard-stopped. It is a **procedural deviation**
+> from the split-gate wording and must be recorded in `results/DEVIATIONS.md`/P2-GATE (owner: lead),
+> not silently absorbed.
+>
+> **Adjudication (ii) — M7 calibration block (54 runs) still awaiting author approval.** **Yes, this
+> pilot-gate verdict can be issued with M7 as an explicit Stage-A precondition.** M7 is an
+> *additive calibration block* needed for the honest Stage B/C projection (`rates.json`); it does
+> not validate the harness and therefore is not a pilot-gate item. It must nevertheless be
+> author-approved and executed — and `rates.py`/R12 implemented — **before Stage A**; otherwise
+> Stage A's pre-registered fixed-rate mode has no evidence-based rate table. The pilot data
+> themselves confirm the need: every 1k record has `performance.warmup_events_excluded = 2000`,
+> `perf_window` null, `n_instances_merged = 0`, and no throughput/p50/p99 values (§10.1), so
+> capacity cannot be derived from the pilot matrix as frozen.
+
+### 10.1 Verified snapshot (hashes checked in this review)
+
+| Artefact | SHA-256 (first 16) / value |
+|---|---|
+| git `refs/heads/main` (HEAD) | `0bfcfdad4662f5cdefaed324235d86424586c014` (commit `0bfcfda`) |
+| `docs/prereg-freeze.json` | file `7bea3530ad7a3223…`, 9,932 B, `frozen_at 2026-11-24T19:14:26Z`, `git_sha 5f6f181…` |
+| freeze `aggregate_pipeline_sha256` | **`fd271416aebb6f9cb88da680694e4fd43e692b94db8c1e9f78c3dfd8d84e788a`** |
+| freeze recomputation | **matches** its own 34 file hashes (independent re-hash of the documented aggregate algorithm) |
+| artefact binding | jar `6e8223751706d64e7b77752b42df5694d4231ba8bd3522034806bae25e8e50d3` (34,467,687 B) + source tree `60ef2c711adb3acb…` — jar hash equals the actual jar in the tree |
+| freeze pre-freeze evidence | G3 `fc4af460…`, gate-negative-controls `6945399e…` (both hashed, R11) |
+| `experiments/matrix.yaml` / `run_order.csv` | `ba985717e773b7e4…` / `6a0159c6b7999f5c…` — both equal the freeze entries and actual files |
+| `experiments/runner.py` / `receipts.py` / `kafka_admin.py` | `ed690369aace9321…` / `18548c17411ec700…` / `c15435d451c734b6…` |
+| `experiments/oracle/oracle.py` / `injectors.py` / `validate_record.py` | `72a158f711eec2cc…` / `9d921abcd354a18f…` / `9decfdd9a58f2ee1…` |
+| `experiments/live_smoke_evidence.py` | `9c7e40523394b564…` |
+| `tools/analyze.py` (still pre-A2 — R10) | `fa08b0bc20fe91bf…` (equal to freeze) |
+| live smoke evidence file | `62fe30c8d2579268…` (3,629 B) |
+
+Every frozen file hash matched the working tree (**0 drift** across the 34 frozen files). All 7,514
+run-order seeds recompute exactly; matrix↔order is 0 missing / 0 extra.
+
+### 10.2 Pilot gate — items verified GREEN (independently re-checked)
+
+| Item | Result | Evidence pointer |
+|---|---|---|
+| **R1** injector factory dispatch (whole matrix) | **PASS** — constructed **7,514/7,514** rows with 0 raises; class map correct (`F1BrokerKill 569, F2ConsumerKill 569, F3ProduceTimeout 569, F4aOffsetCommitFailure 506, F5DbPartition 506, F6DuplicateRedelivery 506, K2UnknownOutcome 270, K5DuplicateDelivery 243, FailpointWatch 1,131`); `make_injector` returns `None` exactly for the 2,645 F0/no-fault rows; failpoint config enabled only for app-owned classes (K1/K3/K4/K7/F4b) | `%TEMP%\wxeo-s5-final\code_checks.py`; `experiments/injectors.py` |
+| **R2** no S4 companion `fired` on app-owned runs | **PASS** — `pilot-valid-g1k3-r22` has exactly 1 app `fired` (detail carries `instance=1`) + 1 S4 `restored`; `validate_run_receipts(...) → attested=true, owner=app, fired=1, restored=1, app_fired=1, s4_fired=0`; the failed attempt `g1k3-r21` is retained only as an excluded record | same script; `results/raw/run-records/run_pilot-valid-g1k3-r22.json` |
+| **R3** single ownership table incl. g1k5/F4b | **PASS (code+matrix)** — ownership table used by injector, receipts and record; validation slate has `g1k5` rows with `injector_mode=external` (matrix validation section); no app/S4 ownership mismatch found in the live records | `experiments/receipts.py`; `experiments/matrix.yaml` |
+| **R4** phase window / L2 timing | **PASS for marker-driven classes** — K2 receipt has `phase` window, `action_verified=true`, `outside_window=false`, `consumers_alive=true`; runner excludes `uninformative_fire_outside_window` (F3 selftest correctly excluded). **Caveat for F1/F3/F5, §10.3-P3** (not marker-driven; 1k window too short) | `run_a-m3-k2-1k-p3-r02`, `run_pilot-valid-selftest-r11` |
+| **R5** C=2 app-owned failpoint scoping | **PASS** — runner arms only `failpoint_instance=1` (`_service_args` + `--wxeo.failpoint.instance`); record `config.runner.failpoint_instance=1`; `g1k3-r22` C=2 has exactly one app fired, attested; the earlier double-fire attempt is an excluded record, not a valid one | `experiments/runner.py` lines ~1444–1478; record receipts |
+| **R6** K5 waits for durable progress marker | **PASS (code)** — `K5DuplicateDelivery` implemented; rewind via write-capable fault role, k×batch offsets, verified action. **Live g1k5 evidence not yet produced** (in-flight pilot, order indices 78/135/138) → pilot-gate condition P2 | `experiments/injectors.py`; `experiments/run_order.csv` |
+| **R7** F1 verify/restore | **PASS (code)** — F1 verification via live AdminClient broker metadata; restore through `pwsh -File` harness; `action_verified` required. **No live F1 record yet** (selftest slate partially run; F3 r11 excluded by window) → pilot-gate condition P2 | `experiments/kafka_admin.py`; `results/redteam-fixes.md` |
+| **R8** `exit_status.consumer` captured | **PASS** — live records have `exit_status.consumer {"1":0,"2":0}` + `load_generator`; validator requires `EXIT_KEYS` and rejects a record missing them (my tamper test) | live records; `experiments/validate_record.py` |
+| **R9** validator A2 §3.4 equations | **PASS** — direct tamper tests: `v3=true / violating_run=false` → rejected; `violating_run=true` with all flags false → rejected; missing `exit_status.consumer` → rejected; base record → valid | `%TEMP%\wxeo-s5-final\code_checks.py` |
+| **R11** gate falsifiability evidence frozen | **PASS** — `gate-negative-controls.json` hash is in the freeze's `pre_freeze_harness_evidence.files_sha256` (matches actual); G3 hash likewise; gate table PASS requires the gate's negative control to have failed (`tools/analyze.py::build_gate_table`) | freeze; `results/harness/gate-negative-controls.json` (8/8 FAIL as required) |
+| **Live evidence — fault-free** | **PASS** — `pilot-m2-f0-1k-p3-r00`: schema-valid, `valid=true`, `source_integrity=true`, GT==expected, 2,000/2,000 postings, dup=0 lost=0, not censored, quiescence checks (lag 0/sink stable/app idle/relay drained) all true, exit codes 0/0; record+oracle SHA-256 in `live-smoke-evidence.json` **match the files**; `passed=true` | `results/harness/live-smoke-evidence.json`; `results/raw/run-records/run_pilot-m2-f0-1k-p3-r00.json` |
+| **Live evidence — app-owned K3** | **PASS** — `pilot-valid-g1k3-r22`: valid, source-integrity, 2,000 expected / 2,044 observed, **44 duplicates**, 0 losses, `violating_run=true` (M0 negative control), receipts attested (1 app + 1 S4 restored), C=2 | same |
+| **Live evidence — S4-owned K2** | **PASS** — `a-m3-k2-1k-p3-r02`: valid, source-integrity, 2,000/2,000, one S4 `fired` with `action_verified=true` **inside the real load window** + one `restored` | same |
+| **Post-freeze pipeline evidence** | **PASS (partial, important)** — pilot matrix records produced **after** the freeze under the frozen runner are already valid/attested: `run_pilot-m1x-f2-1k-p3-r01` and `run_pilot-m1xm3-f6-1k-p3-r01` (valid, `source_integrity=true`, not censored, S4 receipts attested, `git_sha=5f6f181`=freeze git_sha) | `results/raw/run-records/` |
+| **G3 mutation corpus** | **PASS** — 18 classes / 4 corpora (DB-sink, attestation, publication-metrics, M1-kafka ledger), **1,800/1,800 detected + attributed**, clean and input-tamper controls pass (SYNTHETIC, labelled) | `results/harness/g3-mutation.json` |
+| **Gate negative controls** | **PASS** — G1–G8 each FAIL as required, `all_passed=true` | `results/harness/gate-negative-controls.json` |
+| **S3 acceptance** | **PASS** — 4/4 tests (Kafka smoke, M0 e2e, M3 e2e, failpoint crash), archived under `results/harness/acceptance/` with path-scrubbed JSON | `results/harness/acceptance/acceptance-result.json` |
+| **TLC** | **PASS (bounded)** — 8/8 configurations match pre-registered expectations (reported scope: N=3/BatchSize=2/single partition, not an unbounded proof) | `formal/tlc-results/tlc-summary.json` |
+
+### 10.3 Pilot-gate conditions and residuals (must close before P2 sign-off; none requires stopping the running pilot)
+
+- **P1 (major — evidence↔freeze binding).** The committed `results/harness/live-smoke-evidence.json`
+  records `artifact.freeze_aggregate = 1ccb5aac…`, which is **not** the committed freeze aggregate
+  (`fd271416…`) and does not exist in git history. Timeline: evidence `generated_at
+  19:14:14Z`; `runner.py` mtime `19:14:25Z`; freeze re-issued `19:14:26Z`; the frozen pipeline was
+  therefore re-issued **after** the evidence bundle was produced, and the underlying smoke records
+  (`r00` 18:29Z, `g1k3-r22` 19:08Z, `a-m3-k2-r02` 19:13Z) predate the freeze. The freeze is
+  internally consistent and currently drift-free, and the running pilot was launched after it, but
+  the *gate evidence* is not reproducible from the committed artefacts as the lead's summary
+  states. **Fix:** regenerate `live_smoke_evidence.py` against the committed freeze and/or anchor
+  the live-evidence claim to the post-freeze pilot records; add the freeze/evidence commands to
+  `results/RUNLOG.md` (currently absent) and record the old→new aggregate mapping in
+  `results/DEVIATIONS.md`. Note `freeze.run_sha` is `5f6f181` while HEAD is `0bfcfda` (R21): record
+  the code-commit→freeze-commit mapping. *Owner: lead/S4. Not a pilot-stop item; blocker for P2
+  sign-off.*
+- **P2 (major — in-flight evidence slate not yet complete).** Pilot-gate items that the split
+  defined as live evidence but that do not exist yet at review time: **K5** (`pilot-valid-g1k5-r24/25/26`
+  are scheduled at order indices 78/135/138), **post-freeze app-owned K3** (`g1k3-r23` at index 37),
+  and the injector **selftest slate** (only `r11`/F3 executed, and it was correctly excluded
+  `uninformative_fire_outside_window`). **Additional risk:** `F1/F3/F5` are *not* in the
+  marker-driven class set (`MARKER_DRIVEN_FAULTS = K2,K5,F2,F4a,F6`) and therefore still use the
+  60 s expected-load fallback with no `rates.json`; at 1 k/max the real load is ~0.2–1.5 s (F3
+  selftest: 1.15 s window, fire 286 ms after end). Their 1 k pilot cells will therefore be
+  structurally excluded, so F1/F3/F5 will have **no live in-window attestation** from the pilot.
+  **Fix (before P2/G1/G7 claims):** either extend the rate floor to F1/F3/F5 for pilot cells
+  (identical across mechanisms, record as A3/M6-class deviation) or declare those injectors
+  "unvalidated in pilot" in writing and gate their Stage-B cells on a pre-Stage-B live validation.
+  G1 cannot PASS until the g1k5 runs exist (analyzer requires K3 **and** K5 per class).
+- **P3 (major — process deviation: pre-approval Stage-A executions committed as evidence).**
+  `results/raw/run-records/run_a-m3-k2-1k-p3-r01.json` (excluded, outside window) and
+  `run_a-m3-k2-1k-p3-r02.json` (valid, source-integrity, K2 attested) are **Stage-A matrix records**
+  executed before P2 author approval and committed in the evidence commit. They were produced
+  before the freeze. They must be **quarantined as evidence** (moved/labelled out of the confirmatory
+  `results/raw/run-records/` set or marked evidence-only with a closed-list reason) and the
+  reserved Stage-A reps re-run under the approved campaign; otherwise the Stage-A analysis would
+  silently ingest pre-approval, pre-freeze data and the reserve/skip logic would skip the rep.
+  Record the pre-approval execution in DEVIATIONS (owner: lead/S4).
+- **P4 (major — M7 accepted as Stage-A precondition).** All pilot/Stage-A 1k records report
+  `warmup_events_excluded=2000`, null `perf_window`, `n_instances_merged=0`, and null
+  throughput/p50/p99 (observed in every record of this snapshot); `experiments/rates.py` and
+  `rates.json` are absent; the runner correctly raises for Stage B/C without the table. The M7
+  calibration block (9 mechanisms × {10k,100k} × P6 × N=3 = 54 runs) plus an author-ratified
+  `rates.py` derivation are therefore required before Stage A/B/C. **Adjudication: yes — the
+  pilot-gate verdict stands with M7 as an explicit Stage-A precondition** (author approval, then
+  execution, then re-freeze; §10.5 C1/C3).
+- **P5 (minor residuals beyond R10/R12; not pilot blockers, but must be fixed or downgraded in
+  writing before their gate claims are used):**
+  - **R13** run-record `process_limits` is still inaccurate: records report `jvm_xms/jvm_xmx
+    "2g"/"2g"` while the running service is started with `-Xms512m -Xmx1g` (A3.1) and
+    `affinity_mask`/`priority_class`/`hikari_pool` are `null` (`_process_limits` still hard-codes
+    2g and the post-stop lookups find nothing). Fix before Stage-A records are frozen (or G8's
+    affinity/priority wording must be downgraded).
+  - **R20** publication-quiescence helper still creates ephemeral consumer groups
+    `wxeo.quiesce.<pid>.<ts>` and never deletes them (`experiments/kafka_admin.py`); group residue
+    will accumulate over 7.5k runs. Fix/document before the campaign.
+  - **R17/R21** acceptance evidence is archived but not hashed in the freeze/RUNLOG; the final
+    freeze/evidence commands are not in RUNLOG; freeze `git_sha` names the pre-evidence commit
+    (R21). Fold into P1 close-out.
+  - **R22** gate semantics: analyzer now implements fault-aware G1 (K3 **and** K5), G7 (rate table +
+    generator lag + calibration) and G8 (clock/affinity); G7/G8 can only be claimed once `rates.json`
+    and real process limits exist. G2 should treat a censored positive control as a failure (verify
+    on the first control records). Cheap to confirm while the analyzer is updated for A2 (R10).
+  - **R18** A2 evidence-snapshot re-pin is pending author approval (one-line provenance update, not
+    substance). **R15** appears fixed (`SUCCESS_NO_INFO` counted in the idem path); **R19** the
+    zero-executed list no longer shows `V.*` in the first rows (spot-check; full check in Stage-A
+    close-out).
+- **P6 (code nit, non-blocking).** `tools/analyze.py` G1 `_g1_class` contains a leftover dead
+  assignment (`runs = [...]` with a malformed boolean expression) immediately overwritten by the
+  correct one; no behavioural effect, but it should be removed when the analyzer is rewritten for
+  A2 (R10) so the frozen code review is clean.
+
+### 10.4 What "PASS-WITH-CONDITIONS" means operationally
+
+1. The **pilot may continue** unmodified; the run-production path (injector construction, receipts,
+   validator, freeze pre-flight, quiescence) is verified on the frozen tree, and the pilot is
+   producing valid/attested records under that freeze (P: `run_pilot-m1x-f2-1k-p3-r01`,
+   `run_pilot-m1xm3-f6-1k-p3-r01`; K3 evidence: `g1k3-r22`; K2: `a-m3-k2-r02`).
+2. **No Stage A/B/C run** may start. Stage A is blocked by R10, R12 + M7, the P1–P3 close-out and
+   the author's P2 approvals (matrix amendment M1, A2, K6 limitation, budget plan).
+3. The pilot is **descriptive/calibration only**; no hypothesis verdict, table cell, or figure may
+   be computed from pilot or pre-freeze records. The pre-approval Stage-A records P3 must not enter
+   confirmatory data.
+4. The split-gate decision is confirmed: **R10 and R12 are the only deferred Stage-A blockers from
+   the prior list**, and no new critical defect was found in the frozen pipeline; the residuals in
+   P5 are non-blocking for Stage A execution but blocking for their associated *claims* (G8
+   affinity, G7 capability, acceptance/freeze provenance) and must be closed or reworded before the
+   P2 gate is signed.
+
+### 10.5 Stage-A conditions (the five-line list requested)
+
+1. **Author approvals at P2:** matrix amendment M1 (216→198 pilot / 1,830→1,530 A / 4,020→3,960 B, 20→26 validation), Amendment A2 items A2-1…A2-8 + AC-1…AC-8, K6 non-realisability acknowledgment, **M7 calibration-block approval**, and the budget plan for `H`.
+2. **R10 (deferred → must land):** implement and freeze the A2 analyzer (C1 pooled/AC-3, no C2/C3, canonical H2/H4 sets excluding probes, H5-A residual table + non-vacuity guard, P3 three contrasts, `v1a/v1b` + P11, matrix-hash pin, single-source `attested`, record re-validation, A2 §6 item-14 acceptance fixture); re-freeze; S5 re-verifies.
+3. **R12 + M7:** author-ratified `experiments/rates.py` derivation + execute the 54-run M7 calibration block (9 mech × {10k,100k} × P6 × N=3), generate `experiments/rates.json`, connect G7 (≥3× generator capability + lag + T_quiet), and re-freeze; no silent `max` fallback; M6/A3.3 deviation closed.
+4. **Evidence/provenance close-out (P1+P3):** regenerate live-smoke evidence against committed freeze `fd271416…` (or re-anchor to post-freeze pilot records), RUNLOG the freeze/evidence commands, map `git_sha`→HEAD, record the pilot-launch and pre-approval Stage-A executions in DEVIATIONS, and quarantine `run_a-m3-k2-r01/r02` from confirmatory data.
+5. **Complete the gate evidence and residual fixes:** g1k5 + post-freeze app-owned K3 + F1/F3/F5 injector validation live (or written "unvalidated, cells gated"), G1 per class green, G2/G7/G8 positive evidence, and R13/R20/R22 residuals closed or explicitly downgraded; then S5 re-confirms the re-issued freeze and the pilot projection before any Stage A run.
+
+### 10.6 Commands/artefacts used (all read-only; no stack/runner invocation)
+
+```powershell
+git status --porcelain=v1; git log --oneline -3; git show 5f6f181:docs/prereg-freeze.json
+Get-FileHash <freeze/matrix/order/runner/receipts/kafka_admin/oracle/injectors/validate_record/analyze/jar/evidence files>
+python %TEMP%\wxeo-s5-final\check_final.py       # matrix/order/cells/reps/seeds/constraints/records (read-only)
+python %TEMP%\wxeo-s5-final\agg_check.py         # freeze aggregate self-consistency (matches fd271416…)
+python %TEMP%\wxeo-s5-final\code_checks.py       # 7,514/7,514 injector construction; receipts K3/K2; R9 tamper tests
+Get-Content results/raw/run-records/run_pilot-m2-f0-1k-p3-r00.json        # fault-free live evidence
+Get-Content results/raw/run-records/run_pilot-valid-g1k3-r22.json         # app-owned K3 (C=2, attested)
+Get-Content results/raw/run-records/run_a-m3-k2-1k-p3-r02.json            # S4-owned K2 (in-window, verified)
+Get-Content results/harness/live-smoke-evidence.json                      # NOTE: stale aggregate 1ccb5aac…
+Get-Content results/harness/gate-negative-controls.json                   # 8/8 FAIL as required
+Get-Content results/harness/g3-mutation.json                              # 1,800/1,800, 18 classes
+Get-Content results/harness/acceptance/acceptance-result.json             # 4/4 PASS
+```
+
+**No file in the repository was created or modified except this memo.** The pilot (pid process owned
+by the lead) was observed only through its committed/appended records and RUNLOG; the stack was not
+touched, no runner command was executed, no confirmatory data were produced or analysed.
+
+*End of final focused re-review.
+Pilot gate: **PASS-WITH-CONDITIONS**. Stage A/B/C: **BLOCK** under §10.5.*
