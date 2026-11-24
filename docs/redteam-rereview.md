@@ -583,7 +583,7 @@ bundle (or a copy under `results/harness/`); the A2-6/M6/A2-approval status.
 
 ### 9.0 Snapshot + provenance (2 min)
 ```powershell
-$R = "C:\Users\jvtri\OneDrive\Documentos\Projetos\where-exctaly-ones-ends"; Set-Location $R
+$R = "<repo>"; Set-Location $R
 Get-FileHash experiments\matrix.yaml, experiments\run_order.csv, experiments\matrix.sha256,
   experiments\injectors.py, experiments\runner.py, experiments\receipts.py,
   experiments\validate_record.py, experiments\matrix.py, experiments\deviations.py,

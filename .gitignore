@@ -64,3 +64,6 @@ Thumbs.db
 .audit-tmp/
 *.tmp
 main.txt
+
+# raw run dumps are reproducible from frozen seeds; they carry host paths and stay local
+results/raw/artifacts/
