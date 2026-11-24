@@ -52,7 +52,7 @@ Nominal design: **7,866 matrix runs + 20 validation runs** (pilot 216, Stage A 1
 Stage C 1,800). Per-run cost is unknown until the pilot (A1 §12); the projection worksheet in
 `docs/prereg.md` §9.2 is committed with blanks that may only be filled from pilot measurements.
 Cut ladder (fixed): 1M block → partition sensitivity → N≥20 correctness → escalate to author.
-Known host constraints: 12 logical CPUs, 16 GB RAM, ~11.7 GB free disk at P1 time, OneDrive-synced
+Known host constraints: 12 logical CPUs, 16 GB RAM, ~11.7 GB free disk at P1 time, cloud-synced
 workspace (scratch on local disk per D11).
 
 ## 5. What starts immediately after approval
