@@ -65,6 +65,21 @@ def test_cli_writes_a2_outputs(tmp_path):
     assert (out / "a2-hypotheses.json").exists()
     manifest = json.loads((out / "analysis-manifest.json").read_text())
     assert manifest["a2_analysis"]["verdicts"]
+    # P2 (S5 §13): the paper-visible macros must carry the A2 verdicts, not legacy placeholders
+    macros = (out / "macros.tex").read_text(encoding="utf-8")
+    hypotheses = json.loads((out / "hypotheses.json").read_text())
+    assert hypotheses["source"] == "A2"
+    a2_hyp = json.loads((out / "a2-hypotheses.json").read_text())
+    verdicts = a2_hyp.get("verdicts") or a2_hyp.get("hypotheses") or payload["verdicts"]
+    for h, macro in (("H1", "ResHypothesisOneVerdict"),
+                     ("H2", "ResHypothesisTwoVerdict"),
+                     ("H3", "ResHypothesisThreeVerdict"),
+                     ("H4", "ResHypothesisFourVerdict"),
+                     ("H5", "ResHypothesisFiveVerdict")):
+        expected = verdicts.get(h) if isinstance(verdicts.get(h), str) else \
+            (verdicts.get(h) or {}).get("verdict")
+        assert expected is not None, h
+        assert f"\\newcommand{{\\{macro}}}{{{expected}}}" in macros, (h, expected, macros)
 
 
 def test_cli_fails_closed_on_matrix_pin(tmp_path):

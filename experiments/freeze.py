@@ -85,6 +85,7 @@ FROZEN_FILES = [
     "experiments/tests/test_r10_wiring.py",
     "experiments/tests/test_m7_rates_chain.py",
     "experiments/tests/test_injectors_linux.py",
+    "experiments/tests/test_perf_basis_p1.py",
     "experiments/tests/test_kafka_admin_mapping.py",
     "tools/analyze.py",
     "tools/make-figures.py",

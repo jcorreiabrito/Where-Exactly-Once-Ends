@@ -184,20 +184,22 @@ def _is_number(value):
 
 
 def committed_throughput_eps(record):
-    """Committed-event throughput of a run record (events/s), or None if the evidence is absent.
+    """Mechanism-committed throughput of a run record (events/s), or None if evidence is absent.
 
-    Primary evidence is the runner's steady-state committed-event throughput
-    (``performance.throughput_eps_median``, computed from loader ack timestamps with the warm-up
-    excluded); fallback recomputes it from ``performance.committed_events`` and the
-    ``t_load_start``/``t_load_end`` window with the same A5 warm-up-exclusion rule.
+    P1 (S5 §13): the primary evidence is the artifact's steady-state committed-event throughput
+    (``performance.throughput_eps_median`` aggregated from the per-instance app performance blocks,
+    ``committed_basis=="app-committed"``), window from ``performance.perf_window``. Producer
+    acknowledgement rates are never accepted as the mechanism capacity metric (method §7.2).
     """
     perf = record.get("performance") or {}
+    if perf.get("committed_basis") != "app-committed":
+        return None
     eps = perf.get("throughput_eps_median")
     if _is_number(eps) and eps > 0:
         return float(eps)
     committed = perf.get("committed_events")
-    timings = record.get("timings") or {}
-    t0, t1 = timings.get("t_load_start"), timings.get("t_load_end")
+    window = perf.get("perf_window") or {}
+    t0, t1 = window.get("start"), window.get("end")
     if not _is_int(committed) or not _is_int(t0) or not _is_int(t1) or t1 <= t0:
         return None
     return capacity_from_window(committed, t0 / 1000.0, t1 / 1000.0)
@@ -309,7 +311,14 @@ def saturation_validation_report(records, rates_doc):
             run_problems.append(
                 "load-generator failure/missing exit evidence "
                 f"(exit_status.load_generator={exit_status.get('load_generator')!r})")
+        if (record.get("quiescence") or {}).get("censored") is True:
+            run_problems.append("M7sat run is quiescence-censored (A6 requires a sustained, "
+                                "non-censored run)")
         perf = record.get("performance") or {}
+        if perf.get("committed_basis") != "app-committed":
+            run_problems.append("missing mechanism-committed performance basis "
+                                "(performance.committed_basis must be 'app-committed'; producer "
+                                "acks are not accepted for A6)")
         lag = perf.get("generator_lag_p99_ms")
         if not _is_int(lag):
             run_problems.append("missing generator-lag evidence "
@@ -444,26 +453,45 @@ def _record_is_m7sat(record):
 
 
 def _load_records(records_dir):
-    """Calibration samples for the A5 mapping rule.
+    """Calibration samples for the A5 mapping rule (reads the records directory)."""
+    import glob
+    records = []
+    for path in sorted(glob.glob(os.path.join(records_dir, "run_*.json"))):
+        try:
+            records.append(json.load(open(path, encoding="utf-8")))
+        except Exception:  # noqa: BLE001
+            continue
+    return _load_records_from_list(records)
+
+
+def _load_records_from_list(records):
+    """Calibration capacity samples from already-loaded run records.
 
     May ingest M7sat records for validation purposes, but NEVER confirmatory stages (A5.4:
     ``stage in {m7, M7}`` only).  All nine frozen mechanisms are included in the capacity
     statistics, as A5.2 requires ("min over the nine mechanisms"); there is no per-mechanism
-    exclusion.
+    exclusion.  P1 (S5 §13): only mechanism-committed (``app-committed``) evidence with a
+    non-censored, successful load is capacity evidence; producer acks are rejected.
     """
-    import glob
     samples = []
-    for path in sorted(glob.glob(os.path.join(records_dir, "run_*.json"))):
-        try:
-            rec = json.load(open(path, encoding="utf-8"))
-        except Exception:  # noqa: BLE001
-            continue
+    for rec in records:
         if str(rec.get("stage")) not in ("M7", "M7sat"):
             continue
         perf, timings = rec.get("performance") or {}, rec.get("timings") or {}
+        # P1 (S5 §13): capacity must be mechanism-committed, never producer-ack based; rejected
+        # runs (censored / load-generator failure) are not capacity evidence.
+        if perf.get("committed_basis") != "app-committed":
+            continue
+        if (rec.get("quiescence") or {}).get("censored") is True:
+            continue
+        if ((rec.get("exit_status") or {}).get("load_generator") or 0) != 0:
+            continue
         if not isinstance(perf.get("committed_events"), int):
             continue
-        t0, t1 = timings.get("t_load_start"), timings.get("t_load_end")
+        window = perf.get("perf_window") or {}
+        t0, t1 = window.get("start"), window.get("end")
+        if not isinstance(t0, int) or not isinstance(t1, int) or t1 <= t0:
+            t0, t1 = timings.get("t_load_start"), timings.get("t_load_end")
         if not isinstance(t0, int) or not isinstance(t1, int) or t1 <= t0:
             continue
         runner_cfg = ((rec.get("config") or {}).get("runner") or {})

@@ -194,12 +194,23 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _is_int_like(value) -> bool:
+    """True for a real integer (not bool) or an integer-valued string/number."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return True
+    try:
+        return int(value) == value
+    except (TypeError, ValueError):
+        return False
+
+
 def utc_iso(dt: datetime | None = None) -> str:
     return (dt or utc_now()).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def utc_ms(dt: datetime | None = None) -> int:
-    return int((dt or utc_now()).timestamp() * 1000)
+def utc_ms(dt: datetime | None = None) -> int:    return int((dt or utc_now()).timestamp() * 1000)
 
 
 def read_json(path: str, default=None):
@@ -2397,8 +2408,51 @@ class LiveSequence:
                 result[key] = percentiles.get(key)
             result["n_instances_merged"] = percentiles.get("n_instances", 0)
             result["histogram_path"] = percentiles.get("histogram_path")
-        # throughput from committed events in the steady-state window (loader ack times)
+        # P1 (S5 §13): mechanism-committed throughput must come from the artifact's per-instance
+        # steady-state performance blocks (committed postings/ledger entries), NOT from producer
+        # acks (method §7.2). Producer acknowledgements only report generator lag/offered load.
         result["committed_events"] = None
+        result["committed_basis"] = "producer-acks"
+        n_instances = int(self.run.get("consumer_instances") or 1)
+        app_blocks = []
+        for instance in range(1, n_instances + 1):
+            app_doc = read_json(os.path.join(
+                self.p.outputs, f"app_{self.run_id}_{instance}.json")) or {}
+            perf = app_doc.get("performance") or {}
+            if not isinstance(perf.get("committed_events_total"), int):
+                continue
+            app_blocks.append({
+                "instance": instance,
+                "committed_events_total": int(perf.get("committed_events_total") or 0),
+                "steady_state_events": int(perf.get("steady_state_events") or 0),
+                "steady_state_start_ms": perf.get("steady_state_start_ms"),
+                "steady_state_end_ms": perf.get("steady_state_end_ms"),
+                "steady_state_duration_ms": perf.get("steady_state_duration_ms"),
+                "throughput_eps": perf.get("throughput_eps"),
+                "warmup_events_excluded": perf.get("warmup_events_excluded"),
+            })
+        if app_blocks:
+            total_committed = sum(b["committed_events_total"] for b in app_blocks)
+            steady_events = sum(b["steady_state_events"] for b in app_blocks)
+            starts = [int(b["steady_state_start_ms"]) for b in app_blocks
+                      if _is_int_like(b["steady_state_start_ms"])]
+            ends = [int(b["steady_state_end_ms"]) for b in app_blocks
+                    if _is_int_like(b["steady_state_end_ms"])]
+            window_ms = (max(ends) - min(starts)) if (starts and ends
+                                                      and max(ends) > min(starts)) else 0
+            result.update({
+                "committed_basis": "app-committed",
+                "committed_events": int(steady_events),
+                "committed_events_total": int(total_committed),
+                "app_blocks": app_blocks,
+                "n_instances_merged": len(app_blocks),
+                "perf_window": {"start": min(starts) if starts else None,
+                                "end": max(ends) if ends else None,
+                                "events": int(steady_events)},
+            })
+            if window_ms > 0:
+                result["throughput_eps_median"] = round(steady_events / (window_ms / 1000.0), 3)
+        # producer-ack view (compatibility only; never used as the mechanism capacity metric)
         if manifest_rows and self.loader_result:
             acks = [(int(r["ack_ts_ms"]), int(r["scheduled_at_ms"]))
                     for r in manifest_rows if r.get("ack_ts_ms") is not None
@@ -2409,10 +2463,15 @@ class LiveSequence:
                 t0, _ = steady[0]
                 t1 = steady[-1][0]
                 if t1 > t0:
-                    result["throughput_eps_median"] = round(len(steady) / ((t1 - t0) / 1000.0), 3)
-                    result["perf_window"] = {"start": t0, "end": t1,
-                                             "events": len(steady)}
-                    result["committed_events"] = int(len(steady))
+                    result["producer_ack_throughput_eps"] = round(
+                        len(steady) / ((t1 - t0) / 1000.0), 3)
+                    if result["committed_basis"] == "producer-acks":
+                        # dry-run/synthetic fallback only; calibration/confirmatory analysis
+                        # rejects producer-ack baselines (rates.py requires app-committed)
+                        result["throughput_eps_median"] = result["producer_ack_throughput_eps"]
+                        result["committed_events"] = int(len(steady))
+                        result["perf_window"] = {"start": t0, "end": t1,
+                                                 "events": len(steady)}
             # generator lag covariate: actual send time vs scheduled time (fsync manifest field)
             lags = []
             for row in manifest_rows:

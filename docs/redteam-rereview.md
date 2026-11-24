@@ -1442,3 +1442,173 @@ the Linux host was not contacted.
 *End of final re-review. Verdict at `5b5bc68`: **BLOCK** pending B1–B5 (small, local fixes + two
 author clarifications). After the fixes, proceed T0 → T0b → T1 → T3 → final freeze, report the §12.2
 evidence, and S5 confirms the host freeze before T4/Stage A.*
+
+---
+
+## 13. THIRD RE-REVIEW — commit `29a33fd` (2026-11-24, ~20:50–21:45Z)
+
+**Reviewer:** S5. **Tree:** `29a33fd` (HEAD `29a33fd6bc5d751…`; previous `5b5bc68`, `06b9b41`).
+**Method:** docs/code inspection only; **no stack or runner command executed**; read-only git;
+`python -m pytest experiments/tests -q` → **151 passed** (matches the lead's report);
+`python experiments/matrix.py --check` → clean; no freeze written. Throwaway checks under
+`%TEMP%\wxeo-s5-final\`.
+
+### 13.0 Verdict
+
+> # **BLOCK — one measurement defect remains (P1, critical), plus a paper-pipeline defect (P2).**
+> B1–B8 are genuinely fixed in code and the matrix/accounting/A5-r2/A6 state is exactly as reported
+> (hashes verified below). **However**, the throughput/`committed_events` evidence used by the M7
+> calibration, the A6 saturation validation and the Stage-C performance metrics is still computed
+> **from the producer's ack timestamps** (`produced_*.ndjson`), not from the service's committed-event
+> counters — although the artifact already exposes the correct per-instance committed-event
+> performance block. Consequently T1 would derive the fixed rates from load-generator/broker
+> capacity, A6 would validate the derived 2.5× rate against the same producer rate (so it cannot
+> detect a sink that cannot sustain it), and Stage-C throughput would be nearly identical across
+> mechanisms (invalidating the cost half of H2/H4/H5). Separately, `macros.tex` is still generated
+> from the legacy pre-A2 hypotheses and is `\input` by `main.tex`, so the paper would render legacy
+> verdicts despite the new A2 `hypotheses.json`. Both fixes are local (runner + analyzer) and must
+> land before the Linux host runs T1; after them the §12.2 freeze procedure is acceptable and the
+> host freeze can be confirmed PASS.
+
+**New blocking issues**
+
+- **P1 (critical) — calibration and performance throughput are producer-ack-based, not
+  committed-event-based (violates method §7.2 and hollows out A5/A6).**
+  `runner.LiveSequence._performance_block()` builds `acks` from the **produced manifest**
+  (`produced_*.ndjson`: `ack_ts_ms`, `scheduled_at_ms`), sets
+  `performance.committed_events = len(steady)`, and computes
+  `throughput_eps_median = len(steady)/(t1−t0)` from those ack times (runner lines ~2384–2420); the
+  earlier hist-percentile values for throughput are absent (`hist_*.json` carries only event/batch
+  latency percentiles), so the ack-derived number is what lands in every run record. This is what
+  `rates.py` reads as "capacity" (`capacity_from_window(perf["committed_events"], …)`), what the
+  A5 min-over-mechanisms rule uses, and what A6's `committed_throughput_eps()` compares with the
+  offered saturation rate (its own docstring says "computed from loader ack timestamps"). Producer
+  acks measure the load generator + broker — they are essentially mechanism-independent and do not
+  reflect DB/batch commit capacity, so: (i) T1a rates = 0.5 × producer capacity, which can exceed
+  the sink's sustainable rate, producing backlog/coordinated omission and censored B/C runs;
+  (ii) T1b's A6 check would pass while the mechanism cannot sustain the offered rate (it re-measures
+  the producer), and a quiescence-censored M7sat run can still pass because only record validity,
+  offered rate, throughput and generator lag are checked; (iii) Stage-C throughput ≈ offered rate
+  for every mechanism, destroying the throughput contrast that H2/H4/H5 rely on.
+  **The correct evidence already exists**: the artifact writes a per-instance committed-event
+  performance block in `app_<run>_<instance>.json`
+  (`RunMetrics.performanceBlock()`: `committed_events_total`, `steady_state_events`,
+  `steady_state_start_ms/end_ms`, `steady_state_duration_ms`, `throughput_eps`,
+  `throughput_numerator_events`, `throughput_denominator_ms`; written by
+  `ServiceRunner.writeApplicationArtifacts`). The runner archives `app_1` but does not consume it.
+  **Fix:** aggregate the app performance blocks over the C instances (define the run window
+  explicitly, e.g. Σ `steady_state_events` over the union of per-instance steady windows, or
+  per-instance numerator + common wall window; record numerator/denominator/window in the run
+  record), write `performance.committed_events(_total)`/`throughput_eps_median` from that app
+  evidence (not from `produced_*.ndjson`), keep acks only for the generator-lag covariate, handle
+  killed-instance crash runs (documented null), make `rates.committed_throughput_eps` use the
+  app-derived value and require M7sat records **non-censored** and `exit_status.load_generator==0`;
+  add unit tests with synthetic `app_*.json` performance blocks and a regression that a
+  slow-sink fixture cannot pass A6 when its committed throughput is below 75 % of the offered rate.
+  Then re-run T1: the derived `rates.json` must be based on committed-event capacity.
+- **P2 (major, blocking for the paper pipeline) — `macros.tex` still carries legacy pre-A2
+  verdicts.** `main()` now writes `hypotheses.json` from `a2_analyze()` with `"source":"A2"`
+  (verified) and `a2-legacy-noncitable.json` lists the legacy artefacts — but it still calls
+  `write_macros(os.path.join(out_dir,"macros.tex"), hypotheses, …)` with the legacy
+  `decide_hypotheses()` result (runner/analyze lines ~1881–1910), and `main.tex` does
+  `\inputifexists{results/analysis/macros.tex}` while `sections/results.tex` renders
+  `\ResHypothesisOneVerdict … \ResHypothesisFiveVerdict`. A JSON "non-citable" marker does not stop
+  LaTeX from consuming `macros.tex`, so the compiled paper would show legacy verdicts. **Fix:**
+  generate the hypothesis macros from `a2_out["verdicts"]` (and either stop emitting legacy
+  macros or rename them clearly unused), wire the decision table/tables to A2 where they are
+  paper-visible, and add a CLI-level regression that the emitted `\ResHypothesis*Verdict` values
+  equal the A2 verdicts on the A2 acceptance fixture.
+- **P3 (minor docs/corrections):** A5 §A5.1 has a garbled sentence ("execute at \n ate=max"),
+  says "six measurable fixed-rate blocks" but lists seven, and A5.3's heading still says "63 runs"
+  while revision r2 is 54; A5.3's "saturation spot check passes if the 2.5×max rate sustains the
+  run" is now superseded by A6 — point it at A6 and record that the M7spot saturation rows measure
+  unthrottled saturation capacity (the *exercise* is T1b/M7sat). Also disclose in the paper that A5
+  min-over-**nine** includes M1-kafka, the positive control that D13 excludes from cross-mechanism
+  performance comparisons: the offered rate is set by the slowest measured mechanism including
+  M1-kafka. This is conservative and identical across mechanisms but must be stated (or justified
+  as the approved A5 wording).
+- **P4 (minor, fold into P1):** `saturation_validation_report` should also reject
+  `quiescence.censored==true` M7sat runs and require `exit_status.load_generator==0` explicitly;
+  with the app-committed metric and these checks, A6 becomes a real sink-sustainability gate.
+
+**Confirmed fixed in `29a33fd` (verified, not from the summary)**
+
+| B | Status | Evidence checked |
+|---|---|---|
+| B1/A6 | **CLOSED (code)** | matrix `M7sat` = 9 cells/9 runs, 100k/P6 saturation, one per mechanism; `runner --stage M7sat` selects exactly 9; `_effective_rate` handles the M7sat block **before** any max fallback and reads `rates.json.saturation_rate["100000|p6|sat"].rate`, fail-closed if missing, records `rate_mode="saturation-validation"` + `offered_rate`; `rates.py` two-step `--derive` (candidate, `validated=false`, `saturation_validation.mode="post-rates"`) / `--write` (validates 9 M7sat records: stage/prefix/100k/P6/rate_mode/offered==derived/throughput ±25 %/G7 lag; sets `saturation_validation.validated` and `validated` only if A5∧A6) / `--check` reports both; `run-campaign.sh` T1a→T1b order and gates |
+| B2 | **CLOSED** | `REQUIRED_BLOCKS`/spot checks have **no (1k,P3)**; M7spot = **54** (6 blocks); runner sets `pilot-max` for pilot 1k and `stage-a-max` for Stage A 1k (no derived 1k rate needed); A5 r2 text records the rationale (with P3 doc typos) |
+| B3 | **CLOSED** | script header/usage/case order and runbook: smoke→fault-efficacy→calibrate→saturation-validate→gate-controls→**final freeze**→pilot→A/B/C→analysis; freeze phase verifies evidence files + both rates flags before invoking `freeze.py --write --force --require-evidence`; T3 runs under the provisional bootstrap freeze |
+| B4 | **PARTIAL → P2** | `hypotheses.json` is A2-sourced and `a2-legacy-noncitable.json` exists (verified), CLI/wiring/pin/re-validation work; but `macros.tex` (paper input) is still legacy |
+| B5 | **CLOSED** | `deploy/linux/record_container_images.py` writes `results/harness/container-images.json` fail-closed in bootstrap; `freeze.py` binds it in `EVIDENCE_FILES` **and** requires it via `--require-evidence`; runbook documents tag+digest pinning |
+| B6 | **CLOSED (with P3 disclosure)** | `rates._load_records` only calibration stages; all nine mechanisms included in A5 statistics (M1-kafka exclusion removed) — matches A5.2 "min over the nine"; tests updated |
+| B7 | **CLOSED** | `deploy/docker/endpoints.json` is the single source (`fault_bootstrap=127.0.0.1:19091` ∈ group-member proxies); toxiproxy/compose/runner/fault-efficacy all use it; old `19094`/`kafka-bootstrap` alias removed; fault-efficacy validates the same contract and boots through a group member |
+| B8 | **CLOSED** | T0 smoke adds a clean fault-free **M0** row plus M2/M3/M1-kafka and app/S4 fault rows; runbook §9.5 acceptance mapping updated |
+| Matrix/accounting | **CLOSED** | `matrix.yaml` **`5d348efe…`**, `run_order.csv` **`f4e731a2…`**, `matrix.sha256` **`aa9ad0b9…`** — all equal the reported values and actual files (verified); run order **7,631** rows (7,514+117); confirmatory **7,506/7,488+26** unchanged; calibration **M7-cal 54 + M7spot 54 + M7sat 9 = 117**; `matrix.py --check` clean |
+| A5 r2 / A6 | **CLOSED** | both amendments present and approved in `docs/P2-APPROVAL.md` (items 6/7); A6 block/accounting/two-step wording matches the code |
+| Tests/CI | 151/151 locally verified; CI run id on `29a33fd` still to be provided by the lead | `pytest experiments/tests -q` → 151 passed |
+
+### 13.1 Answers to (a): verdict on the five conditions / host readiness
+
+**BLOCK** until P1 (and P2, for the paper pipeline) are fixed. `29a33fd` is a genuine improvement and
+the matrix/calibration/freeze/proxy/phase work is correct, but T1 as coded would calibrate the
+campaign against the **producer**, and A6 would not gate the mechanism's sustainment — so running
+T1/T3 and issuing the final freeze now would freeze a measurement pipeline that cannot support the
+paper's throughput/rate claims. Once P1/P2 land (small, local: runner consumes existing
+`app_*.json` performance blocks; analyzer writes macros from A2 verdicts; +tests), the tree may
+proceed to the host for T0/T0b/T1a/T1b/T3 and the final freeze.
+
+### 13.2 (b) Final-freeze evidence I will re-verify (extends §12.2)
+
+Same list as §12.2, plus for `29a33fd`: **`results/harness/container-images.json`** (three repo
+digests, hashed and frozen); **validated `experiments/rates.json` with both flags** —
+`validated=true`, `validation.validated=true`, `saturation_validation.mode="post-rates"`,
+`saturation_validation.validated=true`, `observed_runs==9`, `rule_id="A5.partition-scale.v1"`,
+`saturation_rule_id="SAT-2.5x-max"`, full fixed-block coverage (7 blocks) and the 6 A5 spot checks;
+**117 calibration records** (M7-cal 54, M7spot 54, M7sat 9) schema-valid with stage `M7`, the
+M7sat records carrying `rate_mode="saturation-validation"`/`offered_rate` equal to the final
+saturation rate and (after P1) **app-committed** throughput within tolerance and non-censored;
+`matrix.yaml`/`run_order.csv`/`matrix.sha256` hashes `5d348efe…`/`f4e731a2…`/`aa9ad0b9…`; freeze
+SHA/aggregate/`frozen_at_utc`/`git_sha`/`missing_at_freeze:[]`/jar+source digest, independent
+recomputation = claim, `freeze.py --check ok:true`; clean `git status` and **green CI on
+`29a33fd`** (run id); bootstrap host log incl. image repo digests, version blocks, Maven + 151-test
+summary, `--check-env`, stack liveness; T0 `live-smoke-evidence` `passed=true` (now includes the
+clean M0 row and M3/M1-kafka), T0b `linux-fault-efficacy.json` `passed=true`, T3
+`linux-gate-controls.json` `passed=true` (produced before T2); RUNLOG rows with aggregate+git SHA;
+P2-APPROVAL boxes remain pending until my confirmation; and (P2 fix) the analysis CLI emits
+`\ResHypothesis*Verdict` from A2 verdicts with the regression test green.
+
+### 13.3 Remaining fix list before the host run
+
+1. **P1** (critical): make `performance.committed_events`/throughput derive from the app
+   committed-event performance blocks (aggregate C instances, explicit window), keep acks only for
+   generator lag; use it in `rates.py`, A6 validation, and Stage-C metrics; reject censored M7sat
+   runs; add slow-sink regression. Re-validate that T1 rates are mean/min over **committed**
+   capacities.
+2. **P2**: write `macros.tex` hypothesis macros from A2 verdicts (legacy macros removed/renamed),
+   wire paper-visible decision/table outputs to A2 where applicable, CLI-level regression.
+3. **P3/P4**: fix A5 r2 typos/stale numbers and the A5.3→A6 supersession; add the D13/M1-kafka
+   disclosure; harden M7sat validation (censored/exit checks — part of P1).
+
+After 1–3 and a re-run of the 151-test suite (+new tests), the host sequence is: T0 → T0b → T1a →
+T1b → T3 → T2 final freeze → report the §13.2 evidence → S5 confirms the freeze → T4/T5.
+
+### 13.4 Commands used (read-only; no stack/runner)
+
+```powershell
+Get-Content .git/refs/heads/main ; git log --oneline -3 ; git status --porcelain
+python -m pytest experiments/tests -q -p no:cacheprovider      # 151 passed
+python experiments/matrix.py --check                           # clean; M7-cal 54 / M7spot 54 / M7sat 9
+python %TEMP%\wxeo-s5-final\m7c.py                             # matrix/order composition + accounting
+sha256: matrix.yaml 5d348efe…, run_order.csv f4e731a2…, matrix.sha256 aa9ad0b9…
+# reads: A5 r2, A6, P2-APPROVAL, runbook; runner (_performance_block/_effective_rate/selected_runs/
+#   endpoints), rates.py (two-step), analyze.py (main/legacy/A2), freeze.py, bootstrap.sh,
+#   deploy/docker/{endpoints.json,toxiproxy.json,docker-compose.yml}, run-campaign.sh,
+#   artifact RunMetrics/ServiceRunner performance block, main.tex/sections/results.tex
+```
+
+**No repository file was created or modified except this memo.** No stack/runner command was
+executed; the Linux host was not contacted.
+
+*End of third re-review. Verdict at `29a33fd`: **BLOCK** pending P1 (committed-event throughput
+measurement + A6 hardening) and P2 (A2 hypothesis macros). Matrix/calibration/freeze/proxy/phase
+work is verified green.*

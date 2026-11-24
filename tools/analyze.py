@@ -1906,9 +1906,11 @@ def main(argv=None) -> int:
     _g7_rates_check(out_dir)
     pin_ok = _matrix_pin_ok(args.freeze)
     a2 = a2_out
-    macros = write_macros(os.path.join(out_dir, "macros.tex"), hypotheses, recs, dataset)
+    # B4/P2: A2 verdicts own the paper-visible macros/tables (legacy objects are non-citable).
+    a2_hypotheses = {k: {"verdict": v} for k, v in (a2_out.get("verdicts") or {}).items()}
+    macros = write_macros(os.path.join(out_dir, "macros.tex"), a2_hypotheses, recs, dataset)
     tables = write_tables(out_dir, gates=gates, cbmf=cbmf, counts=counts, perf=perf,
-                          decision=decision, hypotheses=hypotheses, recs=recs,
+                          decision=decision, hypotheses=a2_hypotheses, recs=recs,
                           dataset=dataset, bootstrap_seed=bootstrap_seed,
                           formal_dir=args.formal_dir)
     manifest = {
@@ -1919,8 +1921,7 @@ def main(argv=None) -> int:
         "warning": ("SYNTHETIC FIXTURE — NOT RESULTS" if dataset != DATASET_CAMPAIGN else None),
         "outputs": {name: os.path.basename(path) for name, path in tables.items()},
         "macros": macros,
-        "hypotheses": {k: v["verdict"] for k, v in hypotheses.items()
-                       if isinstance(v, dict) and "verdict" in v},
+        "hypotheses": {k: v["verdict"] for k, v in a2_hypotheses.items()},
         "n_valid": tests["n_valid"], "n_excluded": tests["n_excluded"],
         "analysis_script_sha256": tests["analysis_script_sha256"],
         "bootstrap_seed": bootstrap_seed,

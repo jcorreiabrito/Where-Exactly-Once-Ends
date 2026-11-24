@@ -66,10 +66,21 @@ def _samples():
 
 
 def _calibration_record(load, partitions, mechanism, committed_events, seconds, rate_mode):
-    """Minimal M7 calibration record as ingested by rates._load_records (A5 evidence)."""
+    """Minimal M7 calibration record as ingested by rates._load_records (A5 evidence).
+
+    P1 (S5 §13): capacity samples must carry the mechanism-committed basis from the artifact's
+    per-instance performance blocks, never producer acks.
+    """
     return {"stage": "M7", "run_id": f"m7-{mechanism.lower()}-{load}-p{partitions}",
             "mechanism": mechanism, "load_events": load, "partitions": partitions,
-            "performance": {"committed_events": committed_events},
+            "performance": {"committed_events": committed_events,
+                            "committed_events_total": committed_events,
+                            "committed_basis": "app-committed",
+                            "throughput_eps_median": committed_events / seconds,
+                            "perf_window": {"start": 0, "end": int(seconds * 1000),
+                                            "events": committed_events}},
+            "quiescence": {"censored": False},
+            "exit_status": {"consumer": {"1": 0}, "load_generator": 0},
             "timings": {"t_load_start": 0, "t_load_end": int(seconds * 1000)},
             "config": {"runner": {"rate_mode": rate_mode}}}
 
@@ -103,9 +114,11 @@ def _m7sat_record(mechanism, rate=M7SAT_DERIVED_RATE, *, offered=None, throughpu
                               "offered_rate": rate if offered is None else offered}},
         "performance": {"throughput_eps_median": rate if throughput is None else throughput,
                         "committed_events": 90_000,
+                        "committed_events_total": 100_000,
+                        "committed_basis": "app-committed",
+                        "perf_window": {"start": 0, "end": 36_000, "events": 90_000},
                         "generator_lag_p99_ms": lag,
-                        "generator_lag_flag": lag > 5,
-                        "perf_window": {"start": 0, "end": 36_000}},
+                        "generator_lag_flag": lag > 5},
         "timings": {"t_load_start": 0, "t_load_end": 36_000},
     }
 
