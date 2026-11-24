@@ -1,0 +1,26 @@
+{
+  "schema": "wxeo.run-fixture.v1",
+  "synthetic": true,
+  "run_id": "pilot-m2-f0-1k-p3-r00",
+  "mechanism": "M2",
+  "sink_kind": "db",
+  "seed_hex": "0f0e0d0c0b0a0908",
+  "seed_u64": 1084818905618843912,
+  "events": 200,
+  "partitions": 3,
+  "observed_postings": 400,
+  "expected_postings": 400,
+  "paths": {
+    "gt": "gt_pilot-m2-f0-1k-p3-r00.ndjson",
+    "source_dump": "source_dump_pilot-m2-f0-1k-p3-r00.ndjson",
+    "produced": "produced_pilot-m2-f0-1k-p3-r00.ndjson",
+    "sink_dump": "sink_dump_pilot-m2-f0-1k-p3-r00.csv",
+    "publication_dump": "publication_pilot-m2-f0-1k-p3-r00.ndjson",
+    "manifest": "manifest_pilot-m2-f0-1k-p3-r00.json",
+    "attestation": "attestation_pilot-m2-f0-1k-p3-r00.json"
+  },
+  "gt_sha256": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+  "generated_at_utc": "2026-11-24T12:52:01.689Z",
+  "label": "synthetic-clean",
+  "note": "SYNTHETIC fixture - not a measurement, never part of results/raw"
+}

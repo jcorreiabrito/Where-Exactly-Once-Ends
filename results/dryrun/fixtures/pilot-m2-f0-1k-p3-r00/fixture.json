@@ -1,0 +1,41 @@
+{
+  "schema": "wxeo.run-fixture.v1",
+  "synthetic": true,
+  "run_id": "pilot-m2-f0-1k-p3-r00",
+  "mechanism": "M2",
+  "sink_kind": "db",
+  "seed_hex": "87df29bf7cf320a5",
+  "seed_u64": 9790590017338548389,
+  "events": 1000,
+  "partitions": 3,
+  "observed_postings": 2000,
+  "expected_postings": 2000,
+  "paths": {
+    "gt": "gt_pilot-m2-f0-1k-p3-r00.ndjson",
+    "source_dump": "source_dump_pilot-m2-f0-1k-p3-r00.ndjson",
+    "produced": "produced_pilot-m2-f0-1k-p3-r00.ndjson",
+    "sink_dump": "sink_dump_pilot-m2-f0-1k-p3-r00.csv",
+    "publication_dump": "publication_pilot-m2-f0-1k-p3-r00.ndjson",
+    "manifest": "manifest_pilot-m2-f0-1k-p3-r00.json",
+    "attestation": "attestation_pilot-m2-f0-1k-p3-r00.json"
+  },
+  "gt_sha256": "151b4aa292da1f70321576f602b1b7a86071e7048b9fd708c73034360b8ac1b9",
+  "generated_at_utc": "2026-11-24T13:01:06.362Z",
+  "label": "synthetic-dryrun",
+  "note": "SYNTHETIC fixture - not a measurement, never part of results/raw",
+  "plan": {
+    "run_id": "pilot-m2-f0-1k-p3-r00",
+    "cell_id": "P.M2.f0.1k.p3",
+    "stage": "pilot",
+    "mechanism": "M2",
+    "fault": "F0",
+    "fault_level": "none",
+    "ordering_variant": "strict",
+    "load_events": "1000",
+    "partitions": "3",
+    "consumer_instances": "2",
+    "rep": "0",
+    "data_seed": "87df29bf7cf320a5",
+    "injection_seed": "c99bb9584efa5a65"
+  }
+}

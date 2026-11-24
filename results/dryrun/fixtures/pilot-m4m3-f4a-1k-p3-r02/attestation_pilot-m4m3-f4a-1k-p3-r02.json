@@ -1,0 +1,7 @@
+{
+  "can_update": false,
+  "can_delete": false,
+  "posting_triggers": 1,
+  "source": "fixture:attestation",
+  "note": "synthetic attestation: append-only privileges/trigger as specified"
+}

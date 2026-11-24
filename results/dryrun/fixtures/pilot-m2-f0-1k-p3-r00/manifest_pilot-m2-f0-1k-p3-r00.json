@@ -1,0 +1,16 @@
+{
+  "spec": "wxeo.gt-manifest.v1",
+  "run_id": "pilot-m2-f0-1k-p3-r00",
+  "master_seed_raw": "9790590017338548389",
+  "master_seed": "9790590017338548389",
+  "events": 1000,
+  "partitions": 3,
+  "gt_path": "gt_pilot-m2-f0-1k-p3-r00.ndjson",
+  "gt_sha256": "151b4aa292da1f70321576f602b1b7a86071e7048b9fd708c73034360b8ac1b9",
+  "gt_lines": 2000,
+  "produced_path": "produced_pilot-m2-f0-1k-p3-r00.ndjson",
+  "topic": "wxeo.src.pilot-m2-f0-1k-p3-r00",
+  "rate": 2000.0,
+  "created_utc": "2026-11-24T13:01:06.362Z",
+  "synthetic": true
+}

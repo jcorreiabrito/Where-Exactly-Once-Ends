@@ -1,0 +1,163 @@
+{
+  "schema": "wxeo.prereg-freeze.v1",
+  "document": "docs/prereg-freeze.json",
+  "purpose": "Analysis-code freeze required by docs/prereg.md \u00a710 before the first Stage A run: oracle, metric computation, statistics, figure generators, run-record validator, plus the seeds and their generation procedure.",
+  "frozen_at_utc": "2026-11-24T13:09:53Z",
+  "git_sha": "1873ab12b6df1d9856dc104792d4228cdabaf8e1",
+  "host": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.12.4",
+    "machine": "AMD64"
+  },
+  "seeds": {
+    "master_seed": "90650742b511adfb662272117444cf43",
+    "order_seed": "08e2a8d70090d93770cdcb15833b08fa",
+    "bootstrap_seed": "a6a7bdd0682f686e7165dd7d2cfbaeab",
+    "seed_phrases": {
+      "master_seed": "wxeo-campaign-v1|master|2026-11-24",
+      "order_seed": "wxeo-campaign-v1|order|2026-11-24",
+      "bootstrap_seed": "wxeo-campaign-v1|bootstrap|2026-11-24|B=10000"
+    },
+    "seed_generation": "sha256(UTF-8(phrase)).hexdigest()[:32] for each phrase; the phrases are fixed constants in experiments/matrix.py and were generated once before any run",
+    "data_seed_formula": "first 16 hex chars of sha256(UTF-8(master_seed + \"data\" + stage_token + condition_token + decimal(rep)))",
+    "injection_seed_formula": "first 16 hex chars of sha256(UTF-8(master_seed + \"inj\" + stage_token + condition_token + decimal(rep)))",
+    "bootstrap_resampling": "numpy.random.default_rng(int(sha256(bootstrap_seed + '|' + label)[:16], 16)); B = 10,000; percentile method primary, BCa sensitivity"
+  },
+  "files": {
+    "experiments/oracle/__init__.py": {
+      "sha256": "da15ab3726028302aaaaffc0d45f14725f69c024979709a3bc0be1c54fd46af3",
+      "bytes": 824
+    },
+    "experiments/oracle/derive.py": {
+      "sha256": "8146c76e4851e4d5c1d58f52514286322b897744c6ed7ffbfe9a1e41de5c805c",
+      "bytes": 13753
+    },
+    "experiments/oracle/oracle.py": {
+      "sha256": "afa40cdde1d8fdc477d6cc01ddf92cf37c686ab327f34d8cd21f8a7ebf491d76",
+      "bytes": 61666
+    },
+    "experiments/oracle/mutation_test.py": {
+      "sha256": "18ba9d82e0bc07cc42ed79335bc4b1c924468e839fdf0a2f4753b2d55feb3832",
+      "bytes": 15334
+    },
+    "experiments/oracle/g5-vectors.json": {
+      "sha256": "aef7eba6ed786335d49fd4ff214ee906899bd47ddc690b62293a473585f9355c",
+      "bytes": 7078
+    },
+    "experiments/fixtures/__init__.py": {
+      "sha256": "8b32dd58fd96a7025f12ebd7e7956651bf388d3921f73b2e07d8e2441e7f90a0",
+      "bytes": 85
+    },
+    "experiments/fixtures/make_fixtures.py": {
+      "sha256": "08cfe2a2f609d3c28076b7a8a6aaa73e01e3c83eb214c9512fad87d63bcaf6f5",
+      "bytes": 14924
+    },
+    "experiments/fixtures/build_dryrun_fixture.py": {
+      "sha256": "2ad16e30258e0904a27c4bb4eadcce94694103c68691d816fb4e7155ab7330b7",
+      "bytes": 3614
+    },
+    "experiments/fixtures/make_synthetic_analysis_fixture.py": {
+      "sha256": "8ac630f0e56abd354dfcee8f58c45b9d4965a1e9dcb62b06462f74b229d80fbb",
+      "bytes": 14278
+    },
+    "experiments/matrix_design.py": {
+      "sha256": "3a10884b90fd0af01dcd340150f08c325afbfa0ab950e02c1ed49e3b9a61f017",
+      "bytes": 5580
+    },
+    "experiments/matrix.py": {
+      "sha256": "a6a5d770c33fc18d83a91f73c05af15ca0c403d94624f0eda15659fbbc03788f",
+      "bytes": 32028
+    },
+    "experiments/matrix.yaml": {
+      "sha256": "2964957d8eea44fe7cee78a6dbf4e1862d512950e916890607964dfa561736e0",
+      "bytes": 181021
+    },
+    "experiments/run_order.csv": {
+      "sha256": "894d7b8ee20c35368d178f001f509fd55253fde0baf8b70af811c62d4aa25a96",
+      "bytes": 1194627
+    },
+    "experiments/matrix.sha256": {
+      "sha256": "b7180d7434c91d552502d61fe17fb6ab6aa5c8e2532e765d8547f1bce297b20e",
+      "bytes": 158
+    },
+    "experiments/injectors.py": {
+      "sha256": "f1d74aba650378726390d09f88648ce2df07d35785f9cef4ac601f7b23842618",
+      "bytes": 34798
+    },
+    "experiments/runner.py": {
+      "sha256": "3c6dd6903e1fa6e4380108abadc07f8f08f7a82189a00d812ab7430bba7fab31",
+      "bytes": 68090
+    },
+    "experiments/validate_record.py": {
+      "sha256": "a4e34cab58c9badfcb29a2da810f0f616a6a0214e46dc2a567b7743dc1bb2085",
+      "bytes": 12384
+    },
+    "experiments/deviations.py": {
+      "sha256": "78af49bf17869ddf96e6fb1343954d9cae58f47a10bd1fd6a22cd7dc4d9f4442",
+      "bytes": 22006
+    },
+    "experiments/freeze.py": {
+      "sha256": "757e86a6d1eb1cc9a34fd4b4622e0ec16b6293b8742dee04debb8b5ed5b89f14",
+      "bytes": 11920
+    },
+    "experiments/run-matrix.ps1": {
+      "sha256": "e358f13c7ea9946e51f4aa6863f98d660ea060d327861fd96aee99a4f7d72771",
+      "bytes": 2533
+    },
+    "experiments/tests/test_oracle.py": {
+      "sha256": "e5fd87e6a43cc025da70f5f6305599c698e3e72d9b090e34d5d4e53a05c111ff",
+      "bytes": 9922
+    },
+    "tools/analyze.py": {
+      "sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5",
+      "bytes": 84721
+    },
+    "tools/make-figures.py": {
+      "sha256": "26172701623995fdfbeeada7c66894a0e6e772fc1ef31979dfd6fe2cde0ba20d",
+      "bytes": 12689
+    }
+  },
+  "provenance_hashes": {
+    "docs/prereg.md": "7a6667a238eab05476db332104bbe617e7901f52009233e2688050e18c11172b",
+    "docs/method.md": "e731750b67e3137b8141e4b5e0f293969d1db35c3d5625dd644c6aee8b32ce96",
+    "docs/CONTRACTS.md": "ad86835ab56056820acbfa4fa9b14853b68e7be4f7eaef1a6bbc77da94d3a348",
+    "docs/P2-RULINGS.md": "4dc0798e329d5fbd9b7015a6a58c4d10c25c7897784585d52fd1f1730a35278d",
+    "docs/derive-vectors.csv": "699518dfe6eb24e31f88611f719ee3a93b52bdee481b291abb24677d4a213f8a",
+    "docs/P1-APPROVAL.md": "4b3be684b2942b0f6a2550188fa58990f8502cca36ab4471954052ead1a7594d"
+  },
+  "pre_freeze_harness_evidence": {
+    "g3_mutation": {
+      "sha256": "66942fd5be55a7d644d3156ed9fe6b385ecd1052855b8d680b8708ffde27a23a",
+      "passed": true,
+      "requirement": "100% detection with correct attribution (docs/method.md \u00a77.6 G3)"
+    },
+    "g5_cross_implementation": {
+      "python_vectors": "experiments/oracle/g5-vectors.json",
+      "java_side_confirmed": true,
+      "evidence": "S3 Java GroundTruthDigest reproduced all four committed digests byte-for-byte; normative rows docs/derive-vectors.csv are asserted by experiments/tests/test_oracle.py (14 tests green)"
+    }
+  },
+  "aggregate_pipeline_sha256": "b8066abfcd143fdb4c4008386c804599ce29ea3a831b8f151d8952feca1ac297",
+  "analysis_outputs_contract": [
+    "results/analysis/macros.tex",
+    "results/analysis/tests.json",
+    "results/analysis/decision-table.csv",
+    "results/analysis/correctness-by-cell.csv",
+    "results/analysis/correctness-by-mechanism-fault.csv",
+    "results/analysis/counts-by-mechanism.csv",
+    "results/analysis/performance-by-cell.csv",
+    "results/analysis/per-run-performance.csv",
+    "results/analysis/tables/t1-validation.tex",
+    "results/analysis/tables/t2-correctness.tex",
+    "results/analysis/tables/t3-counts.tex",
+    "results/analysis/tables/t4-performance.tex",
+    "results/analysis/tables/t5-tlc.tex",
+    "results/analysis/tables/t6-decision.tex",
+    "figures/fig-correctness.pdf",
+    "figures/fig-latency-ecdf.pdf",
+    "figures/fig-cost-coverage.pdf",
+    "figures/fig-throughput.pdf"
+  ],
+  "missing_at_freeze": [],
+  "freeze_policy": "Any change to a file in `files` after this freeze requires a results/DEVIATIONS.md entry naming the file, the reason and the affected analyses; affected results are labelled 'post-freeze analysis' (docs/prereg.md \u00a710.3)."
+}

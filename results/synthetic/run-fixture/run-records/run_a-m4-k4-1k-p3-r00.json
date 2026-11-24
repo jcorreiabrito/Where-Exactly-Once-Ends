@@ -1,0 +1,147 @@
+{
+  "schema": "wxeo.run.v1",
+  "run_id": "a-m4-k4-1k-p3-r00",
+  "stage": "A",
+  "cell_id": "A.M4.k4.1k.p3",
+  "mechanism": "M4",
+  "ordering_variant": "early",
+  "fault": "K4",
+  "fault_level": "L1",
+  "load_events": 1000,
+  "partitions": 3,
+  "consumer_instances": 2,
+  "rep": 0,
+  "data_seed": "dc406e1dbafa98a5",
+  "injection_seed": "c391634a5dee96c8",
+  "master_seed": "90650742b511adfb662272117444cf43",
+  "git_sha": "1873ab12b6df1d9856dc104792d4228cdabaf8e1",
+  "host": {
+    "os_build": "SYNTHETIC",
+    "cpu_model": "SYNTHETIC",
+    "logical_cpus": 12,
+    "ram_gb": 16.0,
+    "disk_free_start_gb": 10.0
+  },
+  "versions": {
+    "java": "synthetic",
+    "kafka": "synthetic",
+    "postgresql": "synthetic",
+    "toxiproxy": "synthetic",
+    "powershell": "synthetic",
+    "python": "3.12"
+  },
+  "config": {
+    "mechanism": "M4",
+    "ordering_variant": "early",
+    "load_events": 1000,
+    "partitions": 3,
+    "consumer_instances": 2,
+    "synthetic_fixture": true,
+    "config_sha256": "2e67dca681f3443cef4a525d95cc581e9893ab42647ad4d4b9455693c394fd91"
+  },
+  "process_limits": {
+    "synthetic_fixture": true
+  },
+  "timings": {
+    "t_start": 1764002600000,
+    "t_load_start": 1764002605000,
+    "t_load_end": 1764002695000,
+    "t_fault_fire": 1764002650000,
+    "t_restore": 1764002655000,
+    "t_quiesce": 1764002705000,
+    "t_observation": 1764002705100,
+    "t_end": 1764002710000
+  },
+  "quiescence": {
+    "lag_per_partition": {
+      "0": 0,
+      "1": 0,
+      "2": 0
+    },
+    "quiet_period_ms": 10000,
+    "censored": false,
+    "t_consistent_ms": 3352
+  },
+  "performance": {
+    "throughput_eps_median": 1005.13,
+    "p50_ms": 7.82,
+    "p90_ms": 13.3,
+    "p99_ms": 24.91,
+    "p999_ms": 44.83,
+    "max_ms": 62.76,
+    "histogram_path": null,
+    "warmup_events_excluded": 2000,
+    "perf_window": {
+      "synthetic": true
+    }
+  },
+  "counts": {
+    "produced": 1000,
+    "consumed_estimate": 1000,
+    "expected_postings": 2000,
+    "observed_postings": 2000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 1000,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0
+  },
+  "oracle": {
+    "gt_sha256": "0d320964712cacee011388186e3b62cfe7e7871d7dd7e7bdaf8245e7a282a775",
+    "expected_sha256": "0d320964712cacee011388186e3b62cfe7e7871d7dd7e7bdaf8245e7a282a775",
+    "source_integrity": true,
+    "oracle_script_sha256": "4dfbc66f429119557b50e41ade0a835d71cc20b60a160377cffe7948beb45920",
+    "result_sha256": "3027536e6ca1be9f8ff5d5e88707c11dcdff357c1566aeda39cfcb621d48e289"
+  },
+  "fault_receipts": [
+    {
+      "ts_utc": "2026-11-24T00:00:00.000Z",
+      "run_id": "a-m4-k4-1k-p3-r00",
+      "fault": "before_effect_commit",
+      "event": "fired",
+      "detail": "action=crash;point=before_effect_commit;hit=1;after=1;mechanism=synthetic;instance=1",
+      "level": "L1"
+    },
+    {
+      "ts_utc": "2026-11-24T00:00:05.000Z",
+      "run_id": "a-m4-k4-1k-p3-r00",
+      "fault": "before_effect_commit",
+      "event": "restored",
+      "detail": "S4: instance restarted after terminal crash failpoint",
+      "level": "L1"
+    }
+  ],
+  "validity": {
+    "valid": true,
+    "excluded": false,
+    "exclude_reason": null,
+    "residue_check": true,
+    "clock_check": true,
+    "disk_free_start_gb": 10.0,
+    "notes": [
+      "SYNTHETIC FIXTURE for analysis/figure dry-run \u2014 NOT a measurement, never part of results/raw"
+    ]
+  },
+  "artifacts": {},
+  "stdout_path": null,
+  "stderr_path": null,
+  "exit_status": {
+    "consumer": "synthetic",
+    "load_generator": "synthetic"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "schema": "wxeo.run.v1",
+  "run_id": "c-m0-f0-10k-p3-r00",
+  "stage": "C",
+  "cell_id": "C.M0.f0.10k.p3",
+  "mechanism": "M0",
+  "ordering_variant": "strict",
+  "fault": "F0",
+  "fault_level": "none",
+  "load_events": 10000,
+  "partitions": 3,
+  "consumer_instances": 2,
+  "rep": 0,
+  "data_seed": "d70f80808bcd0f51",
+  "injection_seed": "19a414f7aa4a6489",
+  "master_seed": "90650742b511adfb662272117444cf43",
+  "git_sha": "1873ab12b6df1d9856dc104792d4228cdabaf8e1",
+  "host": {
+    "os_build": "SYNTHETIC",
+    "cpu_model": "SYNTHETIC",
+    "logical_cpus": 12,
+    "ram_gb": 16.0,
+    "disk_free_start_gb": 10.0
+  },
+  "versions": {
+    "java": "synthetic",
+    "kafka": "synthetic",
+    "postgresql": "synthetic",
+    "toxiproxy": "synthetic",
+    "powershell": "synthetic",
+    "python": "3.12"
+  },
+  "config": {
+    "mechanism": "M0",
+    "ordering_variant": "strict",
+    "load_events": 10000,
+    "partitions": 3,
+    "consumer_instances": 2,
+    "synthetic_fixture": true,
+    "config_sha256": "8220230bfddd0a6a765d58eea195644422b2b8c14000e444ab588ef2324d12f6"
+  },
+  "process_limits": {
+    "synthetic_fixture": true
+  },
+  "timings": {
+    "t_start": 1764000400000,
+    "t_load_start": 1764000405000,
+    "t_load_end": 1764000495000,
+    "t_fault_fire": null,
+    "t_restore": null,
+    "t_quiesce": 1764000505000,
+    "t_observation": 1764000505100,
+    "t_end": 1764000510000
+  },
+  "quiescence": {
+    "lag_per_partition": {
+      "0": 0,
+      "1": 0,
+      "2": 0
+    },
+    "quiet_period_ms": 10000,
+    "censored": true,
+    "t_consistent_ms": null
+  },
+  "performance": {
+    "throughput_eps_median": 1158.82,
+    "p50_ms": 4.68,
+    "p90_ms": 7.96,
+    "p99_ms": 25.73,
+    "p999_ms": 46.31,
+    "max_ms": 64.84,
+    "histogram_path": null,
+    "warmup_events_excluded": 2000,
+    "perf_window": {
+      "synthetic": true
+    }
+  },
+  "counts": {
+    "produced": 10000,
+    "consumed_estimate": 10000,
+    "expected_postings": 20000,
+    "observed_postings": 20000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 10000,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0
+  },
+  "oracle": {
+    "gt_sha256": "8185724338e0861cc943d4b31e4cd5afc74b7da196c7b06e2cd87cf951191730",
+    "expected_sha256": "8185724338e0861cc943d4b31e4cd5afc74b7da196c7b06e2cd87cf951191730",
+    "source_integrity": true,
+    "oracle_script_sha256": "4dfbc66f429119557b50e41ade0a835d71cc20b60a160377cffe7948beb45920",
+    "result_sha256": "9039ba4e39795b82eb672417cfc026f394cd039c5d32b3dfc5445455661dda92"
+  },
+  "fault_receipts": [],
+  "validity": {
+    "valid": true,
+    "excluded": false,
+    "exclude_reason": null,
+    "residue_check": true,
+    "clock_check": true,
+    "disk_free_start_gb": 10.0,
+    "notes": [
+      "SYNTHETIC FIXTURE for analysis/figure dry-run \u2014 NOT a measurement, never part of results/raw"
+    ]
+  },
+  "artifacts": {},
+  "stdout_path": null,
+  "stderr_path": null,
+  "exit_status": {
+    "consumer": "synthetic",
+    "load_generator": "synthetic"
+  }
+}

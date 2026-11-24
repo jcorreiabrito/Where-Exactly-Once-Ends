@@ -1,0 +1,9 @@
+gate,requirement,status,evidence
+G3,oracle mutation testing: 100% detection for every defect class (>=100 mutations/class),PASS,g3-mutation.json: 720/720 detected
+G1,M0 negative control shows predicted I3 violations in K3/K5 with attested injection,PASS,M0 K3/K5 runs=1 I3-violating=1
+G2,M1-kafka and M4+M3 show zero violations in all fault-free control runs,PENDING,no fault-free control runs yet
+G4,every armed injection has exactly one fired and one restored receipt; non-fired runs excluded and counted,PASS,armed injections=10 missing receipts=0; per-cell exclusion rates in correctness-by-cell.csv
+G5,Java GT digest = Python regenerated digest = source-dump digest; normative vectors reproduced,PASS,runs=30 source-integrity/digest failures=0; vector assertion in experiments/tests/test_oracle.py (docs/derive-vectors.csv)
+G6,shared configuration hash identical across mechanisms; only declared intrinsic keys differ,FAIL,"distinct shared-config hashes per mechanism: {""M0"": 4, ""M1x"": 4, ""M2"": 4, ""M3"": 4, ""M4"": 4}"
+G7,generator sustains >= 3x max mechanism throughput; doubling T_quiet changes no count,PENDING,pilot calibration runs (pilot-valid-quiesce-*) record doubled T_quiet; generator capability recorded in the pilot log
+G8,single boot; clock checks; affinity/priority as configured; free disk above the 3 GB floor,PASS,runs=30 clock/residue failures=0 disk-floor failures=0

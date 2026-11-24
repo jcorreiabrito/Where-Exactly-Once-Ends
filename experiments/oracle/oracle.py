@@ -146,6 +146,9 @@ def _shard_ndjson(path: str, out_dir: str, prefix: str, shards: int, fields: tup
     os.makedirs(out_dir, exist_ok=True)
     handle_cache: dict[int, object] = {}
     paths = [os.path.join(out_dir, f"{prefix}-{b:03d}.ndjson") for b in range(shards)]
+    for shard_path in paths:  # every shard file exists, even when empty
+        with open(shard_path, "w", encoding="utf-8", newline=""):
+            pass
     total = 0
     malformed = 0
     try:
@@ -302,7 +305,7 @@ def verify_source_inputs(
                 }
         for b in range(shards):
             src_counter: Counter = Counter()
-            for obj in _iter_shard(src_paths, shards) if False else _iter_ndjson(src_paths[b]):
+            for _ln, obj in _iter_ndjson(src_paths[b]):
                 src_counter[obj["event_id"]] += 1
             if man_paths is not None:
                 man_counter: Counter = Counter()
@@ -315,7 +318,7 @@ def verify_source_inputs(
                 if exp_counter != src_counter:
                     multiset_deriv_ok = False
                 # derivation partition check
-                dump_rows = list(_iter_ndjson(src_paths[b]))
+                dump_rows = [obj for _ln, obj in _iter_ndjson(src_paths[b])]
                 for row in dump_rows:
                     exp = expected_by_bucket[b].get(row["event_id"])
                     if exp is not None and exp.get("partition") is not None:

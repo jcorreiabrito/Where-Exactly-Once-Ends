@@ -1,0 +1,49 @@
+{
+  "run_id": "pilot-m1-kafka-f6-1k-p3-r02",
+  "generated_at_utc": "2026-11-24T13:08:26.790Z",
+  "sha256": {
+    "gt": "ec5c4e1e6476df067dec605cfef02d2a6bcbb75c61055e1c49f8215d4feaabab",
+    "gt_sha256_sidecar": "44e02406b78d9247d04ffa981a1e13f63adc9b93499ab391d0a89e25b1d9b58d",
+    "source_dump": "222b442a3568156a3834d0cbe433e6511bb04185e8fc7492077b9e3d24169182",
+    "produced_manifest": "2f210b774b0377f194110c0ce89a3fc9ea43ff93d996a9cda13470a4ef2c6c9a",
+    "sink_dump": "1b39d1ddfda9431619319408e3b4d3828a81087465c4e99a1920c5b5ac71c02c",
+    "publication_dump": "c2615cdcad6919d7a8edae7e0260b8268d8dc16dacda33d7ca36986f6a6fddc6",
+    "attestation": "d9123ada39c4b540fb2059703af6055ea859ffa1afa2696bd5d436a323d9c5ab",
+    "manifest": "f928bc6d0bcdc1783c5c9fc66c68efaeeb21697bb797c769437044bdb9aae64e",
+    "oracle": "01d10e5a4db2ebcf10428da6cbb35c37092a722bbf5d68335fdd856dcd108c99"
+  },
+  "bytes": {
+    "gt": 310716,
+    "gt_sha256_sidecar": 65,
+    "source_dump": 156670,
+    "produced_manifest": 132670,
+    "sink_dump": 129826,
+    "publication_dump": 473276,
+    "attestation": 189,
+    "manifest": 560,
+    "oracle": 5739
+  },
+  "paths": {
+    "gt": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\gt",
+    "gt_sha256_sidecar": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\gt_sha256_sidecar",
+    "source_dump": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\source_dump",
+    "produced_manifest": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\produced_manifest",
+    "sink_dump": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\sink_dump",
+    "publication_dump": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\publication_dump",
+    "attestation": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\attestation",
+    "manifest": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\manifest",
+    "oracle": "results\\dryrun\\raw\\artifacts\\pilot-m1-kafka-f6-1k-p3-r02\\oracle"
+  },
+  "retained": {
+    "gt": true,
+    "gt_sha256_sidecar": true,
+    "source_dump": true,
+    "produced_manifest": true,
+    "sink_dump": true,
+    "publication_dump": true,
+    "attestation": true,
+    "manifest": true,
+    "oracle": true
+  },
+  "policy": "full dumps retained for violating/control/sample runs (prereg \u00a75); for other runs only digests are kept \u2014 bulk data stays in local non-synced scratch and is deterministically re-generatable (D10/D11)"
+}

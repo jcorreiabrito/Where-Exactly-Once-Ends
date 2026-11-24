@@ -1,0 +1,172 @@
+{
+  "dataset": "synthetic-fixture",
+  "hypotheses": {
+    "dataset": "synthetic-fixture",
+    "alpha": 0.05,
+    "H1": {
+      "verdict": "inconclusive",
+      "reason": "no data for the M1x K2/K3 cells or the M1-kafka control cells",
+      "evidence": {
+        "m1x_k2k3_runs": 1,
+        "m1x_k2k3_violating": 1,
+        "m1kafka_runs": 0,
+        "m1kafka_violating": 0,
+        "k3_mcnemar": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        }
+      }
+    },
+    "H2": {
+      "verdict": "partially confirmed",
+      "reason": "correctness component confirmed (0 violating runs) but the pre-registered cost component was not confirmed",
+      "evidence": {
+        "m2_runs": 3,
+        "m2_violating": 0,
+        "cost_component": {
+          "description": "H2 cost component: M2 worse than M3 or M4 on throughput or p99 with |delta| >= 0.33 (small) and Holm p < 0.05",
+          "tests": {
+            "M2_vs_M3_p99": {
+              "family": "P2",
+              "comparison": "M2 vs M3",
+              "cliff_delta": 1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M3"
+            },
+            "M2_vs_M3_throughput": {
+              "family": "P1",
+              "comparison": "M2 vs M3",
+              "cliff_delta": -1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M3"
+            },
+            "M2_vs_M4_p99": {
+              "family": "P2",
+              "comparison": "M2 vs M4",
+              "cliff_delta": 1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M4"
+            },
+            "M2_vs_M4_throughput": {
+              "family": "P1",
+              "comparison": "M2 vs M4",
+              "cliff_delta": -1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M4"
+            }
+          },
+          "confirmed": false
+        }
+      }
+    },
+    "H3": {
+      "verdict": "inconclusive",
+      "reason": "M3 shows 1 loss run(s) on the probe but the C2 comparison is not significant",
+      "evidence": {
+        "m3_runs": 6,
+        "m3_i3_violating": 0,
+        "early_probe_runs": 1,
+        "early_probe_loss_runs": 1,
+        "c2": {
+          "description": "H3: M3-early vs M3-strict on I4 (McNemar, Holm)",
+          "tests": {
+            "stageA_K4_M3_early_vs_strict": {
+              "family": "C2",
+              "b": 0,
+              "c": 0,
+              "n_discordant": 0,
+              "p": null,
+              "note": "M3 early (K4) vs M3 strict (control), paired by rep",
+              "n_pairs": 1,
+              "p_adjusted": null
+            }
+          }
+        }
+      }
+    },
+    "H4": {
+      "verdict": "partially confirmed",
+      "reason": "correctness confirmed; latency component not confirmed",
+      "evidence": {
+        "m4_runs": 3,
+        "m4_violating": 0,
+        "m4m3_runs": 0,
+        "m4m3_violating": 0,
+        "latency_component": {
+          "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
+          "tests": {
+            "M4_vs_M2_P2": {
+              "family": "P2",
+              "confirmed": false,
+              "note": "no Stage C data for the pre-registered contrast"
+            },
+            "M4_vs_M2_P1": {
+              "family": "P1",
+              "confirmed": false,
+              "note": "no Stage C data for the pre-registered contrast"
+            }
+          },
+          "confirmed": false
+        }
+      }
+    },
+    "H5": {
+      "verdict": "confirmed",
+      "reason": "no mechanism satisfies both dominance clauses",
+      "evidence": {
+        "applicable": true,
+        "definition": "mechanism dominates iff (i) zero violating runs in every executed correctness cell with attested injections and (ii) non-inferior to the best other mechanism in >=4 of 6 Stage C blocks on both throughput and p99 (|Cliff delta|<0.147 and bootstrap CI of median ratio contains 1)",
+        "correctness_clause_i": {
+          "M0": false,
+          "M1x": false,
+          "M2": true,
+          "M3": false,
+          "M4": true
+        },
+        "non_inferiority_clause_ii": {
+          "M0": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M1x": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M2": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M3": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M4": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          }
+        },
+        "dominant_mechanisms": []
+      }
+    }
+  }
+}

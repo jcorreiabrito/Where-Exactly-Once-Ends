@@ -110,6 +110,12 @@ def derive_event(master_seed: int | str, seq: int, partitions: int | None = None
     event_id = h1[0:16].hex()
     account_d = "acct:" + h1[16:22].hex()
     account_c = "acct:" + h1[22:28].hex()
+    # SPEC ERRATUM (lead ruling R5, docs/P2-RULINGS.md): docs/method.md §1.4.1 wrote
+    # `uint64_be(h1[28:36])`, but SHA-256 is 32 bytes, so the only in-bounds literal slice is
+    # h1[28:32] (4 bytes).  The frozen effective form, verified against docs/derive-vectors.csv,
+    # is:  amount = 1 + (uint32_be(h1[28:32]) mod 100000).
+    # `int.from_bytes(h1[28:36], "big")` is exactly that literal Python slice semantics (it reads
+    # the 4 available bytes); it is kept as written so the code matches the spec text verbatim.
     amount = 1 + (int.from_bytes(h1[28:36], "big") % AMOUNT_MODULUS)
 
     event = {
@@ -258,7 +264,7 @@ def write_expected_shards(
         b = eid_bucket(eid, shards)
         for leg_no, leg in enumerate(event_legs(event), start=1):
             buckets[b].append(
-                (eid, leg_no, leg["account_id"], leg["side"], leg["amount_minor"], leg["currency"])
+                (eid, leg_no, leg["account_id"], leg["side"], leg["amount_minor"], event["currency"])
             )
         if write_event_index:
             index = {

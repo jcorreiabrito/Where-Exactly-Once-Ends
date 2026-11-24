@@ -1,0 +1,128 @@
+{
+  "schema": "wxeo.oracle.v1",
+  "run_id": "pilot-m2-f0-1k-p3-r00",
+  "mechanism": "M2",
+  "sink_kind": "db",
+  "generated_at_utc": "2026-11-24T12:52:46.655Z",
+  "counts": {
+    "produced": 200,
+    "consumed_estimate": 200,
+    "expected_postings": 400,
+    "observed_postings": 400,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 200,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0,
+    "notes": null
+  },
+  "attestation": {
+    "present": true,
+    "can_update": false,
+    "can_delete": false,
+    "posting_triggers": 1,
+    "failed": false,
+    "note": "synthetic attestation: append-only privileges/trigger as specified",
+    "source": "fixture:attestation"
+  },
+  "attribution": [],
+  "source_integrity_detail": {
+    "gt_file": "results/synthetic/fixtures/clean-run/gt_pilot-m2-f0-1k-p3-r00.ndjson",
+    "gt_sha256_file": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+    "gt_sha256_regenerated": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+    "gt_lines_regenerated": 400,
+    "gt_digest_match": true,
+    "source_dump": "results/synthetic/fixtures/clean-run/source_dump_pilot-m2-f0-1k-p3-r00.ndjson",
+    "produced_manifest": "results/synthetic/fixtures/clean-run/produced_pilot-m2-f0-1k-p3-r00.ndjson",
+    "source_records": 200,
+    "source_offsets_contiguous": true,
+    "source_partitions_observed": 3,
+    "source_partitions_expected": 3,
+    "source_partitions_exact": true,
+    "source_event_multiset_matches_manifest": true,
+    "source_event_multiset_matches_derivation": true,
+    "source_dump_digest": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+    "source_dump_digest_match": true,
+    "partition_derivation_mismatches": 0,
+    "value_sha256_checked": true,
+    "value_sha256_mismatches": 0,
+    "malformed_source_lines": 0,
+    "malformed_manifest_lines": 0,
+    "errors": [],
+    "source_integrity": true
+  },
+  "diagnostics": {
+    "dup_key_samples": [],
+    "lost_key_samples": [],
+    "mutated_key_samples": [],
+    "imbalanced_eid_samples": [],
+    "spurious_key_samples": [],
+    "lost_entry_samples": [],
+    "pub_dup_eid_samples": [],
+    "pub_lost_eid_samples": [],
+    "pub_divergence_eid_samples": [],
+    "observed_malformed_rows": 0,
+    "dup_entry_events": 0,
+    "complete_entries": 200,
+    "publication_shard_stats": {
+      "records": 200,
+      "parse_errors": 0
+    }
+  },
+  "verdict_rule": "violating_run = v1|v2|v3|v4|(spurious_postings>0); v1=imbalanced_entries>0; v2=(mutated_postings>0 or append-only attestation fails); v3=dup_postings>0; v4=lost_postings>0; per docs/method.md \u00a72.5 with the \u00a72.4 spurious clause and the \u00a72.6 V2 attestation clause (recorded interpretation).",
+  "warnings": [],
+  "inputs": {
+    "gt": {
+      "path": "results/synthetic/fixtures/clean-run/gt_pilot-m2-f0-1k-p3-r00.ndjson",
+      "sha256": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+      "bytes": 61844
+    },
+    "source_dump": {
+      "path": "results/synthetic/fixtures/clean-run/source_dump_pilot-m2-f0-1k-p3-r00.ndjson",
+      "sha256": "4955702fb7e2a780ce465d675d6fab13fa7acb3e73e7393385e8cad77e30f7e5",
+      "bytes": 31170
+    },
+    "produced_manifest": {
+      "path": "results/synthetic/fixtures/clean-run/produced_pilot-m2-f0-1k-p3-r00.ndjson",
+      "sha256": "418c83db1502976a04c87ad7efe8fa4cda3d142111560029340bc05f1ac28eed",
+      "bytes": 26370
+    },
+    "sink_dump": {
+      "path": "results/synthetic/fixtures/clean-run/sink_dump_pilot-m2-f0-1k-p3-r00.csv",
+      "sha256": "c8407ea3811ec7c28a10c079515246dc4012592751f303229bc7a6e38baec6c5",
+      "bytes": 25954
+    },
+    "publication_dump": {
+      "path": "results/synthetic/fixtures/clean-run/publication_pilot-m2-f0-1k-p3-r00.ndjson",
+      "sha256": "81bbae99573f5e5eea742eac1d7eaa0b1bb921372a35690b6d814e7529a9650d",
+      "bytes": 94304
+    },
+    "attestation": {
+      "path": "results/synthetic/fixtures/clean-run/attestation_pilot-m2-f0-1k-p3-r00.json",
+      "sha256": "d9123ada39c4b540fb2059703af6055ea859ffa1afa2696bd5d436a323d9c5ab",
+      "bytes": 189
+    }
+  },
+  "oracle": {
+    "gt_sha256": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+    "expected_sha256": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+    "source_integrity": true,
+    "oracle_script_sha256": "be7c970a40f90e6b2aad7a9ff6e9e2acca5386443b2b6d772baa63e7abf35caf",
+    "result_sha256": "823b31405361cc31fd70a3c005a8f09464bd51b5220b760e34ea1e5020ddb28a"
+  }
+}

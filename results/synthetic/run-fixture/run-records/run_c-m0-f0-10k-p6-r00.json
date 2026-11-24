@@ -1,0 +1,133 @@
+{
+  "schema": "wxeo.run.v1",
+  "run_id": "c-m0-f0-10k-p6-r00",
+  "stage": "C",
+  "cell_id": "C.M0.f0.10k.p6",
+  "mechanism": "M0",
+  "ordering_variant": "strict",
+  "fault": "F0",
+  "fault_level": "none",
+  "load_events": 10000,
+  "partitions": 6,
+  "consumer_instances": 2,
+  "rep": 0,
+  "data_seed": "91f7310818345ed7",
+  "injection_seed": "5c32bed33a49b086",
+  "master_seed": "90650742b511adfb662272117444cf43",
+  "git_sha": "1873ab12b6df1d9856dc104792d4228cdabaf8e1",
+  "host": {
+    "os_build": "SYNTHETIC",
+    "cpu_model": "SYNTHETIC",
+    "logical_cpus": 12,
+    "ram_gb": 16.0,
+    "disk_free_start_gb": 10.0
+  },
+  "versions": {
+    "java": "synthetic",
+    "kafka": "synthetic",
+    "postgresql": "synthetic",
+    "toxiproxy": "synthetic",
+    "powershell": "synthetic",
+    "python": "3.12"
+  },
+  "config": {
+    "mechanism": "M0",
+    "ordering_variant": "strict",
+    "load_events": 10000,
+    "partitions": 6,
+    "consumer_instances": 2,
+    "synthetic_fixture": true,
+    "config_sha256": "d83bb7ee90dc87e73ead1940f480e426580376eb9a9602983d76f81637b6c51c"
+  },
+  "process_limits": {
+    "synthetic_fixture": true
+  },
+  "timings": {
+    "t_start": 1764000300000,
+    "t_load_start": 1764000305000,
+    "t_load_end": 1764000395000,
+    "t_fault_fire": null,
+    "t_restore": null,
+    "t_quiesce": 1764000405000,
+    "t_observation": 1764000405100,
+    "t_end": 1764000410000
+  },
+  "quiescence": {
+    "lag_per_partition": {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0
+    },
+    "quiet_period_ms": 10000,
+    "censored": false,
+    "t_consistent_ms": 2866
+  },
+  "performance": {
+    "throughput_eps_median": 1278.3,
+    "p50_ms": 4.19,
+    "p90_ms": 7.12,
+    "p99_ms": 25.29,
+    "p999_ms": 45.53,
+    "max_ms": 63.74,
+    "histogram_path": null,
+    "warmup_events_excluded": 2000,
+    "perf_window": {
+      "synthetic": true
+    }
+  },
+  "counts": {
+    "produced": 10000,
+    "consumed_estimate": 10000,
+    "expected_postings": 20000,
+    "observed_postings": 20000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 10000,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0
+  },
+  "oracle": {
+    "gt_sha256": "35cd51b9e79914fdb832df08ffc4c24e9f7d36d43d6bdddc3d8fa0d9d35bf141",
+    "expected_sha256": "35cd51b9e79914fdb832df08ffc4c24e9f7d36d43d6bdddc3d8fa0d9d35bf141",
+    "source_integrity": true,
+    "oracle_script_sha256": "4dfbc66f429119557b50e41ade0a835d71cc20b60a160377cffe7948beb45920",
+    "result_sha256": "6f18665a2fe4fcf870b2cad78ba6078ed8785a4099012ef3c23688e13454f6dc"
+  },
+  "fault_receipts": [],
+  "validity": {
+    "valid": true,
+    "excluded": false,
+    "exclude_reason": null,
+    "residue_check": true,
+    "clock_check": true,
+    "disk_free_start_gb": 10.0,
+    "notes": [
+      "SYNTHETIC FIXTURE for analysis/figure dry-run \u2014 NOT a measurement, never part of results/raw"
+    ]
+  },
+  "artifacts": {},
+  "stdout_path": null,
+  "stderr_path": null,
+  "exit_status": {
+    "consumer": "synthetic",
+    "load_generator": "synthetic"
+  }
+}

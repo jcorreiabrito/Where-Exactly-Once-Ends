@@ -1,0 +1,1324 @@
+{
+  "schema": "wxeo.tests.v1",
+  "dataset": "synthetic-fixture",
+  "synthetic": true,
+  "warning": "SYNTHETIC FIXTURE \u2014 harness/analysis demonstration only, NOT results",
+  "alpha": 0.05,
+  "bootstrap": {
+    "B": 10000,
+    "seed": "a6a7bdd0682f686e7165dd7d2cfbaeab",
+    "method": "percentile primary, BCa sensitivity"
+  },
+  "cliff_thresholds": {
+    "negligible": 0.147,
+    "small": 0.33,
+    "medium": 0.474
+  },
+  "n_records": 30,
+  "n_valid": 30,
+  "n_excluded": 0,
+  "malformed_records": [],
+  "families": {
+    "C1": {
+      "description": "H1: M1x vs M1-kafka (McNemar exact, Holm)",
+      "tests": {
+        "stageA_K3_M1x_vs_M1-kafka": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        },
+        "stageB_F0_M1x_vs_M1-kafka": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        },
+        "stageB_F1_M1x_vs_M1-kafka": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        },
+        "stageB_F2_M1x_vs_M1-kafka": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        },
+        "stageB_F3_M1x_vs_M1-kafka": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        },
+        "stageB_F6_M1x_vs_M1-kafka": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        }
+      }
+    },
+    "C2": {
+      "description": "H3: M3-early vs M3-strict on I4 (McNemar, Holm)",
+      "tests": {
+        "stageA_K4_M3_early_vs_strict": {
+          "family": "C2",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "M3 early (K4) vs M3 strict (control), paired by rep",
+          "n_pairs": 1,
+          "p_adjusted": null
+        }
+      }
+    },
+    "C3": {
+      "description": "H4: M4/M4+M3 vs M1x correctness (McNemar, Holm)",
+      "tests": {
+        "M4_vs_M1x": {
+          "family": "C3",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M4 vs M1x",
+          "p_adjusted": null
+        },
+        "M4+M3_vs_M1x": {
+          "family": "C3",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M4+M3 vs M1x",
+          "p_adjusted": null
+        }
+      }
+    },
+    "P1": {
+      "description": "Throughput block-median family (Friedman + Nemenyi gate; Wilcoxon pairwise Holm; Cliff's delta with CI)",
+      "metric": "throughput",
+      "blocks": [
+        {
+          "load_events": 10000,
+          "partitions": 3
+        },
+        {
+          "load_events": 10000,
+          "partitions": 6
+        },
+        {
+          "load_events": 100000,
+          "partitions": 3
+        }
+      ],
+      "friedman": {
+        "applicable": true,
+        "statistic": 12.0,
+        "p": 0.01735126523666451,
+        "k": 5,
+        "n_blocks": 3,
+        "average_ranks": {
+          "M0": 5.0,
+          "M1x": 4.0,
+          "M2": 1.0,
+          "M3": 3.0,
+          "M4": 2.0
+        },
+        "critical_difference": 3.52154157019746,
+        "alpha": 0.05,
+        "pairwise": [
+          {
+            "a": "M0",
+            "b": "M1x",
+            "rank_diff": 1.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M0",
+            "b": "M2",
+            "rank_diff": 4.0,
+            "cd": 3.52154157019746,
+            "significant": true
+          },
+          {
+            "a": "M0",
+            "b": "M3",
+            "rank_diff": 2.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M0",
+            "b": "M4",
+            "rank_diff": 3.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M1x",
+            "b": "M2",
+            "rank_diff": 3.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M1x",
+            "b": "M3",
+            "rank_diff": 1.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M1x",
+            "b": "M4",
+            "rank_diff": 2.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M2",
+            "b": "M3",
+            "rank_diff": 2.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M2",
+            "b": "M4",
+            "rank_diff": 1.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M3",
+            "b": "M4",
+            "rank_diff": 1.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          }
+        ],
+        "note": "blocks = (load \u00d7 partitions) within Stage C, aggregated to block medians"
+      },
+      "pairwise": [
+        {
+          "a": "M0",
+          "b": "M1x",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M0",
+          "b": "M2",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M0",
+          "b": "M3",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M0",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M1x",
+          "b": "M2",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M1x",
+          "b": "M3",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M1x",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M2",
+          "b": "M3",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -1.0,
+            "lo": -1.0,
+            "hi": -1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M2",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -1.0,
+            "lo": -1.0,
+            "hi": -1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M3",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        }
+      ],
+      "alpha": 0.05
+    },
+    "P2": {
+      "description": "p99 latency block-median family (Friedman + Nemenyi gate; Wilcoxon pairwise Holm; Cliff's delta with CI)",
+      "metric": "p99",
+      "blocks": [
+        {
+          "load_events": 10000,
+          "partitions": 3
+        },
+        {
+          "load_events": 10000,
+          "partitions": 6
+        },
+        {
+          "load_events": 100000,
+          "partitions": 3
+        }
+      ],
+      "friedman": {
+        "applicable": true,
+        "statistic": 11.466666666666669,
+        "p": 0.02179089585829388,
+        "k": 5,
+        "n_blocks": 3,
+        "average_ranks": {
+          "M0": 1.3333333333333333,
+          "M1x": 4.0,
+          "M2": 5.0,
+          "M3": 3.0,
+          "M4": 1.6666666666666667
+        },
+        "critical_difference": 3.52154157019746,
+        "alpha": 0.05,
+        "pairwise": [
+          {
+            "a": "M0",
+            "b": "M1x",
+            "rank_diff": 2.666666666666667,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M0",
+            "b": "M2",
+            "rank_diff": 3.666666666666667,
+            "cd": 3.52154157019746,
+            "significant": true
+          },
+          {
+            "a": "M0",
+            "b": "M3",
+            "rank_diff": 1.6666666666666667,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M0",
+            "b": "M4",
+            "rank_diff": 0.3333333333333335,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M1x",
+            "b": "M2",
+            "rank_diff": 1.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M1x",
+            "b": "M3",
+            "rank_diff": 1.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M1x",
+            "b": "M4",
+            "rank_diff": 2.333333333333333,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M2",
+            "b": "M3",
+            "rank_diff": 2.0,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M2",
+            "b": "M4",
+            "rank_diff": 3.333333333333333,
+            "cd": 3.52154157019746,
+            "significant": false
+          },
+          {
+            "a": "M3",
+            "b": "M4",
+            "rank_diff": 1.3333333333333333,
+            "cd": 3.52154157019746,
+            "significant": false
+          }
+        ],
+        "note": "blocks = (load \u00d7 partitions) within Stage C, aggregated to block medians"
+      },
+      "pairwise": [
+        {
+          "a": "M0",
+          "b": "M1x",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -1.0,
+            "lo": -1.0,
+            "hi": -1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M0",
+          "b": "M2",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -1.0,
+            "lo": -1.0,
+            "hi": -1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M0",
+          "b": "M3",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -1.0,
+            "lo": -1.0,
+            "hi": -1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M0",
+          "b": "M4",
+          "p": 0.75,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -0.3333333333333333,
+            "lo": -1.0,
+            "hi": 1.0,
+            "magnitude": "medium",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M1x",
+          "b": "M2",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": -1.0,
+            "lo": -1.0,
+            "hi": -1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M1x",
+          "b": "M3",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M1x",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M2",
+          "b": "M3",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M2",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        },
+        {
+          "a": "M3",
+          "b": "M4",
+          "p": 0.25,
+          "n": 3,
+          "method": "exact",
+          "cliff": {
+            "delta": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "magnitude": "large",
+            "n_x": 3,
+            "n_y": 3,
+            "method": "paired"
+          },
+          "n_blocks": 3,
+          "p_adjusted": 1.0
+        }
+      ],
+      "alpha": 0.05
+    },
+    "H2-cost": {
+      "description": "H2 cost component: M2 worse than M3 or M4 on throughput or p99 with |delta| >= 0.33 (small) and Holm p < 0.05",
+      "tests": {
+        "M2_vs_M3_p99": {
+          "family": "P2",
+          "comparison": "M2 vs M3",
+          "cliff_delta": 1.0,
+          "magnitude": "large",
+          "p_adjusted": 1.0,
+          "confirmed": false,
+          "note": "pre-registered direction: M2 worse than M3"
+        },
+        "M2_vs_M3_throughput": {
+          "family": "P1",
+          "comparison": "M2 vs M3",
+          "cliff_delta": -1.0,
+          "magnitude": "large",
+          "p_adjusted": 1.0,
+          "confirmed": false,
+          "note": "pre-registered direction: M2 worse than M3"
+        },
+        "M2_vs_M4_p99": {
+          "family": "P2",
+          "comparison": "M2 vs M4",
+          "cliff_delta": 1.0,
+          "magnitude": "large",
+          "p_adjusted": 1.0,
+          "confirmed": false,
+          "note": "pre-registered direction: M2 worse than M4"
+        },
+        "M2_vs_M4_throughput": {
+          "family": "P1",
+          "comparison": "M2 vs M4",
+          "cliff_delta": -1.0,
+          "magnitude": "large",
+          "p_adjusted": 1.0,
+          "confirmed": false,
+          "note": "pre-registered direction: M2 worse than M4"
+        }
+      },
+      "confirmed": false
+    },
+    "H4-latency": {
+      "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
+      "tests": {
+        "M4_vs_M2_P2": {
+          "family": "P2",
+          "confirmed": false,
+          "note": "no Stage C data for the pre-registered contrast"
+        },
+        "M4_vs_M2_P1": {
+          "family": "P1",
+          "confirmed": false,
+          "note": "no Stage C data for the pre-registered contrast"
+        }
+      },
+      "confirmed": false
+    },
+    "P3": {
+      "description": "Time-to-consistent-state proportions at 100k/P=6 (Fisher exact, Holm)",
+      "proportions": {},
+      "tests": {}
+    },
+    "H5-dominance": {
+      "applicable": true,
+      "definition": "mechanism dominates iff (i) zero violating runs in every executed correctness cell with attested injections and (ii) non-inferior to the best other mechanism in >=4 of 6 Stage C blocks on both throughput and p99 (|Cliff delta|<0.147 and bootstrap CI of median ratio contains 1)",
+      "correctness_clause_i": {
+        "M0": false,
+        "M1x": false,
+        "M2": true,
+        "M3": false,
+        "M4": true
+      },
+      "non_inferiority_clause_ii": {
+        "M0": {
+          "blocks_throughput_non_inferior": 0,
+          "blocks_p99_non_inferior": 0,
+          "clause_ii": false
+        },
+        "M1x": {
+          "blocks_throughput_non_inferior": 0,
+          "blocks_p99_non_inferior": 0,
+          "clause_ii": false
+        },
+        "M2": {
+          "blocks_throughput_non_inferior": 0,
+          "blocks_p99_non_inferior": 0,
+          "clause_ii": false
+        },
+        "M3": {
+          "blocks_throughput_non_inferior": 0,
+          "blocks_p99_non_inferior": 0,
+          "clause_ii": false
+        },
+        "M4": {
+          "blocks_throughput_non_inferior": 0,
+          "blocks_p99_non_inferior": 0,
+          "clause_ii": false
+        }
+      },
+      "dominant_mechanisms": []
+    }
+  },
+  "hypotheses": {
+    "dataset": "synthetic-fixture",
+    "alpha": 0.05,
+    "H1": {
+      "verdict": "inconclusive",
+      "reason": "no data for the M1x K2/K3 cells or the M1-kafka control cells",
+      "evidence": {
+        "m1x_k2k3_runs": 1,
+        "m1x_k2k3_violating": 1,
+        "m1kafka_runs": 0,
+        "m1kafka_violating": 0,
+        "k3_mcnemar": {
+          "family": "C1",
+          "b": 0,
+          "c": 0,
+          "n_discordant": 0,
+          "p": null,
+          "note": "not applicable: zero discordant pairs (prereg \u00a77.6)",
+          "n_pairs": 0,
+          "comparison": "M1x vs M1-kafka",
+          "p_adjusted": null
+        }
+      }
+    },
+    "H2": {
+      "verdict": "partially confirmed",
+      "reason": "correctness component confirmed (0 violating runs) but the pre-registered cost component was not confirmed",
+      "evidence": {
+        "m2_runs": 3,
+        "m2_violating": 0,
+        "cost_component": {
+          "description": "H2 cost component: M2 worse than M3 or M4 on throughput or p99 with |delta| >= 0.33 (small) and Holm p < 0.05",
+          "tests": {
+            "M2_vs_M3_p99": {
+              "family": "P2",
+              "comparison": "M2 vs M3",
+              "cliff_delta": 1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M3"
+            },
+            "M2_vs_M3_throughput": {
+              "family": "P1",
+              "comparison": "M2 vs M3",
+              "cliff_delta": -1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M3"
+            },
+            "M2_vs_M4_p99": {
+              "family": "P2",
+              "comparison": "M2 vs M4",
+              "cliff_delta": 1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M4"
+            },
+            "M2_vs_M4_throughput": {
+              "family": "P1",
+              "comparison": "M2 vs M4",
+              "cliff_delta": -1.0,
+              "magnitude": "large",
+              "p_adjusted": 1.0,
+              "confirmed": false,
+              "note": "pre-registered direction: M2 worse than M4"
+            }
+          },
+          "confirmed": false
+        }
+      }
+    },
+    "H3": {
+      "verdict": "inconclusive",
+      "reason": "M3 shows 1 loss run(s) on the probe but the C2 comparison is not significant",
+      "evidence": {
+        "m3_runs": 6,
+        "m3_i3_violating": 0,
+        "early_probe_runs": 1,
+        "early_probe_loss_runs": 1,
+        "c2": {
+          "description": "H3: M3-early vs M3-strict on I4 (McNemar, Holm)",
+          "tests": {
+            "stageA_K4_M3_early_vs_strict": {
+              "family": "C2",
+              "b": 0,
+              "c": 0,
+              "n_discordant": 0,
+              "p": null,
+              "note": "M3 early (K4) vs M3 strict (control), paired by rep",
+              "n_pairs": 1,
+              "p_adjusted": null
+            }
+          }
+        }
+      }
+    },
+    "H4": {
+      "verdict": "partially confirmed",
+      "reason": "correctness confirmed; latency component not confirmed",
+      "evidence": {
+        "m4_runs": 3,
+        "m4_violating": 0,
+        "m4m3_runs": 0,
+        "m4m3_violating": 0,
+        "latency_component": {
+          "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
+          "tests": {
+            "M4_vs_M2_P2": {
+              "family": "P2",
+              "confirmed": false,
+              "note": "no Stage C data for the pre-registered contrast"
+            },
+            "M4_vs_M2_P1": {
+              "family": "P1",
+              "confirmed": false,
+              "note": "no Stage C data for the pre-registered contrast"
+            }
+          },
+          "confirmed": false
+        }
+      }
+    },
+    "H5": {
+      "verdict": "confirmed",
+      "reason": "no mechanism satisfies both dominance clauses",
+      "evidence": {
+        "applicable": true,
+        "definition": "mechanism dominates iff (i) zero violating runs in every executed correctness cell with attested injections and (ii) non-inferior to the best other mechanism in >=4 of 6 Stage C blocks on both throughput and p99 (|Cliff delta|<0.147 and bootstrap CI of median ratio contains 1)",
+        "correctness_clause_i": {
+          "M0": false,
+          "M1x": false,
+          "M2": true,
+          "M3": false,
+          "M4": true
+        },
+        "non_inferiority_clause_ii": {
+          "M0": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M1x": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M2": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M3": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          },
+          "M4": {
+            "blocks_throughput_non_inferior": 0,
+            "blocks_p99_non_inferior": 0,
+            "clause_ii": false
+          }
+        },
+        "dominant_mechanisms": []
+      }
+    }
+  },
+  "zero_event_statements": [
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M0",
+      "fault": "K4",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under A/K4 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M0",
+      "fault": "none",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under A/none (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M1x",
+      "fault": "K4",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M1x produced zero violations in N = 1 valid runs under A/K4 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M1x",
+      "fault": "none",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M1x produced zero violations in N = 1 valid runs under A/none (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M2",
+      "fault": "K3",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M2 produced zero violations in N = 1 valid runs under A/K3 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M2",
+      "fault": "K4",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M2 produced zero violations in N = 1 valid runs under A/K4 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M2",
+      "fault": "none",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M2 produced zero violations in N = 1 valid runs under A/none (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M3",
+      "fault": "K3",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M3 produced zero violations in N = 1 valid runs under A/K3 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M3",
+      "fault": "none",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M3 produced zero violations in N = 1 valid runs under A/none (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M4",
+      "fault": "K3",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M4 produced zero violations in N = 1 valid runs under A/K3 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M4",
+      "fault": "K4",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M4 produced zero violations in N = 1 valid runs under A/K4 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "A",
+      "mechanism": "M4",
+      "fault": "none",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M4 produced zero violations in N = 1 valid runs under A/none (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M0",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M0",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M0",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M0 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M1x",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M1x produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M1x",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M1x produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M1x",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M1x produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M2",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M2 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M2",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M2 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M2",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M2 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M3",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M3 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M3",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M3 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M3",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M3 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M4",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M4 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M4",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M4 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    },
+    {
+      "dataset": "synthetic-fixture",
+      "stage": "C",
+      "mechanism": "M4",
+      "fault": "F0",
+      "n_valid": 1,
+      "n_excluded": 0,
+      "cp_upper_one_sided": 0.95,
+      "rule_of_three": 3.0,
+      "sentence": "Mechanism M4 produced zero violations in N = 1 valid runs under C/F0 (0 excluded: none). The exact Clopper\u2013Pearson 95 % upper bound on the per-run violation probability is 0.9500 (rule-of-three bound 3/N = 3.0000). This bounds the violation probability; it does not prove absence."
+    }
+  ],
+  "inputs": {
+    "records_dir": "synthetic\\run-fixture\\run-records",
+    "record_sha256": {
+      "run_a-m0-ctrl-1k-p3-r00.json": "5297ce4e8f804d7c2e5cd11ef08ed22839fe33816f9a0e712b1f20fec1dd3e9b",
+      "run_a-m0-k3-1k-p3-r00.json": "4e36b77054aa4435889fa020e85c4435319cfc35d786d6c6441c787fb0ecb479",
+      "run_a-m0-k4-1k-p3-r00.json": "1c0ab14e59ba66512ab10213bd5321fe415e805f9da7640bd5c612ab965b29d6",
+      "run_a-m1x-ctrl-1k-p3-r00.json": "a9de7d4f135d279f83805038c65049c9f75516b31201167cf31e2555412520a3",
+      "run_a-m1x-k3-1k-p3-r00.json": "0a80255de252e2696a5b5e69a3cf2273e0828eb8ea0fb0a7cbbd0e71aa0082ec",
+      "run_a-m1x-k4-1k-p3-r00.json": "7fdfc2fcae4da29a7126a0b0a2e71598d80aa5e17ee4be982935b21df1644697",
+      "run_a-m2-ctrl-1k-p3-r00.json": "c73b064dd8db9fa9da45b4c08a7868b90a4cb12e8f6f80751dc2e88b35cd250e",
+      "run_a-m2-k3-1k-p3-r00.json": "e8a9b691e71d0b9ce3d00a230e9f80f8f6bb599014df9ea846d6ee3b6ec5dbfb",
+      "run_a-m2-k4-1k-p3-r00.json": "d953d4613493328ad3a5b73a1d429049bd4fa904fed7b86f440e713597b77e4f",
+      "run_a-m3-ctrl-1k-p3-r00.json": "9caf7b6e3d6f1c71914853f131ee1b644c04f352c49103beb66c636cdaf9bb83",
+      "run_a-m3-k3-1k-p3-r00.json": "eb425e6d22c2ec6d803bb06ecbcf60301b7fddc69ad5e28a31a7655bf87f86f1",
+      "run_a-m3-k4-1k-p3-r00.json": "0d98b7f4104eb66dde8636defc85b0713065f54312ad9e04589c6a091a39f281",
+      "run_a-m4-ctrl-1k-p3-r00.json": "5a22a4fdbfa7b0a4fcded7dc391624298af44391ede64fd09b8eaac893984e58",
+      "run_a-m4-k3-1k-p3-r00.json": "aba57e6be8afcbce8f764b8180417eba88502a1029abb3e51a19ab7d5229d60f",
+      "run_a-m4-k4-1k-p3-r00.json": "c6b2f0cbed9d199c1345292a57b1f2165981e7235574a9459d79a7e95fcfa34a",
+      "run_c-m0-f0-100k-p3-r00.json": "b893faec4646db39548d53c2a4d14fd47cbd55e89ea82ec2d3280cb6ec125d5f",
+      "run_c-m0-f0-10k-p3-r00.json": "73fc3a7bad4dd2721bc5e7905f1700c3cfdd97924098c78c63fd47ecd7e33602",
+      "run_c-m0-f0-10k-p6-r00.json": "26eadb0143db8b02e6b9214a067a350e53e4fc28b3a6d3917324c518aa484d58",
+      "run_c-m1x-f0-100k-p3-r00.json": "a7fa7efd8c40ce4313314457d4705a75759fce8fb47b3e48ade93556ff8f0b91",
+      "run_c-m1x-f0-10k-p3-r00.json": "64061da1c9093ff75a5c69b12fa91e7dbc880e2c12d24547acf51a3971165860",
+      "run_c-m1x-f0-10k-p6-r00.json": "d437e7501ffce1a8a4cc442ace3d537a853a728fc49625d1751551c11b112d3a",
+      "run_c-m2-f0-100k-p3-r00.json": "b9a7792b6d21269aed75274a83de7ce57527f48fb0db5b02a7b3162704dc077d",
+      "run_c-m2-f0-10k-p3-r00.json": "60d01093826fd3d8bac5621ed471f7da0200c4e29332d88974a66bdd32b4e44b",
+      "run_c-m2-f0-10k-p6-r00.json": "4ac7129ea625ff9f2109c23af8443ef250bdfa7082d7a2318e22cb99002b7fe4",
+      "run_c-m3-f0-100k-p3-r00.json": "d4e3e8c9873a8853a458b5df8f3fb7cd87730620bda9ffb179a41733e54d97c8",
+      "run_c-m3-f0-10k-p3-r00.json": "e2fac2d3285665ea76edac1a45cdeb8fadf7bdc98caaed8904298779ff062b70",
+      "run_c-m3-f0-10k-p6-r00.json": "3aad4b93108e9e857c6184b7b22cecbcc2121d36087c9c0e952e77b005b96abe",
+      "run_c-m4-f0-100k-p3-r00.json": "4175c93684f519516c60c1205441e541891f17aa73ef1fd99fc33ba7e9323a94",
+      "run_c-m4-f0-10k-p3-r00.json": "40b65540a3e7c387cc54e6cff40432169f789c5d77c2286fa4fc841e5959a635",
+      "run_c-m4-f0-10k-p6-r00.json": "52a2e5cbab4448474802dc24ea4cc051190fc4d35d769865d8d687980aad0976"
+    },
+    "freeze_file": "C:\\Users\\jvtri\\OneDrive\\Documentos\\Projetos\\where-exctaly-ones-ends\\docs\\prereg-freeze.json",
+    "freeze_sha256": "26686eba877b18947e5dcff1f5b09a0897f59740fba9db93e3699f2c5b7d5d93"
+  },
+  "analysis_script_sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5"
+}

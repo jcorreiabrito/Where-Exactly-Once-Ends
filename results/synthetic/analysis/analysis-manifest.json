@@ -1,0 +1,45 @@
+{
+  "schema": "wxeo.analysis-manifest.v1",
+  "dataset": "synthetic-fixture",
+  "synthetic": true,
+  "warning": "SYNTHETIC FIXTURE \u2014 NOT RESULTS",
+  "outputs": {
+    "t1": "t1-validation.tex",
+    "t2": "t2-correctness.tex",
+    "t3": "t3-counts.tex",
+    "t4": "t4-performance.tex",
+    "t5": "t5-tlc.tex",
+    "t6": "t6-decision.tex"
+  },
+  "macros": {
+    "ResHypothesisOneVerdict": "inconclusive",
+    "ResHypothesisTwoVerdict": "partially confirmed",
+    "ResHypothesisThreeVerdict": "inconclusive",
+    "ResHypothesisFourVerdict": "partially confirmed",
+    "ResHypothesisFiveVerdict": "confirmed",
+    "ResTotalValidRuns": "30",
+    "ResTotalExcludedRuns": "0",
+    "ResMzeroViolatingRuns": "1",
+    "ResMkafkaViolatingRuns": "0",
+    "ResMonexViolatingRuns": "1",
+    "ResMonexViolationRate": "16.7\\",
+    "ResMtwoViolatingRuns": "0",
+    "ResMthreeViolatingRuns": "1",
+    "ResMfourViolatingRuns": "0",
+    "ResMtwoPlusMthreeViolatingRuns": "0",
+    "ResMfourPlusMthreeViolatingRuns": "0",
+    "ResMonexPlusMthreeViolatingRuns": "0",
+    "ResEarlyProbeLossRuns": "1"
+  },
+  "hypotheses": {
+    "H1": "inconclusive",
+    "H2": "partially confirmed",
+    "H3": "inconclusive",
+    "H4": "partially confirmed",
+    "H5": "confirmed"
+  },
+  "n_valid": 30,
+  "n_excluded": 0,
+  "analysis_script_sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5",
+  "bootstrap_seed": "a6a7bdd0682f686e7165dd7d2cfbaeab"
+}

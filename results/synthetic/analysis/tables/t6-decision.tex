@@ -1,0 +1,21 @@
+% dataset: synthetic-fixture  (SYNTHETIC FIXTURE — NOT RESULTS)
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Practitioner decision table: exposure class → minimal sufficient mechanism set, with measured corroboration from the pre-registered cell map (prereg §7.7). Values are filled only from results; ‘—’ means not measured.}
+\label{tab:decision}
+\begin{tabular}{lp{0.16\linewidth}p{0.14\linewidth}p{0.22\linewidth}p{0.18\linewidth}}
+\toprule
+\textbf{Exposure} & \textbf{Model-minimal} & \textbf{Measured corroboration} & \textbf{CP 95~\% upper} & \textbf{Residual open risk} \\
+\midrule
+E1 & M3 or M4 & M2, M3, M4 & 1.000 & see method §11.1 \\
+E2 & M4 & M0, M1x, M2, M4 & 1.000 & see method §11.1 \\
+E3 & M3 or M1 family & — & — & see method §11.1 \\
+E4 & M3 or M4 & — & — & see method §11.1 \\
+E5 & M1 family & M0, M1x, M2, M3, M4 & 0.393 & see method §11.1 \\
+E1∧E2∧E3∧E4 & M4+M3 & M2, M4 & 0.975 & see method §11.1 \\
+E1..E4∧E5 & M1x+M3 & M0, M1x, M2, M3, M4 & 0.393 & see method §11.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
