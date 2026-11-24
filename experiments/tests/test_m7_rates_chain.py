@@ -20,6 +20,9 @@ from experiments import runner as RN  # noqa: E402
 from experiments import validate_record as VR  # noqa: E402
 
 M7SAT_DERIVED_RATE = 5555
+#: measured committed capacity behind the 2.5x rule (120000 events over a 60 s window with the
+#: 10 % warm-up exclusion -> 120000 / 54 s)
+M7SAT_CAPACITY = 120_000 / 54.0
 SAT_KEY = "100000|p6|sat"
 M7_RUNS_CSV = os.path.join(REPO, "experiments", "run_order.csv")
 M7_MATRIX_YAML = os.path.join(REPO, "experiments", "matrix.yaml")
@@ -35,11 +38,13 @@ def _m7_record():
     rec["stage"] = "M7"
     rec["fault"] = "none"
     rec["performance"]["committed_events"] = 9000
+    rec["performance"]["committed_basis"] = "app-committed"
+    rec["performance"]["committed_events_total"] = 10000
     return rec
 
 
 def _samples():
-    return [
+    samples = [
         {"load_events": 10_000, "partitions": 6, "mechanism": "M0",
          "committed_events": 9000, "window_start_s": 0.0, "window_end_s": 10.0},
         {"load_events": 10_000, "partitions": 6, "mechanism": "M2",
@@ -49,8 +54,7 @@ def _samples():
         {"load_events": 100_000, "partitions": 6, "mechanism": "M2",
          "committed_events": 72000, "window_start_s": 0.0, "window_end_s": 100.0},
         {"load_events": 100_000, "partitions": 6, "mechanism": "M0", "mode": "saturation",
-         "committed_events": 120000, "window_start_s": 0.0, "window_end_s": 60.0},
-        # A5.2 spot-check evidence (mapping predictions: 10k/P3=450, 10k/P12=1800,
+         "committed_events": 120000, "window_start_s": 0.0, "window_end_s": 60.0},        # A5.2 spot-check evidence (mapping predictions: 10k/P3=450, 10k/P12=1800,
         # 100k/P3=400, 100k/P12=1600, 1M/P6=800 capacity events/s)
         {"load_events": 10_000, "partitions": 3, "mechanism": "M2", "committed_events": 4050,
          "window_start_s": 0.0, "window_end_s": 10.0},
@@ -63,6 +67,15 @@ def _samples():
         {"load_events": 1_000_000, "partitions": 6, "mechanism": "M2",
          "committed_events": 72000, "window_start_s": 0.0, "window_end_s": 100.0},
     ]
+    # A6 r2: the per-mechanism measured saturation capacity is the validation reference, so every
+    # mechanism needs a saturation-capacity sample (100k/P6, 120000 committed in 60 s -> 2222.2/s).
+    for mech in MD.MECHANISMS:
+        if not any(x.get("mode") == "saturation" and x["mechanism"] == mech
+                   for x in samples):
+            samples.append({"load_events": 100_000, "partitions": 6, "mechanism": mech,
+                            "mode": "saturation", "committed_events": 120000,
+                            "window_start_s": 0.0, "window_end_s": 60.0})
+    return samples
 
 
 def _calibration_record(load, partitions, mechanism, committed_events, seconds, rate_mode):
@@ -71,7 +84,8 @@ def _calibration_record(load, partitions, mechanism, committed_events, seconds, 
     P1 (S5 §13): capacity samples must carry the mechanism-committed basis from the artifact's
     per-instance performance blocks, never producer acks.
     """
-    return {"stage": "M7", "run_id": f"m7-{mechanism.lower()}-{load}-p{partitions}",
+    suffix = "-sat" if "saturation" in str(rate_mode) else ""
+    return {"stage": "M7", "run_id": f"m7-{mechanism.lower()}-{load}-p{partitions}{suffix}",
             "mechanism": mechanism, "load_events": load, "partitions": partitions,
             "performance": {"committed_events": committed_events,
                             "committed_events_total": committed_events,
@@ -92,10 +106,19 @@ def _all_calibration_records():
         recs.append(_calibration_record(s["load_events"], s["partitions"], s["mechanism"],
                                         s["committed_events"],
                                         s["window_end_s"] - s["window_start_s"], mode))
+    # A6 r2: the per-mechanism measured saturation capacity is the validation reference, so the
+    # calibration fixture must carry a saturation-capacity sample for all nine mechanisms.
+    for mech in MD.MECHANISMS:
+        if any(r["mechanism"] == mech and "saturation" in str(r["config"]["runner"]["rate_mode"])
+               for r in recs):
+            continue
+        recs.append(_calibration_record(100_000, 6, mech, 120_000, 60.0,
+                                        "calibration-saturation"))
     return recs
 
 
-def _m7sat_record(mechanism, rate=M7SAT_DERIVED_RATE, *, offered=None, throughput=None,
+def _m7sat_record(mechanism, rate=M7SAT_DERIVED_RATE, *, offered=None,
+                  throughput=M7SAT_CAPACITY,
                   lag=1, valid=True, load_generator_exit=0, rate_mode="saturation-validation",
                   run_id=None, load_events=100_000, partitions=6):
     rid = run_id or (f"m7sat-{MD.MECH_TOKEN[mechanism]}-cal-100k-p6-r00")
@@ -392,7 +415,7 @@ def test_a6_all_nine_pass_validates_both_layers():
                    if r["mechanism"] == "M0" else r for r in recs], "generator-lag"),
     (lambda recs: [_m7sat_record("M0", lag=6)] + [r for r in recs if r["mechanism"] != "M0"],
      "generator-lag"),
-    (lambda recs: [_m7sat_record("M0", throughput=M7SAT_DERIVED_RATE * 0.5)]
+    (lambda recs: [_m7sat_record("M0", throughput=M7SAT_CAPACITY * 0.5)]
                   + [r for r in recs if r["mechanism"] != "M0"], "throughput"),
     (lambda recs: [dict(r, performance={k: v for k, v in r["performance"].items()
                                         if k not in ("throughput_eps_median",
@@ -673,3 +696,16 @@ def test_lifecycle_block_records_a6_rate_and_b7_contract(tmp_path, monkeypatch):
     assert contract["fault_bootstrap"] == "127.0.0.1:19091"
     assert contract["path"] == "deploy/docker/endpoints.json"
     assert len(contract["sha256"]) == 64
+
+
+def test_q6_validator_requires_app_committed_basis_for_m7_b_c():
+    # Q6: a producer-ack fallback record must not enter M7/B/C analysis, even if the JSON is
+    # otherwise well-formed.
+    rec = _m7_record()
+    rec["performance"]["committed_basis"] = "producer-acks"
+    assert any("committed_basis" in e for e in VR.validate_record(rec))
+    rec["performance"]["committed_basis"] = "app-committed-partial"
+    rec["performance"]["partial"] = True
+    assert VR.validate_record(rec) == []  # partial crash runs remain schema-valid
+    rec["performance"]["partial"] = False
+    assert any("partial" in e for e in VR.validate_record(rec))

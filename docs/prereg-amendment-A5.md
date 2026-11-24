@@ -34,12 +34,19 @@ For a mechanism m and load L with partitions P:
    pilot 1k runs always execute at `rate=max` (`rate_mode="stage-a-max"/"pilot-max"`) and are
    correctness-only for performance purposes.
 4. Fixed rate for a block = `floor(0.5 × min_mechanism capacity(m, L, P))`, min over the **nine**
-   frozen mechanisms, exactly as in R12; never below the 50 events/s floor used by A3.3. The nine
-   include M1-kafka, although D13 excludes M1-kafka from *cross-mechanism performance comparisons*;
-   including it in the minimum is conservative (it can only lower the derived rate) and is stated here
-   for reviewers.
+   frozen mechanisms, exactly as in R12; never below the 50 events/s floor used by A3.3. **Revision
+   r3 (author-approved):** `prereg.md` §6.2's text says 0.75×min; the implemented and approved factor
+   is **0.5×min** (more headroom for the downstream sink). A5 r3 supersedes §6.2 on this point;
+   `rates.json` records `frozen_rule_supersedes={prereg_6_2_fraction:0.75,
+   implemented_fraction:0.5, author_approved:true}` and `rates.py --check` fails closed if it is
+   absent. The nine include M1-kafka, although D13 excludes M1-kafka from *cross-mechanism performance
+   comparisons*; including it in the minimum is conservative (it can only lower the derived rate) and
+   is stated here for reviewers.
 5. Saturation rate = `2.5 × max_mechanism measured capacity at (100k, P6)` (pre-registered
-   "2.5× max capacity"), explicitly NOT a fraction of the minimum.
+   "2.5× max capacity"), explicitly NOT a fraction of the minimum. **Revision r2 (A6 r2):** the
+   campaign's G7 capability claim is narrowed from the frozen "≥3×" text to this documented 2.5×
+   saturation rate (author-approved), and the achieved throughput is validated against each
+   mechanism's measured capacity by the A6 M7sat block (not against the offered 2.5× rate).
 6. Every derived block records `{rule, basis_block, assumption_ids}` in `rates.json`; a block without a
    measured basis or a failed spot-check is an error, never a silent fallback.
 

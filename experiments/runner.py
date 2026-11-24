@@ -194,6 +194,12 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def per_instance_warmup(total_events: int, consumer_instances: int) -> int:
+    """Q4 (S5 §14): split the frozen per-RUN warm-up across consumer instances (ceil)."""
+    n = max(1, int(consumer_instances))
+    return max(1, -(-int(total_events) // n))
+
+
 def _is_int_like(value) -> bool:
     """True for a real integer (not bool) or an integer-valued string/number."""
     if isinstance(value, bool):
@@ -1470,6 +1476,11 @@ class Runner:
             "endpoint_contract": self.endpoint_contract(),
             "failpoint_instance": getattr(seq, "_failpoint_instance", 1),
             "l2_trigger": "progress-based (M6)",
+            # Q4: per-run vs per-instance warm-up accounting (the service excludes per instance)
+            "warmup_events_total": getattr(seq, "warmup_total", None),
+            "warmup_events_per_instance": getattr(seq, "warmup_per_instance", None),
+            "consumer_instances": int(((getattr(seq, "run", None) or {}).get("consumer_instances"))
+                                      or 1),
             "topic_count_after": reset_info.get("topic_count_after"),
             "topic_lifecycle": "no per-run deletion (M5); periodic reset-kafka wipe",
             "max_live_topics": MAX_LIVE_TOPICS,
@@ -1697,7 +1708,14 @@ class LiveSequence:
     def _service_args(self, instance: int, disable_failpoint: bool = False) -> list[str]:
         jar = os.path.join(self.r.repo, "artifact", "target", "wxeo-service.jar")
         java = self.env.get("java") or "java"
-        warmup = self._warmup_events()
+        # Q4 (S5 §14): the frozen per-RUN warm-up is max(2000, 10%); the service excludes warm-up
+        # per INSTANCE, so split it across the consumer instances instead of applying the full
+        # per-run value to each instance (which excluded ~2x on C=2).
+        n_instances = max(1, int(self.run.get("consumer_instances") or 1))
+        warmup_total = self._warmup_events()
+        warmup = max(1, -(-warmup_total // n_instances))
+        self.warmup_total = warmup_total
+        self.warmup_per_instance = warmup
         ep = self._endpoints()
         args = [
             java, "-Xms512m", "-Xmx1g", "-XX:+UseG1GC", "-XX:+ExitOnOutOfMemoryError",
@@ -2440,8 +2458,11 @@ class LiveSequence:
                     if _is_int_like(b["steady_state_end_ms"])]
             window_ms = (max(ends) - min(starts)) if (starts and ends
                                                       and max(ends) > min(starts)) else 0
+            partial = len(app_blocks) < n_instances
             result.update({
-                "committed_basis": "app-committed",
+                "committed_basis": "app-committed-partial" if partial else "app-committed",
+                "partial": bool(partial),
+                "instances_expected": n_instances,
                 "committed_events": int(steady_events),
                 "committed_events_total": int(total_committed),
                 "app_blocks": app_blocks,
@@ -2450,7 +2471,9 @@ class LiveSequence:
                                 "end": max(ends) if ends else None,
                                 "events": int(steady_events)},
             })
-            if window_ms > 0:
+            # Q5 (S5 §14): a crash/partial run must not contribute a throughput that looks like a
+            # complete mechanism measurement; only a full slate of instance blocks is comparable.
+            if not partial and window_ms > 0:
                 result["throughput_eps_median"] = round(steady_events / (window_ms / 1000.0), 3)
         # producer-ack view (compatibility only; never used as the mechanism capacity metric)
         if manifest_rows and self.loader_result:

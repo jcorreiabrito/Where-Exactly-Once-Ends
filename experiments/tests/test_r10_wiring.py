@@ -50,7 +50,12 @@ def test_cli_writes_a2_outputs(tmp_path):
         path = os.path.join(records, name)
         rec = json.load(open(path, encoding="utf-8"))
         if rec.get("stage") in ("B", "C"):
-            rec.setdefault("performance", {})["committed_events"] = 1000
+            perf = rec.setdefault("performance", {})
+            perf["committed_events"] = 1000
+            perf["committed_events_total"] = 1000
+            perf["committed_basis"] = "app-committed"
+            perf["throughput_eps_median"] = 1000.0
+            perf["perf_window"] = {"start": 1000, "end": 2000, "events": 1000}
             rec["timings"] = {**(rec.get("timings") or {}),
                               "t_load_start": 1000, "t_load_end": 2000}
         json.dump(rec, open(path, "w", encoding="utf-8"))

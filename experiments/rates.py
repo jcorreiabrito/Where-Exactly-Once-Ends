@@ -54,6 +54,8 @@ REQUIRED_BLOCKS = (
 #: derived rate (the same tolerance class as the A5.3 spot checks); the G7 generator-lag p99 bound
 #: is the analyzer's frozen 5 ms threshold (tools/analyze.py G7).
 SATURATION_THROUGHPUT_TOLERANCE = 0.25
+#: A6 r2: a saturated run must achieve at least this fraction of its measured capacity
+SATURATION_MIN_FRACTION = 0.75
 GENERATOR_LAG_P99_MAX_MS = 5
 #: A6.1: the M7sat block is exactly the nine frozen mechanisms, one 100k/P6 saturation run each.
 SATURATION_VALIDATION_BLOCK = "100000|p6|sat"
@@ -329,24 +331,34 @@ def saturation_validation_report(records, rates_doc):
         if perf.get("generator_lag_flag") is True:
             run_problems.append("G7 generator-lag flag set")
         throughput = committed_throughput_eps(record)
+        capacities = rates_doc.get("saturation_capacity_by_mechanism") or {}
+        capacity = capacities.get(mech)
+        run_entry = {"mechanism": mech, "offered_rate": offered, "derived_rate": derived_rate,
+                     "throughput_eps": round(throughput, 3) if throughput is not None else None,
+                     "generator_lag_p99_ms": lag}
         if throughput is None:
-            run_problems.append("missing committed-event throughput evidence")
+            run_problems.append("missing mechanism-committed throughput evidence")
+        elif not _is_number(capacity) or capacity <= 0:
+            run_problems.append(
+                f"missing measured saturation capacity for mechanism {mech!r} (A6 r2 requires "
+                "achieved-vs-measured-capacity)")
         else:
-            rel = abs(throughput - derived_rate) / derived_rate if derived_rate else 1.0
+            rel = abs(throughput - capacity) / capacity
+            run_entry.update({"measured_capacity": round(float(capacity), 6),
+                              "achieved_throughput": round(float(throughput), 6),
+                              "achieved_vs_capacity_relative": round(rel, 6),
+                              "saturated": throughput >= SATURATION_MIN_FRACTION * capacity})
             if rel > SATURATION_THROUGHPUT_TOLERANCE:
                 run_problems.append(
-                    f"committed-event throughput {throughput:.3f}/s is outside ±"
-                    f"{SATURATION_THROUGHPUT_TOLERANCE:.0%} of the offered rate "
-                    f"{derived_rate}/s (relative error {rel:.3f})")
-        report["runs"][run_id] = {
-            "mechanism": mech,
-            "offered_rate": offered,
-            "derived_rate": derived_rate,
-            "throughput_eps": round(throughput, 3) if throughput is not None else None,
-            "generator_lag_p99_ms": lag,
-            "valid": not run_problems,
-            "problems": run_problems,
-        }
+                    f"achieved committed throughput {throughput:.3f}/s deviates from the measured "
+                    f"capacity {capacity:.3f}/s by {rel:.1%} (> ±"
+                    f"{SATURATION_THROUGHPUT_TOLERANCE:.0%}; A6 r2)")
+            if throughput < SATURATION_MIN_FRACTION * capacity:
+                run_problems.append(
+                    f"mechanism is not saturated: achieved {throughput:.3f}/s < "
+                    f"{SATURATION_MIN_FRACTION:.0%} of measured capacity {capacity:.3f}/s")
+        run_entry.update({"valid": not run_problems, "problems": run_problems})
+        report["runs"][run_id] = run_entry
         problems.extend(f"{run_id}: {p}" for p in run_problems)
     missing = [m for m in DESIGN.MECHANISMS if m not in seen_mechs]
     report["mechanisms_missing"] = missing
@@ -377,6 +389,9 @@ def derive_rates(samples, matrix_sha256=None, mode=RULE_ID_MAPPING,
             f"{SATURATION_RULE_ID} (2.5 x max measured capacity) refuses to fabricate an "
             "entry from fixed samples (S5 §11.4(iv))")
     sat_cap = max(sat_measured.values())
+    # Q1 (S5 §14): per-mechanism measured capacity is the reference for the A6 check; a mechanism
+    # offered 2.5x its capacity physically cannot commit at the offered rate.
+    sat_capacity_by_mechanism = {str(m): round(float(c), 6) for m, c in sat_measured.items()}
     saturation = {_block_key(100_000, 6, "saturation"):
                   {"rate": max(MIN_RATE, int(SATURATION_MULTIPLIER * sat_cap)),
                    "capacity": round(sat_cap, 6),
@@ -397,6 +412,18 @@ def derive_rates(samples, matrix_sha256=None, mode=RULE_ID_MAPPING,
             "calibrated_blocks": sorted(_block_key(*k) for k, v in caps.items() if v),
             "derived_blocks": sorted(derived), "assumptions": derived,
             "fixed_rate": fixed, "saturation_rate": saturation,
+            "saturation_capacity_by_mechanism": sat_capacity_by_mechanism,
+            # Q3 (author-approved A5 r3): 0.5 x min capacity supersedes prereg 6.2's 0.75 x
+            "frozen_rule_supersedes": {"prereg_6_2_fraction_of_min_capacity": 0.75,
+                                       "implemented_fraction_of_min_capacity": FIXED_RATE_FRACTION,
+                                       "author_approved": True,
+                                       "amendment": "A5 r3"},
+            # Q2 (author-approved A6 r2): the G7 capability claim is narrowed from 3x to the
+            # documented 2.5x saturation rate; no unimplemented 3x claim is made.
+            "g7_capability": {"mode": "documented-saturation-rate",
+                              "multiplier": SATURATION_MULTIPLIER,
+                              "prereg_6_2_three_x_claim": "narrowed",
+                              "author_approved": True, "amendment": "A6 r2"},
             "saturation_validation": sat_report,
             # A6.2: overall validation requires BOTH the A5 spot checks and the A6 saturation
             # validation; a candidate document is therefore always validated=false.
@@ -440,6 +467,15 @@ def g7_checks(rates_doc, required_blocks, need_saturation=True):
                             f"_rate for {block}")
     if not rates_doc.get("matrix_sha256"):
         problems.append("missing matrix pin")
+    cap = rates_doc.get("g7_capability") or {}
+    if cap.get("mode") != "documented-saturation-rate" or \
+            float(cap.get("multiplier") or 0) != SATURATION_MULTIPLIER or \
+            cap.get("author_approved") is not True:
+        problems.append("G7 capability evidence missing/narrowing not author-recorded (A6 r2)")
+    sup = rates_doc.get("frozen_rule_supersedes") or {}
+    if sup.get("author_approved") is not True or \
+            float(sup.get("implemented_fraction_of_min_capacity") or 0) != FIXED_RATE_FRACTION:
+        problems.append("A5 r3 supersede record missing (0.5x rule must supersede prereg 6.2 0.75x)")
     return {"ok": not problems, "problems": problems}
 
 

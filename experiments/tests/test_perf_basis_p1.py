@@ -109,7 +109,10 @@ def test_rates_capacity_rejects_censored_or_loader_failure():
     assert len(R._load_records_from_list([base])) == 1
 
 
-def _m7sat(mech, *, censored=False, loader_exit=0, throughput=5555, basis="app-committed"):
+M7SAT_CAPACITY = 120_000 / 54.0
+
+
+def _m7sat(mech, *, censored=False, loader_exit=0, throughput=M7SAT_CAPACITY, basis="app-committed"):
     return {
         "stage": "M7", "run_id": f"m7sat-{MD.MECH_TOKEN[mech]}-cal-100k-p6-r00",
         "mechanism": mech, "load_events": 100_000, "partitions": 6,
@@ -129,14 +132,15 @@ def _m7sat(mech, *, censored=False, loader_exit=0, throughput=5555, basis="app-c
 
 
 def test_a6_rejects_censored_loader_failure_and_ack_basis():
-    rates_doc = {"saturation_rate": {R.SATURATION_VALIDATION_BLOCK: {"rate": 5555}}}
+    rates_doc = {"saturation_rate": {R.SATURATION_VALIDATION_BLOCK: {"rate": 5555}},
+                 "saturation_capacity_by_mechanism": {m: M7SAT_CAPACITY for m in MD.MECHANISMS}}
     records = [_m7sat(m) for m in MD.MECHANISMS]
     assert R.saturation_validation_report(records, rates_doc)["validated"] is True
     for mutated, needle in (
         (_m7sat("M0", censored=True), "censored"),
         (_m7sat("M0", loader_exit=1), "load-generator"),
         (_m7sat("M0", basis="producer-acks"), "performance basis"),
-        (_m7sat("M0", throughput=1000), "throughput"),
+        (_m7sat("M0", throughput=M7SAT_CAPACITY * 0.5), "throughput"),
     ):
         bad = [_m7sat(m) for m in MD.MECHANISMS]
         bad[0] = mutated
@@ -144,3 +148,24 @@ def test_a6_rejects_censored_loader_failure_and_ack_basis():
         assert report["validated"] is False, needle
         assert any(needle.lower() in p.lower() for p in report["problems"]), (
             needle, report["problems"])
+
+
+def test_per_instance_warmup_splits_the_frozen_per_run_value():
+    # Q4: C=2 must split max(2000,10%) instead of applying it to each instance
+    assert runner.per_instance_warmup(2000, 2) == 1000
+    assert runner.per_instance_warmup(2000, 1) == 2000
+    assert runner.per_instance_warmup(1000, 3) == 334
+    assert runner.per_instance_warmup(0, 2) == 1
+
+
+def test_partial_crash_run_is_not_a_comparable_throughput_measurement(tmp_path):
+    # Q5: crash/partial runs keep the per-instance blocks but must not publish a throughput that
+    # looks like a complete mechanism measurement.
+    seq = _fake_sequence(tmp_path, instances=2)
+    os.remove(os.path.join(seq.p.outputs, f"app_{seq.run_id}_2.json"))
+    perf = seq._performance_block()
+    assert perf["committed_basis"] == "app-committed-partial"
+    assert perf["partial"] is True
+    assert perf["instances_expected"] == 2
+    assert perf["n_instances_merged"] == 1
+    assert perf.get("throughput_eps_median") is None

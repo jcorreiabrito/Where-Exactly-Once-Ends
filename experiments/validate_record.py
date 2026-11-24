@@ -167,11 +167,19 @@ def validate_record(rec: dict, *, path: str = "") -> list[str]:
                     "max_ms"):
             if perf.get(key) is not None and not _is_number(perf.get(key)):
                 err(f"performance.{key} must be a number or null")
-        # R12: committed_events is required for calibrated/confirmed-rate stages; pre-R12
+        # R12/Q6: committed_events is required for calibrated/confirmed-rate stages; pre-R12
         # records from pilot/Stage A may omit it (backward compatibility)
         if rec.get("stage") in ("M7", "B", "C") \
                 and not _is_int(perf.get("committed_events")):
             err("performance.committed_events must be an integer for stage M7/B/C (R12)")
+        if rec.get("stage") in ("M7", "B", "C"):
+            basis = perf.get("committed_basis")
+            if basis not in ("app-committed", "app-committed-partial"):
+                err("performance.committed_basis must be 'app-committed' (or "
+                    "'app-committed-partial' for crash/partial runs) for stage M7/B/C; producer-ack "
+                    "baselines are not accepted (S5 §14 Q6)")
+            if basis == "app-committed-partial" and perf.get("partial") is not True:
+                err("app-committed-partial performance must set performance.partial=true")
     counts = rec.get("counts")
     if not isinstance(counts, dict) or set(counts) != COUNTS_KEYS:
         err(f"counts must contain exactly {sorted(COUNTS_KEYS)}")

@@ -10,7 +10,7 @@ approval and the P2 hard stop. It is not part of the paper.
 | Manuscript draft + frozen bibliography (63 entries, DOI-verified) | done (draft, 33 pp; page compression to ≤25 pp still pending) | `main.tex`, `refs/refs.bib`, `refs/verified.csv`, CI job “Verify bibliography integrity” |
 | Formal model + TLC | bounded machine-checked witnesses only (8/8 configurations match expectations); unbounded claims are model/pen arguments | `formal/ledger.tla`, `formal/tlc-results/tlc-summary.json`, `formal/README.md` |
 | Artifact implementation (Java 21/Spring Boot; 9 mechanisms; failpoints; loader; SchemaTool; 51 unit tests) | accepted; Linux CI Maven tests green | `artifact/**`, `artifact/target/wxeo-service.jar` SHA-256 `6e8223751706d64e7b77752b42df5694d4231ba8bd3522034806bae25e8e50d3` |
-| Oracle + runner + matrix (7,506 planned / 7,488 executable + 26 validation) | implemented and frozen; 73 harness tests green | `experiments/**`, `docs/prereg-freeze.json` aggregate `fd271416aebb6f9cb88da680694e4fd43e692b94db8c1e9f78c3dfd8d84e788a` |
+| Oracle + runner + matrix (7,506 planned / 7,488 executable + 26 validation) | implemented and frozen; 158 harness tests green | `experiments/**`, `docs/prereg-freeze.json` aggregate `fd271416aebb6f9cb88da680694e4fd43e692b94db8c1e9f78c3dfd8d84e788a` |
 | Oracle mutation testing (G3) | 1,800/1,800 defects detected and correctly attributed (18/18 classes), clean + input-integrity controls pass — SYNTHETIC corpus | `results/harness/g3-mutation.json` |
 | Gate falsifiability (G1–G8 negative controls) | 8/8 gates fail as required | `results/harness/gate-negative-controls.json` |
 | S3 live acceptance | 4/4 passed | `results/harness/acceptance/acceptance-result.json` |
@@ -41,13 +41,13 @@ approval and the P2 hard stop. It is not part of the paper.
   re-validation); R12 `experiments/rates.py` implemented (refuses to write until the M7 block exists);
   M7 calibration blocks (M7-cal 54 + M7spot 54 + M7sat 9 = 117 runs; Amendments A5/A6) added as a separate accounting block (confirmatory counts untouched:
   7,506/7,488 + 26); injector fixes: F1/F3/F5 now marker-driven, F4b threshold scaled to effect-
-  transaction geometry. Harness tests: **155/155 green** (incl. S5 §13 P1 committed-event basis and P2 A2-macro regressions).
+  transaction geometry. Harness tests: **158/158 green** (S5 §13 P1 committed-event basis, P2 A2 macros, S5 §14 Q1-Q6 measurement/schema fixes).
 - **Paper:** S6 completed the 33 pp → **24 pp** compression (≤25 pp target met) with 0 undefined
   references/citations and no fabricated data: §7 carries a `Data status` paragraph and 19 `PENDING`
   markers; result insertion on the Linux host is estimated at +1.5–2.5 pp, with reserve cuts recorded
   in `submission/CHECKLIST.md` (K2/K6) to stay ≤25 pp. Submission checklist/VENUE-RULES updated;
   anonymized review PDF pending results insertion.
-- Hand-off for the Linux host: docs/HOST-HANDOFF.md (pinned commit 29a33fd, CI run #25 green, 151/151 tests, exact phase order + evidence list).
+- Hand-off for the Linux host: docs/HOST-HANDOFF.md (pinned to the final host-ready commit with green CI and 158/158 tests; exact phase order + final-freeze evidence list).
 - The Windows stack is stopped; no experiment process is running.
 
 ## 2b. S5 Stage-A blocker closure status (review at `docs/redteam-rereview.md` §11)

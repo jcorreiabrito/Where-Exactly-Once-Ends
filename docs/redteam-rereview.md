@@ -1612,3 +1612,168 @@ executed; the Linux host was not contacted.
 *End of third re-review. Verdict at `29a33fd`: **BLOCK** pending P1 (committed-event throughput
 measurement + A6 hardening) and P2 (A2 hypothesis macros). Matrix/calibration/freeze/proxy/phase
 work is verified green.*
+
+---
+
+## 14. FOURTH RE-REVIEW — commit `bd41133` (2026-11-24, ~21:05–21:50Z)
+
+**Reviewer:** S5. **Tree:** `bd41133` (HEAD `bd41133f72ff71b9…`; previous `29a33fd`, `9cc24f0`).
+**Method:** docs/code inspection only; **no stack or runner command executed** (read-only git; pure
+`python -m pytest experiments/tests -q` → **155 passed**, matching the lead; `matrix.py --check`
+clean). Matrix/order hashes are **unchanged** and equal `5d348efe…` / `f4e731a2…` / `aa9ad0b9…`;
+7,631 rows; confirmatory 7,506/7,488 + 26; calibration 54+54+9 = 117 (verified).
+
+### 14.0 Verdict
+
+> # **BLOCK — one critical calibration-gate defect remains (Q1), plus a gate-scope gap (Q2).**
+> P1/P2/P3/P4 are genuinely fixed and verified, and B1–B8 remain closed. **However, the A6
+> saturation-validation criterion is physically unsatisfiable for an honest mechanism as written:**
+> the candidate saturation rate is `2.5 × max measured committed capacity`, but the validator
+> requires the *achieved committed throughput* to be within ±25 % of that **offered** rate. A
+> mechanism running at 2.5× its measured capacity can commit at most ~1/2.5 = 40 % of the offered
+> rate, so a correct run shows a relative error ≥ 60 % and T1b always fails (the new tests pass only
+> because their "all-pass" fixture sets committed throughput equal to the offered rate, which is not
+> physically realisable; frozen prereg §6.2 defines the saturation outcome as *achieved throughput and
+> its stability*, not as matching the offered rate). T1b therefore cannot produce
+> `saturation_validation.validated=true`, the final freeze cannot be issued, and Stage C's capacity
+> block interpretation is not defined. A second gate gap: prereg §6.2 requires the generator to be
+> validated to sustain **≥3× max capacity** (G7), but the campaign only ever offers 2.5× max capacity;
+> no code path produces 3× capability evidence. Both need a code/A6 clarification (Q1) and an
+> author-level G7 decision (Q2) before the host run.
+>
+> After Q1/Q2 (plus the small Q3–Q6 items) the tree is ready for the Linux host; the §13.2/§14.2
+> freeze-evidence list below is what S5 will re-verify before T4/Stage A.
+
+### 14.1 Verified fixed at `bd41133` (not taken from the summary)
+
+| Item | Status | Evidence checked |
+|---|---|---|
+| **P1 measurement basis** | **CLOSED** | `runner._performance_block()` now reads **`app_<run>_<instance>.json`** performance blocks for every C instance, sets `committed_basis="app-committed"`, `committed_events=Σ steady_state_events`, `committed_events_total=Σ totals`, `throughput_eps_median=Σ steady/(max(end)−min(start))`, `perf_window`, `app_blocks`, `n_instances_merged`; producer acks are kept only as `producer_ack_throughput_eps` and become the basis only for the explicit dry-run/synthetic fallback (`committed_basis="producer-acks"`). `rates._load_records_from_list` accepts only `app-committed` samples and rejects censored runs and non-zero `exit_status.load_generator` (A5 capacity); `committed_throughput_eps` rejects non-`app-committed`; A6 report requires `committed_basis=="app-committed"`, valid record, non-censored, loader exit 0, G7 lag ≤5 ms (P4 partially; see Q1) |
+| **P1 tests** | **CLOSED** | `experiments/tests/test_perf_basis_p1.py`: app-block aggregation, ack-basis rejected, censored/loader-failure rejected, slow-sink rejected even with good acks; suite 155/155 green |
+| **P2 paper pipeline** | **CLOSED** | `main()` writes `hypotheses.json` from `a2_analyze()` with `source:"A2"` and passes **A2** hypotheses to `write_macros()` and `write_tables()`; `analysis-manifest.json.hypotheses` is A2-sourced; `test_r10_wiring.py` asserts each `\ResHypothesis*Verdict` macro equals the A2 verdict on the CLI fixture; legacy artefacts remain listed in `a2-legacy-noncitable.json` |
+| **P3 A5 r2 rewrite** | **CLOSED** | `docs/prereg-amendment-A5.md` now: seven measurable fixed-rate blocks (not six), no garbled sentence, M7spot heading/54 runs, saturation-capacity spot separated from the A6 T1b exercise, explicit note that min-over-nine includes M1-kafka although D13 excludes it from cross-mechanism performance comparisons |
+| **P4 gates (partial)** | **CLOSED (except Q1 tolerance)** | A6 report rejects censored M7sat runs, missing/incorrect load-generator exit, non-app-committed basis, missing/wrong `offered_rate`, missing lag >5 ms; A5 spot gates unchanged ±25 % |
+| **B1–B8** | **remain CLOSED as verified at 29a33fd** | M7sat block/selection/two-step rates/phase order/endpoints/container-images/freeze evidence/T0 clean M0 row all unchanged by these fixes; matrix/order hashes unchanged (verified) |
+| **Matrix/accounting** | **CLOSED** | `5d348efe…` / `f4e731a2…` / `aa9ad0b9…` = actual files; 7,631 rows; M7-cal 54 + M7spot 54 + M7sat 9; confirmatory unchanged; `matrix.py --check` clean |
+
+### 14.2 New blocking issues
+
+- **Q1 (critical) — A6 saturation validation is physically unsatisfiable / mis-specified.**
+  `rates.saturation_validation_report()` computes
+  `rel = |committed_throughput − derived_rate| / derived_rate` and fails if `rel > 0.25`
+  (lines ~331–341), where `derived_rate` is the candidate **offered** saturation rate
+  (`2.5 × max measured committed capacity`, A5.2(5)/A6.1). A mechanism offered 2.5× its own
+  measured committed capacity can commit at most ~capacity, i.e. ~40 % of the offered rate
+  (relative error ≈ 0.6), so a correctly functioning run is rejected and T1b can never set
+  `saturation_validation.validated=true`. The new `test_perf_basis_p1.py` "all-pass" fixture hard-codes
+  `throughput == offered_rate` (5555/s) and therefore encodes the impossible criterion; the
+  "slow-sink" case rejects legitimate saturated behaviour. This also conflicts with frozen prereg
+  §6.2: saturation mode is "offered rate = 2.5 × max capacity; the measured outcome is achieved
+  throughput and its stability over the steady-state window" — not equality with the offered rate.
+  **Required fix:** define the A6 acceptance in terms of **measured capacity** (the same
+  `sat_cap` used to derive the rate, or the run's own stable plateau): e.g. require
+  (i) `offered_rate == derived_rate` (already checked), (ii) G7 generator-lag p99 ≤5 ms and loader
+  exit 0 (already checked), (iii) achieved app-committed throughput **within ±25 % of the measured
+  committed capacity** and stable over the steady window (optionally a lower bound such as
+  ≥0.75 × capacity to demonstrate saturation), and record `{offered_rate, measured_capacity,
+  achieved_throughput, stability}` in `rates.json`/`saturation_validation`; update A6.2 wording with
+  an author-approved clarification (**A6 revision r2**, author-level because it defines what
+  "saturation validation" asserts), replace the fixture with a realistic saturated run
+  (achieved ≈ capacity << offered) and a true slow-sink case (achieved < 0.75 × capacity), and re-run
+  the 155-test suite.
+- **Q2 (major, gate evidence/author decision) — G7's "generator sustains ≥3× max capacity" is never
+  exercised.** Prereg §6.2 requires `generator validated to sustain ≥3 × max capacity` (method G7);
+  the only saturation load in the campaign/A6 is **2.5×** max committed capacity (and after Q1 the
+  achieved-rate check cannot prove offered-rate capability either; the G7 lag check on producer acks
+  at 2.5× is the only generator evidence). **Fix (author-level, A7 or G7-narrowing):** either add a
+  small generator-capability phase (e.g. a 30–60 s load at 3× max measured capacity into the source
+  topic, with producer-ack/lag evidence recorded and frozen) or explicitly amend G7 to the 2.5×
+  documented saturation rate (as used by the frozen saturation block) and record the scope reduction.
+  Until then the T3/G7 gate claim is unsupported and the final freeze should not assert it.
+- **Q3 (major, doc/prereg coherence; solve before final freeze) — fixed-rate rule 50 % vs prereg
+  §6.2's 75 %.** Frozen `docs/prereg.md` §6.2: `R_off = 0.75 × min capacity`. A5 (author-approved)
+  asserts and implements `floor(0.5 × min capacity)` and misattributes it to "AC-2/R12" (AC-2 is the
+  seed-encoding choice). The campaign would run at 50 %, not the pre-registered 75 % — a material
+  change to offered load (affects latency/queueing, H2/H4 cost claims, coordinated-omission
+  exposure) and to what the paper's "pre-registered" claim means. **Fix:** make A5 explicitly
+  supersede prereg §6.2 (A5 revision r3), record it in `results/DEVIATIONS.md`, update P2-APPROVAL
+  language, and state the 50 % choice/rationale in the paper's method section; if the author intended
+  75 %, change `FIXED_RATE_FRACTION` and re-derive. This is a documentation/author-record fix, not a
+  code bug, but the final freeze must not bind contradictory frozen texts.
+- **Q4 (minor, measurement contract) — per-instance warm-up differs from the frozen per-run rule.**
+  `app` receives `--wxeo.warmup-events = max(2000, 10 % of run events)` and applies it **per
+  instance**; with C=2 the run excludes ~2× the registered warm-up (and the record's
+  `performance.warmup_events_excluded` reports the per-instance number, not the run total). The
+  aggregated throughput largely cancels this out for C=2/P=3, but latency percentiles exclude more
+  events than §4.5 specifies and the recorded value is misleading. **Fix (small):** pass
+  `ceil(W/C)` per instance and record `warmup_events_excluded` = W total plus per-instance values
+  (or record the per-instance rule explicitly as an A4/A6 documented deviation and report the total).
+  Must be fixed/documented before T1 because rates/A6 evidence derives from these records.
+- **Q5 (minor, crash-run performance) — partial app blocks can masquerade as full runs.**
+  For fault/crash runs one instance's `app_*.json` is absent (killed), so `app_blocks` covers fewer
+  than C instances while `committed_basis` is still `app-committed` and `n_instances_merged` shows the
+  surviving count; a record can look valid with an undercounted throughput. **Fix:** record
+  `n_instances_expected`, set a `partial: true`/`consistency` flag (or null performance) when fewer
+  than C blocks exist, exclude such runs from throughput comparisons, and state this in the
+  paper/analysis. (Calibration/M7sat runs are fault-free and unaffected, so this is not a T1
+  blocker but must not silently enter Stage B/D performance.)
+- **Q6 (minor, run-record schema/frozen contract) — new performance keys are not in the frozen
+  schema/validator requirements.** `committed_basis`, `committed_events_total`, `app_blocks`,
+  `producer_ack_throughput_eps` are emitted but not listed in `validate_record.PERF_KEYS`
+  (validator only checks required ⊆ present, so they pass) and are not in prereg §5/run-record
+  documentation. **Fix:** add the fields to the frozen run-record description/A6 and require
+  `committed_basis=="app-committed"` for stages `M7/B/C` in the validator so a producer-ack fallback
+  record cannot silently enter confirmatory analysis.
+
+### 14.3 Answers to (a): host readiness
+
+**BLOCK** until Q1 and Q2 are resolved (both small: Q1 code + A6-r2 author clarification + realistic
+tests; Q2 either a tiny generator-capability phase or an author-approved G7 narrowing), and Q3–Q6 are
+fixed/recorded. The measurement basis (P1), paper macros (P2), A5 text (P3), matrix/calibration state,
+endpoints, container-image evidence and phase order are all verified — so after these fixes the tree
+is ready for T0/T0b/T1a/T1b/T3 and the final freeze.
+
+### 14.4 (b) Final-freeze evidence S5 will re-verify
+
+All of §13.2, plus:
+1. **Q1/Q2 first:** A6-r2 acceptance criterion implemented and recorded (`saturation_validation`
+   fields `{mode:"post-rates", validated:true, observed_runs:9, derived_rate, measured_capacity,
+   achieved_throughput_median, achieved_vs_capacity_relative, stability}`), tests include a realistic
+   saturated pass and a true slow-sink failure; G7 capability evidence for either ≥3× (new phase) or
+   the author-approved 2.5× narrowing with its evidence file frozen.
+2. **`rates.json`:** `validated=true`, `validation.validated=true`,
+   `saturation_validation.mode="post-rates"`, `saturation_validation.validated=true`,
+   `observed_runs==9`, rule ids `A5.partition-scale.v1`/`SAT-2.5x-max`, seven fixed blocks + six A5
+   spot checks, `committed_basis` provenance; **117 calibration records** (M7-cal 54, M7spot 54,
+   M7sat 9) schema-valid, stage `M7`; M7sat records show **app-committed** throughput,
+   `rate_mode="saturation-validation"`, `offered_rate` equal to the final saturation rate, non-
+   censored, loader exit 0, G7 lag ≤5 ms, and achieved-vs-capacity inside the A6-r2 bound; **no
+   producer-ack-based records** among them (validator/rates evidence).
+3. Freeze file SHA/aggregate/`frozen_at_utc`/`git_sha`/`missing_at_freeze:[]`/jar+source digest and
+   container-image repo digests; independent recomputation of the aggregate = claim; `freeze.py
+   --check ok:true`; clean `git status` and **green CI on `bd41133` with its run id**; bootstrap host
+   log (images, versions, Maven + 155-test summary, `--check-env`, stack liveness); T0
+   `live-smoke-evidence passed=true` (clean M0/M2/M3/M1-kafka + app/S4 fault rows), T0b
+   `linux-fault-efficacy.json passed=true`, T3 `linux-gate-controls.json passed=true` produced before
+   T2; RUNLOG rows with aggregate+git SHA; **P2 macro regression green** (macro values = A2
+   verdicts); Q3/Q4/Q5/Q6 dispositions recorded; P2-APPROVAL sign-off boxes remain pending until my
+   confirmation.
+
+### 14.5 Commands used (read-only; no stack/runner)
+
+```powershell
+Get-Content .git/refs/heads/main ; git log --oneline -2 ; git status --porcelain
+python -m pytest experiments/tests -q -p no:cacheprovider        # 155 passed
+python experiments/matrix.py --check                             # clean
+sha256: matrix.yaml 5d348efe…, run_order.csv f4e731a2…, matrix.sha256 aa9ad0b9…
+# reads: A5 r2/A6/P2-APPROVAL/prereg §4.5/§6.2/method §7.2; runner _performance_block; rates.py
+#   (loader/committed_throughput/A6 report); analyze.py (A2 macros/write_tables); validate_record;
+#   test_perf_basis_p1.py; test_r10_wiring.py; deploy/linux run-campaign
+```
+
+**No repository file was created or modified except this memo.** No stack/runner command was
+executed; the Linux host was not contacted.
+
+*End of fourth re-review. Verdict at `bd41133`: **BLOCK** pending Q1 (A6 saturation criterion +
+realistic tests + A6-r2 wording) and Q2 (G7 ≥3× capability decision), with Q3–Q6 as
+fix-before-freeze conditions. P1/P2/P3/P4 and B1–B8 are verified green.*
