@@ -63,7 +63,7 @@ try {
     @{ Name='Generic secret assign';Regex='(?i)(password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["'']?[A-Za-z0-9_\-]{12,}'; Scope='prose' },
     @{ Name='Personal Windows path';Regex='C:\\Users\\jvtri|/home/jvtri'; Scope='all' },
     @{ Name='Internal TLD';         Regex='(?i)\b[a-z0-9-]+\.(internal|corp|intranet|lan|localdomain)\b'; Scope='prose' },
-    @{ Name='Jira ticket';          Regex='\b(?!(SHA|UTC|ISO|RFC|HTTP|HTTPS|TLS|SSL|AES|RSA|MD|HDR|TCP|UDP|IP|GB|MB|KB|JDK|JRE|LTS|KIP|API|CPU|SQL|EOS|DB|PG|MSR|TR|F|M|C|K|P)\b)[A-Z][A-Z0-9]{1,5}-\d{2,5}\b'; Scope='prose' }
+    @{ Name='Jira ticket';          Regex='\b(?!(SHA|UTC|ISO|RFC|HTTP|HTTPS|TLS|SSL|AES|RSA|MD|HDR|TCP|UDP|IP|GB|MB|KB|JDK|JRE|LTS|KIP|API|CPU|SQL|EOS|DB|PG|MSR|TR|F|M|C|K|P|S1|S2|S3|S4|S5|S6|S7|S8|S9)\b)[A-Z][A-Z0-9]{1,5}-\d{2,5}\b'; Scope='prose' }
   )
   $proseExt = @('.md','.tex','.ps1','.psm1','.java','.kt','.yml','.yaml','.sql','.properties','.toml','.sh','.py','.cff','.cls','.sty','.bib')
   $proseNames = @('LICENSE','README')

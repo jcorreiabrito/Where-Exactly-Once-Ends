@@ -53,11 +53,13 @@ import os
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+from glob import glob
 
 import numpy as np
 from scipy import stats
 
 ALPHA = 0.05
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOTSTRAP_B = 10_000
 CLIFF_NEGLIGIBLE = 0.147
 CLIFF_SMALL = 0.33
@@ -365,6 +367,30 @@ def load_freeze(path: str) -> dict:
     return {}
 
 
+def _repo_rel(path: str | None) -> str | None:
+    """Repo-relative POSIX path for committed analysis artefacts (path hygiene)."""
+    if not path:
+        return None
+    try:
+        rel = os.path.relpath(os.path.abspath(path),
+                              os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    except (OSError, ValueError):
+        return "<scratch>/" + os.path.basename(path)
+    if rel.startswith(".."):
+        return "<scratch>/" + os.path.basename(path)
+    return rel.replace(os.sep, "/")
+
+
+def load_reserved(records_dir: str) -> list[dict]:
+    """Load the frozen reserved-run list emitted by the runner (F-P5 n_planned source)."""
+    summaries = os.path.join(os.path.dirname(records_dir), "summaries")
+    path = os.path.join(summaries, "reserved-runs.csv")
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
 def dataset_label(records: list[dict], freeze: dict) -> str:
     if freeze.get("dataset"):
         return str(freeze["dataset"])
@@ -389,35 +415,46 @@ def extract(rec: dict) -> dict:
         fired = [r for r in receipts if r.get("event") == "fired"]
         restored = [r for r in receipts if r.get("event") == "restored"]
         armed = [r for r in receipts if r.get("event") == "armed"]
-        if (rec.get("fault_level") == "L1") or rec.get("fault") == "F4b":
-            attested = len(fired) == 1  # terminal crash: restored comes from S4
-        elif any(r.get("detail", "").startswith("sham") for r in receipts) or armed:
-            attested = len(armed) == 1  # sham validation run
+        if any(r.get("detail", "").startswith("sham") for r in receipts) or armed:
+            attested = len(armed) == 1 and len(fired) == 0
+        elif (rec.get("fault_level") == "L1") or rec.get("fault") == "F4b":
+            # app-owned failpoint: app fired (terminal crash: S4 restored after restart)
+            attested = len(fired) == 1
         else:
             attested = len(fired) == 1 and len(restored) == 1
+    censored = bool(quiescence.get("censored"))
+    raw_violating = bool(violations.get("violating_run"))
+    cell_id = rec.get("cell_id") or ""
     return {
         "run_id": rec.get("run_id"), "stage": rec.get("stage"),
-        "cell_id": rec.get("cell_id"), "mechanism": rec.get("mechanism"),
+        "cell_id": cell_id, "mechanism": rec.get("mechanism"),
+        "is_validation": cell_id.startswith("V."),
         "ordering_variant": rec.get("ordering_variant"), "fault": rec.get("fault"),
         "fault_level": rec.get("fault_level"),
         "load_events": rec.get("load_events"), "partitions": rec.get("partitions"),
         "consumer_instances": rec.get("consumer_instances"), "rep": rec.get("rep"),
         "valid": bool(validity.get("valid")), "excluded": bool(validity.get("excluded")),
         "exclude_reason": validity.get("exclude_reason"),
-        "violating_run": bool(violations.get("violating_run")),
+        # method §7.3: censored runs are included in the correctness primary outcome as
+        # violating runs (S5 F-P5 fix). The raw oracle verdict is kept separately.
+        "violating_run": bool(raw_violating or censored),
+        "violating_run_raw": raw_violating,
+        "censored": censored,
         "v1": bool(violations.get("v1")), "v2": bool(violations.get("v2")),
         "v3": bool(violations.get("v3")), "v4": bool(violations.get("v4")),
+        "v5": bool(violations.get("v5")),
         "dup_postings": counts.get("dup_postings"),
         "dup_entries": counts.get("dup_entries"),
         "lost_postings": counts.get("lost_postings"),
         "lost_entries": counts.get("lost_entries"),
         "imbalanced_entries": counts.get("imbalanced_entries"),
+        "structurally_malformed_entries": counts.get("structurally_malformed_entries"),
+        "imbalanced_sum_entries": counts.get("imbalanced_sum_entries"),
         "mutated_postings": counts.get("mutated_postings"),
         "spurious_postings": counts.get("spurious_postings"),
         "throughput": perf.get("throughput_eps_median"),
         "p50": perf.get("p50_ms"), "p99": perf.get("p99_ms"),
         "p999": perf.get("p999_ms"),
-        "censored": bool(quiescence.get("censored")),
         "t_consistent_ms": quiescence.get("t_consistent_ms"),
         "injected": injected, "attested": attested,
         "config_sha256": (rec.get("config") or {}).get("config_sha256"),
@@ -436,6 +473,15 @@ def extract(rec: dict) -> dict:
     }
 
 
+def confirmatory(recs: list[dict]) -> list[dict]:
+    """Exclude the dedicated validation runs (cell_id ``V.*``) from confirmatory tables.
+
+    prereg §2.3: the validation runs are recorded separately and are not part of the matrix;
+    mixing them into mechanism×cell tables would contaminate the estimands (S5 F-P5 item 3).
+    """
+    return [r for r in recs if not r.get("is_validation")]
+
+
 def _group_by(records: list[dict], key) -> dict:
     out: dict = defaultdict(list)
     for rec in records:
@@ -446,7 +492,14 @@ def _group_by(records: list[dict], key) -> dict:
 # --------------------------------------------------------------------------------------------
 # estimator tables
 # --------------------------------------------------------------------------------------------
-def correctness_by_cell(recs: list[dict], dataset: str) -> list[dict]:
+def correctness_by_cell(recs: list[dict], dataset: str,
+                        reserved: dict[str, int] | None = None) -> list[dict]:
+    """Per-cell correctness with the FROZEN N_planned from the reserved-run list (F-P5).
+
+    ``reserved`` maps cell_id -> reserved run count.  ``n_planned`` is never redefined to the
+    number of surviving records: ``n_missing = max(0, reserved - valid - excluded)``.
+    """
+    reserved = reserved or {}
     rows = []
     groups = _group_by(recs, lambda r: (r["stage"], r["mechanism"], r["fault"],
                                         r["ordering_variant"], r["load_events"],
@@ -458,17 +511,25 @@ def correctness_by_cell(recs: list[dict], dataset: str) -> list[dict]:
         k = sum(1 for r in valid if r["violating_run"])
         lo, hi = cp_ci(k, n)
         reasons = Counter(str(r["exclude_reason"]) for r in excluded)
+        cell_id = group[0].get("cell_id")
+        planned = reserved.get(cell_id, len(group)) if cell_id else len(group)
+        n_missing = max(0, int(planned) - n - len(excluded))
         row = {
-            "dataset": dataset, "stage": stage, "mechanism": mech, "fault": fault,
-            "ordering_variant": ordering, "load_events": load, "partitions": parts,
-            "n_planned": len(group), "n_valid": n, "n_excluded": len(excluded),
-            "exclusion_rate": (len(excluded) / len(group)) if group else None,
+            "dataset": dataset, "cell_id": cell_id, "stage": stage, "mechanism": mech,
+            "fault": fault, "ordering_variant": ordering, "load_events": load,
+            "partitions": parts,
+            "n_planned": int(planned),
+            "n_planned_source": ("reserved-runs.csv" if cell_id in reserved
+                                 else "records-only (reserved list unavailable)"),
+            "n_valid": n, "n_excluded": len(excluded), "n_missing": n_missing,
+            "exclusion_rate": (len(excluded) / (n + len(excluded)))
+            if (n + len(excluded)) else None,
             "violating_runs": k, "violating_rate": (k / n) if n else None,
             "cp_lo": lo, "cp_hi": hi, "cp_upper_one_sided": cp_upper(k, n),
             "rule_of_three": rule_of_three(n),
             "exclude_reasons": "; ".join(f"{a} x{b}" for a, b in sorted(reasons.items())),
         }
-        for inv in ("v1", "v2", "v3", "v4"):
+        for inv in ("v1", "v2", "v3", "v4", "v5"):
             kk = sum(1 for r in valid if r[inv])
             row[f"{inv}_runs"] = kk
             row[f"{inv}_rate"] = (kk / n) if n else None
@@ -627,7 +688,10 @@ def decide_hypotheses(recs: list[dict], tests: dict, dataset: str) -> dict:
 
     # ---------------- H1: M1x violates, M1-kafka does not --------------------------------
     m1x_bad = cell_runs("M1x", {"K2", "K3"}, {"A"})
-    mk_all = cell_runs("M1-kafka", set(r["fault"] for r in valid))
+    # H1's clean arm: the M1-kafka cells named by the decision rule (Stage A/B F0-F3,F5-F6
+    # reachable set); exploratory cells are not allowed to affect the hypothesis (F-P5 item 6).
+    mk_all = cell_runs("M1-kafka", {"F0", "F1", "F2", "F3", "F6", "K1", "K2", "K3", "K5"},
+                       {"A", "B"})
     m1x_viol = [r for r in m1x_bad if r["violating_run"]]
     mk_viol = [r for r in mk_all if r["violating_run"]]
     k3_test = tests["families"].get("C1", {}).get("tests", {}).get(
@@ -905,25 +969,41 @@ def build_test_families(recs: list[dict], bootstrap_seed: str) -> dict:
         }
 
     # ---- H2 cost / H4 latency components ---------------------------------------------
-    def _cost_confirmed(family: str, better: str, worse: str, metric_key: str = "d") -> dict:
+    def _cost_confirmed(family: str, better: str, worse: str,
+                        direction: int = -1) -> dict:
         fam = families.get(family, {})
         for p in fam.get("pairwise", []):
             if p.get("a") == better and p.get("b") == worse:
                 cd = p.get("cliff") or {}
                 delta = cd.get("delta")
                 sig = p.get("p_adjusted") is not None and p["p_adjusted"] < ALPHA
-                ok = (delta is not None and abs(delta) >= CLIFF_SMALL and sig)
+                # direction-aware (F-P5): the sign must match the pre-registered direction.
+                # direction=-1 => better < worse in the metric; +1 => better > worse.
+                fam_blocks = fam.get("blocks") or []
+                metric = fam.get("metric")
+                sign_ok = None
+                if metric and fam_blocks:
+                    key = "throughput" if metric == "throughput" else "p99"
+                    med_a = [b.get("median", {}).get(key) if isinstance(b.get("median"), dict)
+                             else None for b in fam_blocks]
+                    sign_ok = True  # block medians recorded in pairwise cliff delta sign
+                ok = (delta is not None and abs(delta) >= CLIFF_SMALL and sig
+                      and (delta * direction) > 0)
                 return {"family": family, "comparison": f"{better} vs {worse}",
                         "cliff_delta": delta, "magnitude": cd.get("magnitude"),
+                        "direction_expected": direction, "direction_ok": bool(
+                            delta is not None and delta * direction > 0),
                         "p_adjusted": p.get("p_adjusted"), "confirmed": bool(ok),
-                        "note": f"pre-registered direction: {better} worse than {worse}"}
+                        "note": f"pre-registered direction: {better} {'worse than' if direction < 0 else 'better than'} {worse}"}
         return {"family": family, "confirmed": False,
                 "note": "no Stage C data for the pre-registered contrast"}
 
     h2_tests = {}
     for other in ("M3", "M4"):
-        h2_tests[f"M2_vs_{other}_p99"] = _cost_confirmed("P2", "M2", other)
-        h2_tests[f"M2_vs_{other}_throughput"] = _cost_confirmed("P1", "M2", other)
+        # p99: M2 worse => higher => direction +1; throughput: M2 worse => lower => -1
+        h2_tests[f"M2_vs_{other}_p99"] = _cost_confirmed("P2", "M2", other, direction=1)
+        h2_tests[f"M2_vs_{other}_throughput"] = _cost_confirmed("P1", "M2", other,
+                                                                direction=-1)
     families["H2-cost"] = {
         "description": "H2 cost component: M2 worse than M3 or M4 on throughput or p99 with "
                        "|delta| >= 0.33 (small) and Holm p < 0.05",
@@ -936,8 +1016,8 @@ def build_test_families(recs: list[dict], bootstrap_seed: str) -> dict:
             pass
     # H4 latency: M4 p99 lower than M2 at P=6, either load (family P2 direction reversed)
     for other in ("M2",):
-        for family, better, worse in (("P2", "M4", other), ("P1", "M4", other)):
-            h4_tests[f"{better}_vs_{worse}_{family}"] = _cost_confirmed(family, better, worse)
+        # H4: M4 p99 lower than M2 => direction -1; throughput non-inferiority is H5's job
+        h4_tests["M4_vs_M2_p99"] = _cost_confirmed("P2", "M4", other, direction=-1)
     families["H4-latency"] = {
         "description": "H4 latency component: M4 median p99 (and p50 secondary) lower than M2 "
                        "in at least one Stage C load at P=6 with |delta| >= 0.33 and Holm p < .05",
@@ -947,8 +1027,10 @@ def build_test_families(recs: list[dict], bootstrap_seed: str) -> dict:
 
     # ---- P3: time-to-consistent-state ------------------------------------------------
     p3_tests = {}
+    # prereg §7.4 is per cell; the confirmatory contrast uses the fault-free Stage-C
+    # 100k/P=6 cell (S5 F-P5 item 5: do not pool fault conditions across stages)
     ttc = [r for r in valid if r["load_events"] == 100_000 and r["partitions"] == 6
-           and r["stage"] in ("B", "C")]
+           and r["stage"] == "C" and r["fault"] in ("F0", "none", "ctrl")]
     by_mech = _group_by(ttc, lambda r: r["mechanism"])
     props = {}
     for mech, runs in sorted(by_mech.items()):
@@ -977,7 +1059,8 @@ def build_test_families(recs: list[dict], bootstrap_seed: str) -> dict:
 
     # ---- H5 dominance ----------------------------------------------------------------
     dom_block = {}
-    if families.get("P1", {}).get("friedman", {}).get("applicable"):
+    if families.get("P1", {}).get("friedman", {}).get("applicable") and \
+            len(families.get("P1", {}).get("blocks", [])) >= 4:
         mechs_dom = mechs_with_data
         worst_correct = []
         for mech in mechs_dom:
@@ -1163,15 +1246,100 @@ def build_decision_table(recs: list[dict], dataset: str) -> list[dict]:
 # --------------------------------------------------------------------------------------------
 # harness gates (T1) — reads frozen gate evidence only
 # --------------------------------------------------------------------------------------------
-def build_gate_table(recs: list[dict], harness_dir: str) -> list[dict]:
+def _reserved_index(reserved: list[dict] | None) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for row in (reserved or []):
+        cell = row.get("cell_id")
+        if cell:
+            out[cell] = out.get(cell, 0) + 1
+    return out
+
+
+def _gate_negative_controls(harness_dir: str) -> dict:
+    path = os.path.join(harness_dir, "gate-negative-controls.json")
+    if not os.path.exists(path):
+        return {"present": False, "gates": {}}
+    try:
+        doc = json.load(open(path, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {"present": False, "gates": {}}
+    return {"present": True, "gates": doc.get("gates", {}),
+            "all_passed": bool(doc.get("all_passed")),
+            "warning": ("SYNTHETIC FIXTURE" if doc.get("synthetic") else None)}
+
+
+def build_gate_table(recs: list[dict], harness_dir: str,
+                     reserved: list[dict] | None = None,
+                     faults_log: str | None = None,
+                     artifacts_dir: str | None = None,
+                     rates_path: str | None = None,
+                     negative_controls_required: bool = True) -> list[dict]:
+    """Falsifiable harness gates G1-G8 (S5 F-G1 fix).
+
+    Each gate is computed from provenance/records over ALL executed runs (valid and excluded),
+    never only from ``valid`` runs.  A gate can only PASS when its positive predicate holds AND a
+    purpose-built negative-control fixture for that gate fails it
+    (``results/harness/gate-negative-controls.json``).  Gates whose required artefact is not yet
+    delivered are reported PENDING with the exact missing evidence, never PASS.
+    """
+    executed = [r for r in recs if r["valid"] or r["excluded"]]
     valid = [r for r in recs if r["valid"] and not r["excluded"]]
+    reserved_idx = _reserved_index(reserved)
+    neg = _gate_negative_controls(harness_dir)
+    gates: list[dict] = []
 
-    def status_from(pred, evidence, pending_if_no_data=True):
-        if pred is None:
-            return ("PENDING" if pending_if_no_data else "NO DATA"), evidence
-        return ("PASS" if pred else "FAIL"), evidence
+    def add(gate: str, requirement: str, status: str, evidence: str):
+        if status == "PASS" and negative_controls_required:
+            control = (neg.get("gates") or {}).get(gate, {})
+            if not neg.get("present"):
+                status = "PENDING"
+                evidence += "; negative-control fixture set missing (G1-G8 falsifiability " \
+                            "not demonstrated)"
+            elif not control.get("failed_as_required"):
+                status = "FAIL"
+                evidence += f"; negative control did not fail the gate " \
+                            f"({control.get('reason') or 'missing'})"
+            else:
+                evidence += "; negative control FAILED as required"
+        gates.append({"gate": gate, "requirement": requirement, "status": status,
+                      "evidence": evidence,
+                      "negative_control": (neg.get("gates") or {}).get(gate)})
 
-    gates = []
+    # ---- G1 negative control: M0 shows I3 in deterministic K3 AND K5, per class ----------
+    def _g1_class(klass: str):
+        runs = [r for r in executed if r["mechanism"] == "M0"
+                and r["fault"] == "K3" or (r["mechanism"] == "M0" and r["fault"] == "K5")
+                and klass in (r["fault"], "K3" if klass == "K3" else "K5")]
+        runs = [r for r in executed if r["mechanism"] == "M0" and r["fault"] == klass]
+        good = [r for r in runs if r["v3"] and r["attested"]]
+        return len(runs), len(good), runs
+
+    k3_n, k3_good, _ = _g1_class("K3")
+    k5_n, k5_good, _ = _g1_class("K5")
+    if k3_n == 0 and k5_n == 0:
+        add("G1", "M0 negative control shows I3 violations in K3 AND K5 separately with "
+                  "attested injection", "PENDING", "no M0 K3/K5 runs yet (gate-control "
+                  "validation runs pilot-valid-g1k3/g1k5 are pre-Stage-A)")
+    else:
+        ok = k3_good > 0 and k5_good > 0
+        add("G1", "M0 negative control shows I3 violations in K3 AND K5 separately with "
+                  "attested injection", "PASS" if ok else "FAIL",
+            f"K3 runs={k3_n} I3+attested={k3_good}; K5 runs={k5_n} I3+attested={k5_good}")
+
+    # ---- G2 positive controls: M1-kafka and M4+M3 clean in fault-free controls -----------
+    ctrl = [r for r in executed if r["mechanism"] in ("M1-kafka", "M4+M3")
+            and r["fault"] in ("F0", "none", "ctrl")]
+    if ctrl:
+        bad = [r for r in ctrl if r["violating_run_raw"]]
+        add("G2", "M1-kafka and M4+M3 zero violations in all fault-free control runs",
+            "PASS" if not bad else "FAIL",
+            f"control runs={len(ctrl)} violating={len(bad)} "
+            f"CP95 upper={cp_upper(len(bad), len(ctrl)):.4f}")
+    else:
+        add("G2", "M1-kafka and M4+M3 zero violations in all fault-free control runs",
+            "PENDING", "no fault-free control runs yet")
+
+    # ---- G3 checker mutation testing (frozen evidence file) ------------------------------
     g3_path = os.path.join(harness_dir, "g3-mutation.json")
     g3 = None
     if os.path.exists(g3_path):
@@ -1180,115 +1348,153 @@ def build_gate_table(recs: list[dict], harness_dir: str) -> list[dict]:
         except Exception:  # noqa: BLE001
             g3 = None
     if g3:
-        st, ev = status_from(bool(g3.get("passed")),
-                             f"g3-mutation.json: {g3.get('overview', {}).get('detected', '?')}"
-                             f"/{g3.get('overview', {}).get('mutations', '?')} detected")
+        corpora = g3.get("corpora") or {}
+        required = {"db_sink", "attestation", "publication_metrics", "kafka_ledger"}
+        covered = required <= set(corpora)
+        per_class_ok = all(c.get("mutations", 0) >= 100
+                           for grp in (g3.get("groups") or {}).values()
+                           for c in (grp.get("classes") or {}).values())
+        ok = bool(g3.get("passed")) and covered and per_class_ok
+        add("G3", "oracle mutation testing: 100% detection with correct attribution for every "
+                  "class, >=100 mutations/class, all four corpora covered (DB sink, attestation, "
+                  "publication metrics, M1-kafka ledger)",
+            "PASS" if ok else "FAIL",
+            f"g3 passed={g3.get('passed')} corpora={sorted(corpora)} "
+            f"classes={g3.get('overview', {}).get('classes')} "
+            f"detected={g3.get('overview', {}).get('detected')}/"
+            f"{g3.get('overview', {}).get('mutations')}")
     else:
-        st, ev = "PENDING", "results/harness/g3-mutation.json not found"
-    gates.append({"gate": "G3", "requirement": "oracle mutation testing: 100% detection for "
-                                                "every defect class (>=100 mutations/class)",
-                  "status": st, "evidence": ev})
+        add("G3", "oracle mutation testing 100% (>=100/class, all corpora)", "PENDING",
+            "results/harness/g3-mutation.json not found")
 
-    # G1 negative control: M0 I3 violations in deterministic K3 and K5 cells
-    m0_k3 = [r for r in valid if r["mechanism"] == "M0" and r["fault"] in ("K3", "K5")
-             and r["stage"] == "A"]
-    if m0_k3:
-        st, ev = status_from(any(r["v3"] for r in m0_k3),
-                             f"M0 K3/K5 runs={len(m0_k3)} I3-violating="
-                             f"{sum(1 for r in m0_k3 if r['v3'])}")
-    else:
-        st, ev = "PENDING", "no M0 Stage-A K3/K5 runs yet"
-    gates.append({"gate": "G1", "requirement": "M0 negative control shows predicted I3 "
-                                                "violations in K3/K5 with attested injection",
-                  "status": st, "evidence": ev})
-
-    # G2 positive controls: M1-kafka and M4+M3 zero violations in fault-free controls
-    ctrl = [r for r in valid if r["mechanism"] in ("M1-kafka", "M4+M3")
-            and r["fault"] in ("F0", "none", "ctrl")]
-    if ctrl:
-        bad = sum(1 for r in ctrl if r["violating_run"])
-        st, ev = status_from(bad == 0, f"fault-free control runs={len(ctrl)} violating={bad}; "
-                                       f"CP upper={cp_upper(bad, len(ctrl)):.4f}")
-    else:
-        st, ev = "PENDING", "no fault-free control runs yet"
-    gates.append({"gate": "G2", "requirement": "M1-kafka and M4+M3 show zero violations in "
-                                                "all fault-free control runs", "status": st,
-                  "evidence": ev})
-
-    # G4 injector attestation
-    injected = [r for r in valid if r["injected"]]
+    # ---- G4 injector attestation over ALL reserved injected runs -------------------------
+    injected = [r for r in executed if r["injected"]]
     if injected:
-        un = [r for r in injected if not r["attested"]]
-        st, ev = status_from(not un, f"armed injections={len(injected)} missing receipts="
-                                     f"{len(un)}; per-cell exclusion rates in "
-                                     f"correctness-by-cell.csv")
+        unattested = [r for r in injected if not r["attested"]]
+        excluded_receipt = [r for r in injected
+                            if r["excluded"] and "fault_receipts_invalid" ==
+                            (r.get("exclude_reason") or "")]
+        executed_planned = sum(1 for r in executed if r["injected"])
+        requested = sum(v for cell, v in reserved_idx.items()
+                        if cell.startswith(("A.", "B.", "pilot.")) and
+                        not cell.split(".")[2].lower().startswith(("f0", "ctrl")))
+        add("G4", "every armed injection has exactly one fired and one restored receipt "
+                  "(single-owner protocol); receipt failures excluded and counted",
+            "PASS" if not unattested else "FAIL",
+            f"executed injected runs={executed_planned} unattested={len(unattested)} "
+            f"receipt-excluded={len(excluded_receipt)} "
+            f"(reserved injected slots={requested if reserved else 'n/a'})")
     else:
-        st, ev = "PENDING", "no injected runs yet"
-    gates.append({"gate": "G4", "requirement": "every armed injection has exactly one fired and "
-                                                "one restored receipt; non-fired runs excluded "
-                                                "and counted", "status": st, "evidence": ev})
+        add("G4", "every armed injection attested (fired+restored, single-owner protocol)",
+            "PENDING", "no executed injected runs yet")
 
-    # G5 ground-truth independence
-    if valid:
-        bad = [r for r in valid if not r["source_integrity"]
-               or (r["gt_sha256"] and r["expected_sha256"]
-                   and r["gt_sha256"] != r["expected_sha256"])]
-        st, ev = status_from(not bad, f"runs={len(valid)} source-integrity/digest failures="
-                                      f"{len(bad)}; vector assertion in "
-                                      f"experiments/tests/test_oracle.py (docs/derive-vectors.csv)")
+    # ---- G5 ground-truth independence over ALL executed runs -----------------------------
+    if executed:
+        missing = []
+        mismatched = []
+        for r in executed:
+            if r["source_integrity"] is not True:
+                missing.append(r["run_id"])
+            elif (r["gt_sha256"] and r["expected_sha256"]
+                  and r["gt_sha256"] != r["expected_sha256"]):
+                mismatched.append(r["run_id"])
+        ok = not missing and not mismatched
+        add("G5", "GT digest = regenerated digest = source-dump digest for every executed run; "
+                  "normative vectors reproduced",
+            "PASS" if ok else "FAIL",
+            f"executed runs={len(executed)} source-integrity failures={len(missing)} "
+            f"digest mismatches={len(mismatched)} (vectors: experiments/tests/"
+            f"test_oracle.py asserts docs/derive-vectors.csv + g5-vectors.json)")
     else:
-        st, ev = "PENDING", "no runs yet"
-    gates.append({"gate": "G5", "requirement": "Java GT digest = Python regenerated digest = "
-                                                "source-dump digest; normative vectors reproduced",
-                  "status": st, "evidence": ev})
+        add("G5", "GT digest = regenerated digest = source-dump digest for every executed run",
+            "PENDING", "no executed runs yet")
 
-    # G6 configuration equality (shared keys identical across mechanisms)
-    intrinsic = {"mechanism", "ordering_variant", "config_sha256"}
-    if valid:
-        shared = {}
-        for r in valid:
-            cfg = {k: v for k, v in r["config"].items() if k not in intrinsic}
-            shared.setdefault(r["mechanism"], set()).add(
-                sha256_text(json.dumps(cfg, sort_keys=True, separators=(",", ":"))))
-        per_mech = {m: sorted(v) for m, v in shared.items()}
-        ok = all(len(v) == 1 for v in per_mech.values())
-        st, ev = status_from(ok, "distinct shared-config hashes per mechanism: "
-                                 + json.dumps({m: len(v) for m, v in per_mech.items()}))
+    # ---- G6 configuration equality across mechanisms (app-emitted shared_sha256) --------
+    if artifacts_dir:
+        configs = {}
+        for cell_dir in glob(os.path.join(artifacts_dir, "*", "config")):
+            run_id = os.path.basename(os.path.dirname(cell_dir))
+            doc = None
+            try:
+                doc = json.load(open(cell_dir, encoding="utf-8"))
+            except Exception:  # noqa: BLE001
+                continue
+            rec = next((r for r in executed if r["run_id"] == run_id), None)
+            if rec is None:
+                continue
+            configs.setdefault(rec["cell_id"], {})[rec["mechanism"]] = {
+                "shared": doc.get("shared_sha256"),
+                "intrinsic": doc.get("intrinsic_sha256"),
+                "mechanism": doc.get("mechanism"),
+            }
+        comparable = {cell: vals for cell, vals in configs.items() if len(vals) >= 2}
+        bad = []
+        for cell, vals in comparable.items():
+            shared = {v.get("shared") for v in vals.values()}
+            if len(shared) != 1 or None in shared:
+                bad.append(cell)
+            mechs = {v.get("mechanism") for v in vals.values()}
+            if len(mechs) != len(vals):
+                bad.append(cell + ":mechanism-key")
+        if comparable:
+            add("G6", "shared configuration hash identical across mechanisms within a cell; "
+                      "only mechanism-intrinsic keys differ",
+                "PASS" if not bad else "FAIL",
+                f"comparable cells={len(comparable)} inconsistent={len(set(bad))} "
+                f"(app-emitted shared_sha256 from archived config_*.json)")
+        else:
+            add("G6", "shared configuration hash identical across mechanisms",
+                "PENDING", "no cell has archived app config artefacts for >=2 mechanisms yet")
     else:
-        st, ev = "PENDING", "no runs yet"
-    gates.append({"gate": "G6", "requirement": "shared configuration hash identical across "
-                                                "mechanisms; only declared intrinsic keys differ",
-                  "status": st, "evidence": ev})
+        add("G6", "shared configuration hash identical across mechanisms", "PENDING",
+            "artifacts directory not supplied to the analysis")
 
-    # G7 generator capability / quiescence calibration (needs generator-lag diagnostics)
-    gates.append({"gate": "G7", "requirement": "generator sustains >= 3x max mechanism "
-                                                "throughput; doubling T_quiet changes no count",
-                  "status": "PENDING",
-                  "evidence": "pilot calibration runs (pilot-valid-quiesce-*) record doubled "
-                              "T_quiet; generator capability recorded in the pilot log"})
-
-    # G8 clock/host sanity
-    if valid:
-        bad = [r for r in valid if not r["clock_check"] or not r["residue_check"]]
-        disk_bad = [r for r in valid if (r["disk_free_start_gb"] or 99) < 3.0]
-        st, ev = status_from(not bad and not disk_bad,
-                             f"runs={len(valid)} clock/residue failures={len(bad)} "
-                             f"disk-floor failures={len(disk_bad)}")
+    # ---- G7 generator capability / quiescence calibration -------------------------------
+    rates_path = rates_path or os.path.join(REPO, "experiments", "rates.json")
+    rates = None
+    if os.path.exists(rates_path):
+        try:
+            rates = json.load(open(rates_path, encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            rates = None
+    lag_values = [r.get("generator_lag_p99_ms") for r in executed
+                  if r.get("generator_lag_p99_ms") is not None]
+    calibration = [r for r in recs if r.get("cell_id", "").startswith("V.quiesce")]
+    calib_ok = bool(calibration) and all(not r["censored"] for r in calibration)
+    if rates is None:
+        add("G7", "rate table exists (prereg §6.2); generator sustains >=3x max mechanism "
+                  "throughput; doubling T_quiet changes no count", "PENDING",
+            "experiments/rates.json missing (pilot output; fixed-rate/saturation modes may not "
+            "fall back to max)")
+    elif not lag_values:
+        add("G7", "rate table + generator-lag p99 <= 5 ms + T_quiet doubling stable", "PENDING",
+            "rate table present but no generator-lag sample in run records "
+            "(service-side send-timestamp hook requested from S3; recorded deviation S5-6)")
     else:
-        st, ev = "PENDING", "no runs yet"
-    gates.append({"gate": "G8", "requirement": "single boot; clock checks; affinity/priority as "
-                                                "configured; free disk above the 3 GB floor",
-                  "status": st, "evidence": ev})
-    # marker that G3 evidence came from the frozen harness directory
-    for g in gates:
-        if g["gate"] == "G3":
-            g["evidence"] = g["evidence"]
+        lag_ok = max(lag_values) <= 5
+        add("G7", "rate table + generator-lag p99 <= 5 ms + T_quiet doubling stable",
+            "PASS" if (lag_ok and calib_ok) else "FAIL",
+            f"rates present; generator-lag p99 max={max(lag_values)}ms (<=5={lag_ok}); "
+            f"quiescence calibration runs={len(calibration)} stable={calib_ok}")
+
+    # ---- G8 clock and host sanity over ALL executed runs --------------------------------
+    if executed:
+        clock_bad = [r for r in executed if not r["clock_check"]]
+        residue_bad = [r for r in executed if not r["residue_check"]]
+        disk_bad = [r for r in executed
+                    if (r["disk_free_start_gb"] if r["disk_free_start_gb"] is not None
+                        else 99) < 3.0]
+        add("G8", "single boot; clock probe before/after every run; affinity/priority recorded; "
+                  "free disk above the 3 GB floor",
+            "PASS" if not (clock_bad or residue_bad or disk_bad) else "FAIL",
+            f"executed runs={len(executed)} clock failures={len(clock_bad)} "
+            f"residue failures={len(residue_bad)} disk-floor failures={len(disk_bad)}")
+    else:
+        add("G8", "single boot; clock probe; affinity/priority; disk floor", "PENDING",
+            "no executed runs yet")
     return gates
 
 
-# --------------------------------------------------------------------------------------------
-# zero-event reporting table (prereg §7.5)
-# --------------------------------------------------------------------------------------------
 def zero_event_table(recs: list[dict], dataset: str) -> list[dict]:
     rows = []
     for r in correctness_by_cell(recs, dataset):
@@ -1590,7 +1796,15 @@ def main(argv=None) -> int:
     os.makedirs(out_dir, exist_ok=True)
     freeze = load_freeze(args.freeze)
     raw_records, malformed = load_records(records_dir)
-    recs = [extract(r) for r in raw_records]
+    all_recs = [extract(r) for r in raw_records]
+    recs = confirmatory(all_recs)
+    validation_recs = [r for r in all_recs if r["is_validation"]]
+    reserved = load_reserved(records_dir)
+    reserved_cells: dict[str, int] = {}
+    for row in reserved:
+        cell = row.get("cell_id")
+        if cell:
+            reserved_cells[cell] = reserved_cells.get(cell, 0) + 1
     dataset = args.dataset or dataset_label(raw_records, freeze)
     bootstrap_seed = (args.bootstrap_seed
                       or (freeze.get("seeds") or {}).get("bootstrap_seed")
@@ -1601,12 +1815,17 @@ def main(argv=None) -> int:
         harness_dir = os.path.join(os.path.dirname(os.path.dirname(records_dir)), "harness")
 
     # estimator tables
-    by_cell = correctness_by_cell(recs, dataset)
+    by_cell = correctness_by_cell(recs, dataset, reserved_cells)
+    validation_by_cell = correctness_by_cell(validation_recs, dataset)
     cbmf = correctness_by_mechanism_fault(recs, dataset)
     counts = counts_by_mechanism(recs, dataset)
     perf = performance_by_cell(recs, dataset, bootstrap_seed)
     per_run = per_run_performance(recs, dataset)
-    gates = build_gate_table(recs, harness_dir)
+    artifacts_dir = os.path.join(os.path.dirname(records_dir), "artifacts")
+    gates = build_gate_table(all_recs, harness_dir, reserved=reserved,
+                             faults_log=os.path.join(os.path.dirname(os.path.dirname(
+                                 records_dir)), "faults.log"),
+                             artifacts_dir=artifacts_dir)
     decision = build_decision_table(recs, dataset)
     zero_events = zero_event_table(recs, dataset)
     families = build_test_families(recs, bootstrap_seed)
@@ -1636,14 +1855,21 @@ def main(argv=None) -> int:
         "families": families,
         "hypotheses": hypotheses,
         "zero_event_statements": zero_events,
-        "inputs": {"records_dir": os.path.relpath(records_dir,
-                                                  os.path.dirname(os.path.dirname(out_dir))),
+        "inputs": {"records_dir": _repo_rel(records_dir),
+                   "reserved_runs": _repo_rel(os.path.join(os.path.dirname(records_dir),
+                                                           "summaries", "reserved-runs.csv")),
                    "record_sha256": input_digests,
-                   "freeze_file": args.freeze,
+                   "freeze_file": _repo_rel(args.freeze),
                    "freeze_sha256": sha256_file(args.freeze) if os.path.exists(args.freeze)
                    else None},
         "analysis_script_sha256": sha256_file(os.path.abspath(__file__)),
     }
+    try:
+        from experiments import pathsafe as _pathsafe
+        tests = _pathsafe.scrub(tests)
+        pathsafe_ok = True
+    except Exception:  # noqa: BLE001
+        pathsafe_ok = False
     with open(os.path.join(out_dir, "tests.json"), "w", encoding="utf-8", newline="") as fh:
         json.dump(tests, fh, indent=2, sort_keys=False)
         fh.write("\n")
@@ -1651,6 +1877,7 @@ def main(argv=None) -> int:
         json.dump({"dataset": dataset, "hypotheses": hypotheses}, fh, indent=2)
         fh.write("\n")
     write_csv(os.path.join(out_dir, "correctness-by-cell.csv"), by_cell)
+    write_csv(os.path.join(out_dir, "validation-by-cell.csv"), validation_by_cell)
     write_csv(os.path.join(out_dir, "correctness-by-mechanism-fault.csv"), cbmf)
     write_csv(os.path.join(out_dir, "counts-by-mechanism.csv"), counts)
     write_csv(os.path.join(out_dir, "performance-by-cell.csv"), perf)

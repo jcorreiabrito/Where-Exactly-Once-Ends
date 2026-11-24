@@ -25,6 +25,7 @@ Usage::
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import os
@@ -123,18 +124,22 @@ def _counts_for(run: dict) -> tuple[dict, dict]:
         "produced": events, "consumed_estimate": events,
         "expected_postings": 2 * events, "observed_postings": 2 * events,
         "dup_postings": 0, "dup_entries": 0, "lost_postings": 0, "lost_entries": 0,
-        "imbalanced_entries": 0, "mutated_postings": 0, "spurious_postings": 0,
+        "imbalanced_entries": 0, "structurally_malformed_entries": 0,
+        "imbalanced_sum_entries": 0, "ledger_entries_total": events,
+        "mutated_postings": 0, "spurious_postings": 0,
     }
-    violations = {"v1": False, "v2": False, "v3": False, "v4": False,
+    violations = {"v1": False, "v2": False, "v3": False, "v4": False, "v5": False,
                   "violating_run": False}
     defect = run["defect"]
     if defect == "dup":
         counts["dup_postings"] = 2 * (events // 4)
         counts["dup_entries"] = events // 4
+        counts["ledger_entries_total"] = events + (events // 4)
         violations["v3"] = True
     elif defect == "loss":
         counts["lost_postings"] = events // 2
         counts["lost_entries"] = events // 4
+        counts["ledger_entries_total"] = events - (events // 4)
         violations["v4"] = True
     violations["violating_run"] = any(violations[k] for k in ("v1", "v2", "v3", "v4"))
     return counts, violations
@@ -265,6 +270,20 @@ def main(argv=None) -> int:
             json.dump(record, fh, indent=2)
             fh.write("\n")
         written.append(os.path.relpath(path, _REPO))
+    # reserved-run list (the frozen N source for the analysis); synthetic, cell-faithful
+    summaries = os.path.join(out_root, "summaries")
+    os.makedirs(summaries, exist_ok=True)
+    with open(os.path.join(summaries, "reserved-runs.csv"), "w", encoding="utf-8",
+              newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["run_id", "cell_id", "stage_label",
+                                                "mechanism", "fault", "rep"])
+        writer.writeheader()
+        for index, run in enumerate(runs):
+            record = build_record(run, index, git_sha=git_sha, master_seed=master_seed)
+            writer.writerow({"run_id": record["run_id"], "cell_id": record["cell_id"],
+                             "stage_label": {"A": "A", "C": "C"}[record["stage"]],
+                             "mechanism": record["mechanism"],
+                             "fault": record["fault"], "rep": record["rep"]})
     marker = os.path.join(out_root, "SYNTHETIC-NOT-RESULTS.md")
     with open(marker, "w", encoding="utf-8", newline="") as fh:
         fh.write("# SYNTHETIC FIXTURE — NOT RESULTS\n\n"

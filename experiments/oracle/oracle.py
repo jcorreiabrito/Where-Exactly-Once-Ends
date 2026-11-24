@@ -107,7 +107,8 @@ def _sha256_bytes(data: bytes) -> str:
 
 
 def _read_json(path: str):
-    with open(path, "r", encoding="utf-8") as fh:
+    # stack-state/config files written by PowerShell may carry a UTF-8 BOM
+    with open(path, "r", encoding="utf-8-sig") as fh:
         return json.load(fh)
 
 
@@ -977,6 +978,8 @@ class OracleContext:
         if att["failed"]:
             violations["v2"] = True
             violations["violating_run"] = True
+            if "I2" not in attribution:
+                attribution.append("I2")
             attribution.append("ATTESTATION")
             warnings.append("append-only attestation failed/unavailable: I2(a) unverified")
 

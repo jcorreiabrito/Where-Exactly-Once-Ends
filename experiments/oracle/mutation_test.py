@@ -87,7 +87,7 @@ def run_mutation_test(*, mutations_per_class: int, n_events: int, partitions: in
         paths = {k: os.path.join(fixture_dir, v) for k, v in descriptor["paths"].items()}
         seed_u64 = D.seed_hex_to_u64(seed_hex)
         ctx = O.OracleContext(master_seed_u64=seed_u64, n_events=n_events,
-                              partitions=partitions, shards=16,
+                              partitions=partitions, shards=8,
                               workdir=os.path.join(workdir, "oracle"))
         source_detail = ctx.verify_source(
             gt_path=paths["gt"], source_dump_path=paths["source_dump"],
@@ -129,6 +129,8 @@ def run_mutation_test(*, mutations_per_class: int, n_events: int, partitions: in
         os.makedirs(mutated_dir, exist_ok=True)
 
         # ---- group 1: DB-sink posting defects ------------------------------------------
+        print(f"[G3] DB-sink corpus: {len(F.DEFECT_CLASSES)} classes × "
+              f"{mutations_per_class} mutations", flush=True)
         db_classes = {}
         for ci, defect_class in enumerate(F.DEFECT_CLASSES):
             spec = F.EXPECTED_ATTRIBUTION[defect_class]
@@ -166,6 +168,7 @@ def run_mutation_test(*, mutations_per_class: int, n_events: int, partitions: in
         groups["db_sink_mutations"] = {"classes": db_classes}
 
         # ---- group 2: attestation defects ----------------------------------------------
+        print("[G3] attestation corpus", flush=True)
         att_classes = {}
         att_variants = {
             "attestation_granted": {"can_update": True, "can_delete": False,
@@ -203,6 +206,7 @@ def run_mutation_test(*, mutations_per_class: int, n_events: int, partitions: in
         groups["attestation_mutations"] = {"classes": att_classes}
 
         # ---- group 3: publication-stream secondary metrics (DB mechanisms) -------------
+        print("[G3] publication-metrics corpus", flush=True)
         pub_classes = {}
         for ci, defect_class in enumerate(F.PUBLICATION_CLASSES):
             detected = attributed = 0
@@ -251,6 +255,7 @@ def run_mutation_test(*, mutations_per_class: int, n_events: int, partitions: in
         groups["publication_mutations"] = {"classes": pub_classes}
 
         # ---- group 4: M1-kafka ledger corpus -------------------------------------------
+        print("[G3] M1-kafka ledger corpus", flush=True)
         kafka_classes = {}
         for ci, defect_class in enumerate(F.KAFKA_CLASSES):
             spec = F.KAFKA_EXPECTED[defect_class]

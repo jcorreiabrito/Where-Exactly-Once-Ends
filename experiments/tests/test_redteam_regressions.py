@@ -426,8 +426,23 @@ def test_fixture_and_analysis_outputs_are_path_clean():
     for root in roots:
         for dirpath, _dirs, files in os.walk(root):
             for name in files:
-                if name.endswith((".json", ".ndjson", ".csv", ".tex", ".md")):
-                    path = os.path.join(dirpath, name)
-                    text = open(path, encoding="utf-8", errors="replace").read()
-                    assert not pathsafe.text_violations(text), \
-                        f"absolute local path leaked into {os.path.relpath(path, REPO)}"
+                path = os.path.join(dirpath, name)
+                if name.endswith(".json"):
+                    obj = json.load(open(path, encoding="utf-8"))
+                    violations = pathsafe.find_violations(obj)
+                elif name.endswith(".ndjson"):
+                    violations = []
+                    for line in open(path, encoding="utf-8", errors="replace"):
+                        line = line.strip()
+                        if line:
+                            try:
+                                violations += pathsafe.find_violations(json.loads(line))
+                            except json.JSONDecodeError:
+                                violations += pathsafe.text_violations(line)
+                elif name.endswith((".csv", ".tex", ".md")):
+                    violations = pathsafe.text_violations(
+                        open(path, encoding="utf-8", errors="replace").read())
+                else:
+                    continue
+                assert not violations, \
+                    f"absolute local path leaked into {os.path.relpath(path, REPO)}: {violations[:2]}"

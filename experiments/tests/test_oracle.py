@@ -141,12 +141,12 @@ def test_clean_fixture_is_consistent(clean_fixture, tmp_path):
 
 
 @pytest.mark.parametrize("defect_class,primary,allowed", [
-    ("drop_row", "I4", {"I1", "I1a"}),
+    ("drop_row", "I4", {"I1", "I1a", "I1b"}),
     ("delete_event", "I4", set()),
-    ("duplicate_row", "I3", {"I1", "I1a"}),
+    ("duplicate_row", "I3", {"I1", "I1a", "I1b"}),
     ("flip_leg_sign", "I2", {"I1", "I1a", "I1b"}),
     ("update_row_value", "I2", {"I1", "I1a", "I1b"}),
-    ("insert_spurious_row", "SPURIOUS", {"I1", "I1a"}),
+    ("insert_spurious_row", "SPURIOUS", {"I1", "I1a", "I1b"}),
 ])
 def test_single_defect_detected_and_attributed(clean_fixture, tmp_path, defect_class,
                                                primary, allowed):

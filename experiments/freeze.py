@@ -42,6 +42,11 @@ FROZEN_FILES = [
     "experiments/oracle/oracle.py",
     "experiments/oracle/mutation_test.py",
     "experiments/oracle/g5-vectors.json",
+    "experiments/pathsafe.py",
+    "experiments/receipts.py",
+    "experiments/kafka_admin.py",
+    "experiments/gate_negative_controls.py",
+    "experiments/live_smoke_evidence.py",
     "experiments/fixtures/__init__.py",
     "experiments/fixtures/make_fixtures.py",
     "experiments/fixtures/build_dryrun_fixture.py",
@@ -58,6 +63,9 @@ FROZEN_FILES = [
     "experiments/freeze.py",
     "experiments/run-matrix.ps1",
     "experiments/tests/test_oracle.py",
+    "experiments/tests/test_redteam_regressions.py",
+    "experiments/tests/test_runner_lifecycle.py",
+    "experiments/tests/test_freeze_artifact.py",
     "tools/analyze.py",
     "tools/make-figures.py",
 ]
@@ -75,6 +83,19 @@ PROVENANCE_FILES = [
 #: Pre-freeze harness evidence whose hash is recorded (not part of the pipeline).
 EVIDENCE_FILES = [
     "results/harness/g3-mutation.json",
+]
+
+#: Artifact binding: the measured service is the shipped jar; the freeze records the jar digest
+#: and a deterministic source-tree digest so a rebuild is always visible (S5 F-P6 / lead order).
+ARTIFACT_JAR = "artifact/target/wxeo-service.jar"
+ARTIFACT_SOURCE_GLOBS = [
+    "artifact/pom.xml",
+    "artifact/README.md",
+    "artifact/src/**/*.java",
+    "artifact/src/**/*.properties",
+    "artifact/src/**/*.yml",
+    "artifact/harness/*.ps1",
+    "artifact/harness/*.json",
 ]
 
 ANALYSIS_OUTPUT_CONTRACT = [
@@ -97,6 +118,37 @@ ANALYSIS_OUTPUT_CONTRACT = [
     "figures/fig-cost-coverage.pdf",
     "figures/fig-throughput.pdf",
 ]
+
+
+def artifact_source_files() -> list[str]:
+    """Deterministic list of artifact source/config files (excludes build outputs)."""
+    import glob as _glob
+    files: list[str] = []
+    for pattern in ARTIFACT_SOURCE_GLOBS:
+        files.extend(_glob.glob(os.path.join(_REPO, pattern), recursive=True))
+    return sorted(set(files))
+
+
+def artifact_binding() -> dict:
+    """Jar digest + deterministic source-tree digest (the measured artifact identity)."""
+    jar_path = os.path.join(_REPO, ARTIFACT_JAR)
+    jar = {"path": ARTIFACT_JAR, "sha256": None, "bytes": None}
+    if os.path.exists(jar_path):
+        jar["sha256"] = sha256_file(jar_path)
+        jar["bytes"] = os.path.getsize(jar_path)
+    tree_hasher = hashlib.sha256()
+    files = artifact_source_files()
+    for path in files:
+        rel = os.path.relpath(path, _REPO).replace(os.sep, "/")
+        tree_hasher.update(rel.encode("utf-8"))
+        tree_hasher.update(b"\0")
+        tree_hasher.update(sha256_file(path).encode("ascii"))
+        tree_hasher.update(b"\n")
+    return {"jar": jar, "source_tree_sha256": tree_hasher.hexdigest(),
+            "source_files_hashed": len(files),
+            "note": "jar rebuilt by S3 after service fixes is bound here and verified by the "
+                    "runner preflight; a changed jar/source tree shows up as freeze drift and "
+                    "must be re-frozen before a live run"}
 
 
 def sha256_file(path: str) -> str:
@@ -211,6 +263,7 @@ def build_freeze_document() -> dict:
             },
         },
         "aggregate_pipeline_sha256": aggregate.hexdigest(),
+        "artifact": artifact_binding(),
         "analysis_outputs_contract": ANALYSIS_OUTPUT_CONTRACT,
         "missing_at_freeze": missing,
         "freeze_policy": "Any change to a file in `files` after this freeze requires a "
@@ -218,6 +271,30 @@ def build_freeze_document() -> dict:
                          "affected analyses; affected results are labelled "
                          "'post-freeze analysis' (docs/prereg.md §10.3).",
     }
+
+
+def artifact_drift(frozen_artifact: dict | None, current: dict | None = None) -> list[dict]:
+    """Pure comparison of the frozen artifact binding vs the current jar/source tree."""
+    frozen_artifact = frozen_artifact or {}
+    current = current or artifact_binding()
+    drift: list[dict] = []
+    if not frozen_artifact:
+        return [{"file": "artifact binding", "kind": "artifact",
+                 "problem": "freeze has no artifact block"}]
+    frozen_jar = (frozen_artifact.get("jar") or {}).get("sha256")
+    current_jar = (current.get("jar") or {}).get("sha256")
+    if frozen_jar != current_jar:
+        drift.append({"file": ARTIFACT_JAR, "kind": "artifact_jar",
+                      "frozen": frozen_jar, "current": current_jar,
+                      "problem": ("jar missing at freeze time" if not frozen_jar
+                                  else "jar rebuilt/changed after the freeze")})
+    frozen_tree = frozen_artifact.get("source_tree_sha256")
+    current_tree = current.get("source_tree_sha256")
+    if frozen_tree != current_tree:
+        drift.append({"file": "artifact source tree", "kind": "artifact_source_tree",
+                      "frozen": frozen_tree, "current": current_tree,
+                      "problem": "artifact sources changed after the freeze"})
+    return drift
 
 
 def check(verbose: bool = True) -> dict:
@@ -235,7 +312,12 @@ def check(verbose: bool = True) -> dict:
         current = sha256_file(path)
         if current != info.get("sha256"):
             drift.append({"file": rel, "frozen": info.get("sha256"), "current": current})
-    report = {"ok": not (drift or missing), "drift": drift, "missing": missing,
+    # artifact binding drift (jar rebuilt / sources changed => re-freeze before a live run)
+    current_artifact = artifact_binding()
+    artifact_changes = artifact_drift(frozen.get("artifact") or {}, current_artifact)
+    report = {"ok": not (drift or missing or artifact_changes), "drift": drift,
+              "artifact_drift": artifact_changes,
+              "artifact": current_artifact["jar"], "missing": missing,
               "frozen_at_utc": frozen.get("frozen_at_utc"),
               "aggregate_pipeline_sha256": frozen.get("aggregate_pipeline_sha256")}
     if verbose:

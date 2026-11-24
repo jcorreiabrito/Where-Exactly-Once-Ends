@@ -186,7 +186,8 @@ class ToxiproxyError(RuntimeError):
 
 def _http(method: str, url: str, payload: dict | None = None, timeout: float = 10.0):
     data = None
-    headers = {}
+    # Toxiproxy 2.9.0 rejects PowerShell's default user agent with HTTP 403; send an explicit one.
+    headers = {"User-Agent": "wxeo-harness/1.0"}
     if payload is not None:
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
@@ -1070,7 +1071,7 @@ def _read_json(path: str):
     if not path or not os.path.exists(path):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, "r", encoding="utf-8-sig") as fh:
             return json.load(fh)
     except (OSError, json.JSONDecodeError):
         return None

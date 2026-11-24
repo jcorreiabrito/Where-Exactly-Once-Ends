@@ -75,6 +75,63 @@ from experiments.oracle import derive as D  # noqa: E402
 from experiments.oracle import oracle as O  # noqa: E402
 
 QUIET_PERIOD_MS = 10_000          # prereg §4.6 / method §7.3 (T_quiet)
+
+# ---- Windows-KRaft topic lifecycle (lead directive M5) --------------------------------------
+# Topic deletion is FATAL on this Windows KRaft setup ("Error while renaming dir for <topic>" ->
+# KafkaStorageException -> brokers shut down).  Therefore:
+#  * the runner NEVER deletes topics; fresh state comes from unique attempt-scoped topic names,
+#    a fresh consumer group and a fresh schema;
+#  * storage is reclaimed by periodic full-stack `reset-kafka` (wipe + reformat), never per run;
+#  * the reset cadence depends on the run load and is recorded in results/DEVIATIONS.md (M5).
+RESET_CADENCE_BY_LOAD = {1_000: 50, 10_000: 25, 100_000: 20, 1_000_000: 1}
+RESET_CADENCE_SATURATION = 20
+MAX_LIVE_TOPICS = 400             # hard topic-count cap: abort -> reset-kafka
+BROKER_REQUIRED_PROPERTIES = {
+    "delete.topic.enable": "false",
+    "log.retention.check.interval.ms": "3600000",
+}
+
+
+def reset_cadence_for(load_events: int, load_mode: str = "fixed-rate") -> int:
+    """Runs between full-stack `reset-kafka` wipes for a run type (lead M5 directive)."""
+    if load_mode == "saturation":
+        return RESET_CADENCE_SATURATION
+    return int(RESET_CADENCE_BY_LOAD.get(int(load_events), 50))
+
+
+def should_periodic_reset(runs_since_reset: int, load_events: int,
+                          load_mode: str = "fixed-rate",
+                          live_topics: int = 0) -> tuple[bool, str | None]:
+    """Pure cadence decision: (should_reset, reason). reason in {cadence, topic_cap}."""
+    if live_topics > MAX_LIVE_TOPICS:
+        return True, "topic_cap"
+    cadence = reset_cadence_for(load_events, load_mode)
+    # cadence == 1 means "reset before every run" (1M block, M5)
+    if cadence <= 1 or int(runs_since_reset) >= cadence:
+        return True, "cadence"
+    return False, None
+
+
+def check_broker_properties(text: str) -> dict:
+    """Verify the broker safety properties required by the M5 directive are in effect."""
+    values: dict[str, str | None] = {k: None for k in BROKER_REQUIRED_PROPERTIES}
+    for line in (text or "").splitlines():
+        line = line.strip()
+        for key in BROKER_REQUIRED_PROPERTIES:
+            if line.startswith(key + "="):
+                values[key] = line.split("=", 1)[1].strip()
+    missing = [k for k, v in values.items() if v is None]
+    wrong = [f"{k}={values[k]!r} (required {BROKER_REQUIRED_PROPERTIES[k]!r})"
+             for k in BROKER_REQUIRED_PROPERTIES
+             if values[k] is not None and values[k] != BROKER_REQUIRED_PROPERTIES[k]]
+    return {"ok": not missing and not wrong, "values": values, "missing": missing,
+            "wrong": wrong}
+
+
+def broker_property_files() -> list[str]:
+    """Broker server.properties files (persist on disk even when Kafka is stopped)."""
+    root = os.path.join(eos_runtime_root(), "run", "kafka")
+    return sorted(glob(os.path.join(root, "node*", "server.properties")))
 QUIESCE_TIMEOUT_MS = 300_000      # T_max = 300 s
 READY_STABLE_MS = 5_000           # readiness: group stable, lag 0 for 5 s (prereg §4.1 step 3)
 FREE_SPACE_FLOOR_GB = 3.0         # prereg §9.3 (G8)
@@ -93,11 +150,13 @@ EXCLUDE_DISK = "disk_below_floor"
 EXCLUDE_CONFIG = "config_mismatch"
 EXCLUDE_START = "application_did_not_start"
 EXCLUDE_OUTCOME = "outcome_obscured_by_invalidity"
+EXCLUDE_STACK = "environment_stack_down"
 EXCLUDE_WINDOW = "uninformative_fire_outside_window"
 
 CLOSED_EXCLUSIONS = {
     EXCLUDE_RECEIPTS, EXCLUDE_NOT_FIRED, EXCLUDE_SOURCE, EXCLUDE_RESIDUE, EXCLUDE_CLOCK,
     EXCLUDE_DISK, EXCLUDE_CONFIG, EXCLUDE_START, EXCLUDE_OUTCOME, EXCLUDE_WINDOW,
+    EXCLUDE_STACK,
 }
 
 
@@ -127,7 +186,7 @@ def utc_ms(dt: datetime | None = None) -> int:
 
 def read_json(path: str, default=None):
     try:
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, "r", encoding="utf-8-sig") as fh:
             return json.load(fh)
     except (OSError, json.JSONDecodeError):
         return default
@@ -211,7 +270,7 @@ def version_block() -> dict:
     versions = {
         "java": None, "kafka": None, "postgresql": None, "toxiproxy": None,
         "powershell": None, "python": sys.version.split()[0],
-        "python_executable": sys.executable,
+        "python_executable": pathsafe.repo_rel(sys.executable),
         "pinned_toolchain": None,
         "sha256": {},
     }
@@ -378,6 +437,10 @@ class Runner:
         self._started_iso = utc_iso()
         self._commands: list[dict] = []
         self._restart_epoch = 0
+        self._reset_epoch = 0
+        self._block_id = 0
+        self._runs_since_reset = 0
+        self._last_reset: dict | None = None
         self._reserved_written = False
 
     # -- plan -----------------------------------------------------------------------------
@@ -435,7 +498,7 @@ class Runner:
         return proc
 
     # -- preflight -------------------------------------------------------------------------
-    def preflight(self) -> dict:
+    def preflight(self, *, require_broker_configs: bool = False) -> dict:
         free = free_space_gb(eos_runtime_root())
         if free < FREE_SPACE_FLOOR_GB:
             raise SystemExit(f"free-space floor violated: {free:.2f} GB < "
@@ -448,10 +511,53 @@ class Runner:
         clock = clock_sanity_probe()
         if not clock["ok"]:
             raise SystemExit(f"clock sanity check failed: {clock}")
+        broker_configs = None
+        if require_broker_configs:
+            broker_configs = self.verify_broker_safety()
         self._write_reserved_summary()
         return {"free_gb": free, "interface": interface, "host": host_block(),
                 "versions": version_block(), "git_sha": self.runlog.sha,
-                "freeze": freeze_report, "clock": clock}
+                "freeze": freeze_report, "clock": clock,
+                "broker_safety": broker_configs}
+
+    def verify_broker_safety(self) -> dict:
+        """M5 requirement: `delete.topic.enable=false` + `log.retention.check.interval.ms=3600000`.
+
+        Topic deletion is fatal on this Windows KRaft setup (S3 acceptance-run evidence); the
+        runner refuses to start if the broker safety properties are not in effect.
+        """
+        files = broker_property_files()
+        if len(files) < 3:
+            raise SystemExit(
+                f"BROKER SAFETY CHECK FAILED: expected >=3 broker server.properties under "
+                f"<scratch>/run/kafka/node*/server.properties, found {len(files)}. The stack "
+                f"must be started by its single owner (S3 harness) before a live run.")
+        problems = []
+        values = {}
+        for path in files:
+            try:
+                text = open(path, "r", encoding="utf-8", errors="replace").read()
+            except OSError as exc:
+                problems.append(f"{os.path.basename(os.path.dirname(path))}: unreadable ({exc})")
+                continue
+            result = check_broker_properties(text)
+            values[os.path.basename(os.path.dirname(path))] = result["values"]
+            if not result["ok"]:
+                problems.append(f"{os.path.basename(os.path.dirname(path))}: "
+                                f"missing={result['missing']} wrong={result['wrong']}")
+        if problems:
+            raise SystemExit(
+                "BROKER SAFETY CHECK FAILED (M5): topic deletion is fatal on this Windows KRaft "
+                "setup, so the broker configuration must contain "
+                f"{BROKER_REQUIRED_PROPERTIES}. Not in effect: " + "; ".join(problems)
+                + ". S3 must add these to the broker configs; refusing to run (a topic delete "
+                  "would be a runner bug).")
+        self.runlog.append(stage="preflight", run_id="-", seed="-",
+                           command="[preflight] broker safety configs verified "
+                                   "(delete.topic.enable=false, retention check 1h)",
+                           exit_status=0, outputs="; ".join(
+                               pathsafe.repo_rel(f) or "" for f in files))
+        return {"ok": True, "files": len(files), "values": values}
 
     def verify_freeze(self) -> dict:
         freeze_path = os.path.join(self.repo, "docs", "prereg-freeze.json")
@@ -466,7 +572,29 @@ class Runner:
                 continue
             if sha256_file(path) != info.get("sha256"):
                 drift.append({"file": rel, "problem": "hash changed"})
-        return {"ok": not drift, "drift": drift,
+        # artifact binding: a rebuilt jar must be re-frozen before a live run (lead order)
+        try:
+            from experiments.freeze import artifact_binding
+            frozen_artifact = frozen.get("artifact") or {}
+            current = artifact_binding()
+            if frozen_artifact:
+                frozen_sha = (frozen_artifact.get("jar") or {}).get("sha256")
+                if frozen_sha != current["jar"]["sha256"]:
+                    drift.append({"file": "artifact/target/wxeo-service.jar",
+                                  "problem": "jar hash differs from the freeze (rebuilt?)",
+                                  "frozen": frozen_sha, "current": current["jar"]["sha256"]})
+                if (frozen_artifact.get("source_tree_sha256")
+                        != current["source_tree_sha256"]):
+                    drift.append({"file": "artifact source tree",
+                                  "problem": "artifact sources changed after the freeze"})
+            else:
+                drift.append({"file": "artifact binding",
+                              "problem": "freeze has no artifact block (re-freeze required)"})
+            artifact = current["jar"]
+        except Exception as exc:  # noqa: BLE001
+            drift.append({"file": "artifact binding", "problem": str(exc)[:200]})
+            artifact = None
+        return {"ok": not drift, "drift": drift, "artifact": artifact,
                 "aggregate": frozen.get("aggregate_pipeline_sha256")}
 
     def _write_reserved_summary(self) -> None:
@@ -500,10 +628,11 @@ class Runner:
                                  "present": os.path.exists(harness)},
             "stack_state": {"path": "<scratch>/run/stack-state.json",
                             "present": os.path.exists(stack_state)},
-            "kafka_home": "<scratch>/vendor/kafka" if kafka_home else None,
-            "psql": "<scratch>/vendor/pgsql/bin/psql.exe" if pg_bin else None,
-            "toxiproxy": "<scratch>/vendor/bin/toxiproxy-server" if toxiproxy else None,
-            "java": ("<scratch>/vendor/jdk21/bin/java" if discover_java() else None),
+            # internal execution paths (raw on purpose); RUNLOG/artifact blocks are scrubbed
+            "kafka_home": kafka_home or None,
+            "psql": pg_bin,
+            "toxiproxy": toxiproxy,
+            "java": discover_java(),
             "pwsh": discover_pwsh(),
             "ready": bool(os.path.exists(jar) and os.path.exists(harness)
                           and os.path.exists(stack_state)),
@@ -630,6 +759,7 @@ class Runner:
                               error: str, notes: list[str] | None = None) -> str:
         """F-I4: any outcome produces a schema-valid record, even a failed run."""
         record = self._base_record(run, preflight)
+        record["config"]["runner"] = self._lifecycle_block(None, {})
         reason = reason if reason in CLOSED_EXCLUSIONS else EXCLUDE_OUTCOME
         record["validity"]["exclude_reason"] = reason
         record["validity"]["valid"] = False
@@ -656,13 +786,14 @@ class Runner:
                            outputs=pathsafe.repo_rel(path))
         return path
 
-    def _attempt_loop(self, run: dict, preflight: dict) -> dict:
+    def _attempt_loop(self, run: dict, preflight: dict,
+                      reset_info: dict | None = None) -> dict:
         """prereg §8.3: invalid attempts are rerun up to R_max with the same (cell, rep) seeds."""
         attempts = []
         final = None
         for attempt in range(1, RERUN_CAP + 1):
             self._restart_epoch = self._restart_epoch if hasattr(self, "_restart_epoch") else 0
-            outcome = self._attempt_once(run, preflight, attempt)
+            outcome = self._attempt_once(run, preflight, attempt, reset_info or {})
             outcome["attempt"] = attempt
             attempts.append({"attempt": attempt, "status": outcome.get("status"),
                              "record": outcome.get("record"),
@@ -678,9 +809,10 @@ class Runner:
         self._write_attempt_summary(attempts)
         return {"run_id": run["run_id"], "attempts": attempts, "final": final}
 
-    def _attempt_once(self, run: dict, preflight: dict, attempt: int) -> dict:
+    def _attempt_once(self, run: dict, preflight: dict, attempt: int,
+                      reset_info: dict | None = None) -> dict:
         try:
-            seq = LiveSequence(self, run, preflight, attempt)
+            seq = LiveSequence(self, run, preflight, attempt, reset_info or {})
             result = seq.execute()
             if result.get("status") == "invalid":
                 # LiveSequence already wrote the invalid record
@@ -723,9 +855,8 @@ class Runner:
                 + "\nThe pilot must not start before S3's artifact acceptance tests pass and "
                   "the lead confirms (P2 gate).")
         runs = self.selected_runs()
-        preflight = self.preflight()
+        preflight = self.preflight(require_broker_configs=True)
         results = []
-        completed = 0
         for run in runs:
             record_path = os.path.join(self.records_dir, f"run_{run['run_id']}.json")
             if self.opts.resume and os.path.exists(record_path):
@@ -733,26 +864,197 @@ class Runner:
                 if (existing.get("validity") or {}).get("valid"):
                     results.append({"run_id": run["run_id"], "skipped": "valid record exists"})
                     continue
-            completed += 1
-            if completed % RESTART_EVERY_N_RUNS == 0:
-                self._full_stack_restart(run)
-            results.append(self._attempt_loop(run, preflight))
+            # broker/PG/Toxiproxy liveness guard before every run (M5 item 5). If the stack is
+            # unexpectedly down: reset once, record the run invalid with an explicit reason,
+            # never silently continue.
+            alive, live_state = self._ensure_stack_alive(run)
+            if not alive:
+                path = self._write_invalid_record(
+                    run, preflight, reason=EXCLUDE_STACK,
+                    error=f"stack not alive after one reset attempt: {live_state}",
+                    notes=["environment_stack_down: brokers/PG/Toxiproxy did not respond; "
+                           "one reset-kafka attempt made; run recorded invalid for rerun"])
+                results.append({"run_id": run["run_id"], "status": "invalid",
+                                "reason": EXCLUDE_STACK,
+                                "record": pathsafe.repo_rel(path)})
+                self._runs_since_reset += 1
+                continue
+            reset_info = self._maybe_periodic_reset(run)
+            results.append(self._attempt_loop(run, preflight, reset_info))
+            self._runs_since_reset += 1
         return {"mode": "live", "runs": results, "preflight": preflight,
+                "reset_epoch": self._reset_epoch, "block_id": self._block_id,
                 "attempts_summary": pathsafe.repo_rel(
-                    os.path.join(self.summaries_dir, "attempts.csv"))}
+                    os.path.join(self.summaries_dir, "attempts.csv")),
+                "lifecycle_summary": pathsafe.repo_rel(
+                    os.path.join(self.summaries_dir, "lifecycle.csv"))}
 
-    def _full_stack_restart(self, run: dict) -> None:
+    # -- Windows-KRaft topic lifecycle (M5) -------------------------------------------------
+    def _live_topic_count(self) -> int:
+        """Non-internal topics currently in the cluster (topic-cap accounting, M5 item 2)."""
+        try:
+            topics = self._admin_client().list_topics()
+            return len([t for t in topics if not t.startswith("__")])
+        except Exception:  # noqa: BLE001 - liveness guard reports the failure
+            return -1
+
+    def _admin_client(self):
+        if getattr(self, "_admin", None) is None:
+            self._admin = KA.KafkaAdmin()
+        return self._admin
+
+    def _stack_liveness(self) -> dict:
+        """Brokers + PostgreSQL + Toxiproxy respond (M5 item 5)."""
+        state: dict = {"kafka": False, "brokers": 0, "pg": False, "toxiproxy": False}
+        try:
+            md = self._admin_client()._client.list_topics(timeout=20)
+            state["brokers"] = len(getattr(md, "brokers", {}) or {})
+            state["kafka"] = state["brokers"] >= 3
+        except Exception as exc:  # noqa: BLE001
+            state["kafka_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        env = self.check_env()
+        psql = env.get("psql")
+        if psql:
+            try:
+                proc = subprocess.run([psql, "-h", "127.0.0.1", "-p", "5433", "-U", "wxeo_read",
+                                       "-d", "wxeo", "-tAc", "SELECT 1"],
+                                      capture_output=True, text=True, timeout=20)
+                state["pg"] = proc.returncode == 0 and (proc.stdout or "").strip() == "1"
+            except Exception as exc:  # noqa: BLE001
+                state["pg_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        try:
+            info = INJ.Toxiproxy().proxies()
+            state["toxiproxy"] = isinstance(info, dict) and len(info) >= 2
+        except Exception as exc:  # noqa: BLE001
+            state["toxiproxy_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        state["ok"] = bool(state["kafka"] and state["pg"] and state["toxiproxy"])
+        return state
+
+    def _harness_verb(self, verb: str, run: dict, purpose: str, timeout: float = 600) -> int:
         harness = os.path.join(self.repo, "artifact", "harness", "native-stack.ps1")
-        self.call([discover_pwsh(), "-File", harness, FULL_STACK_RESTART_VERB],
-                  stage=run["stage_label"], run_id=run["run_id"],
-                  seed=run["data_seed"], purpose="restart-all", timeout=900)
-        self._restart_epoch += 1
+        proc = self.call([discover_pwsh(), "-NoProfile", "-ExecutionPolicy", "Bypass",
+                          "-File", harness, verb],
+                         stage=run["stage_label"], run_id=run["run_id"],
+                         seed=run["data_seed"], purpose=purpose, check=False, timeout=timeout)
+        return int(proc.returncode or 0)
+
+    def _perform_reset(self, reason: str, run: dict) -> dict:
+        """Full-stack storage reclaim via `reset-kafka` (wipe + reformat), then restart PG/Toxi.
+
+        Plain stop/start would not reclaim the accumulated topic segments, and per-run topic
+        deletion is fatal on this Windows KRaft setup (M5 directive).
+        """
+        topics_before = self._live_topic_count()
+        start_utc = utc_iso()
+        self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
+                           seed=run["data_seed"],
+                           command=f"[reset] reset-kafka ({reason})", exit_status="START")
+        rc_reset = self._harness_verb("reset-kafka", run, f"reset-kafka ({reason})", 900)
+        rc_pg = self._harness_verb("start-pg", run, "start-pg (after reset)", 300)
+        rc_toxi = self._harness_verb("start-toxiproxy", run, "start-toxiproxy (after reset)",
+                                     300)
+        # verify liveness (retry up to 240 s)
+        deadline = time.monotonic() + 240
+        live = {"ok": False}
+        while time.monotonic() < deadline:
+            live = self._stack_liveness()
+            if live["ok"]:
+                break
+            time.sleep(2.0)
+        self._reset_epoch += 1
+        self._block_id += 1
+        info = {
+            "ts_utc": start_utc, "action": "reset-kafka", "reason": reason,
+            "epoch": self._reset_epoch, "block_id": self._block_id,
+            "runs_since_last_reset": self._runs_since_reset,
+            "cadence": reset_cadence_for(int(run["load_events"]),
+                                         run.get("load_mode", "fixed-rate")),
+            "topics_before": topics_before, "rc_reset_kafka": rc_reset, "rc_start_pg": rc_pg,
+            "rc_start_toxiproxy": rc_toxi, "alive_after": bool(live.get("ok")),
+            "brokers": live.get("brokers"), "git_sha": self.runlog.sha,
+        }
+        self._last_reset = info
         restart_log = os.path.join(self.results_dir, "fault_restart.log")
         with open(restart_log, "a", encoding="utf-8", newline="") as fh:
-            fh.write(json.dumps({"ts_utc": utc_iso(), "action": "restart-all",
-                                 "after_runs": RESTART_EVERY_N_RUNS,
-                                 "epoch": self._restart_epoch,
-                                 "git_sha": self.runlog.sha}) + "\n")
+            fh.write(json.dumps(pathsafe.scrub(info), separators=(",", ":")) + "\n")
+        self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
+                           seed=run["data_seed"],
+                           command=f"[reset] reset-kafka done (alive={info['alive_after']})",
+                           exit_status=0,
+                           outputs=f"epoch={self._reset_epoch} block={self._block_id}")
+        self._runs_since_reset = 0
+        if not info["alive_after"]:
+            raise SystemExit(
+                "ABORT: full-stack reset (-reason " + reason + ") did not restore a live stack "
+                f"({live}); refusing to continue the campaign. Live state: {live}")
+        return info
+
+    def _ensure_stack_alive(self, run: dict) -> tuple[bool, dict]:
+        """M5 item 5: liveness guard; one reset attempt on failure, then record invalid."""
+        live = self._stack_liveness()
+        if live.get("ok"):
+            return True, live
+        self.runlog.append(stage=run["stage_label"], run_id=run["run_id"],
+                           seed=run["data_seed"],
+                           command="[guard] stack not alive before run; reset-kafka once",
+                           exit_status="WARN", notes=json.dumps(pathsafe.scrub(live))[:400])
+        try:
+            self._perform_reset("stack_down", run)
+        except SystemExit:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            return False, {"first_state": live, "reset_error":
+                           f"{type(exc).__name__}: {exc}"[:300]}
+        live_after = self._stack_liveness()
+        return bool(live_after.get("ok")), {"first_state": live, "after_reset": live_after}
+
+    def _maybe_periodic_reset(self, run: dict) -> dict:
+        """M5 item 2: reset cadence by load + hard live-topic cap."""
+        load = int(run["load_events"])
+        mode = run.get("load_mode") or "fixed-rate"
+        cadence = reset_cadence_for(load, mode)
+        live_topics = self._live_topic_count()
+        due, reason = should_periodic_reset(self._runs_since_reset, load, mode, live_topics)
+        info = {"restart_before_run": due, "block_id": self._block_id,
+                "reset_epoch": self._reset_epoch,
+                "runs_since_reset_before": self._runs_since_reset,
+                "cadence": cadence, "topic_count_before": live_topics}
+        if due:
+            reset = self._perform_reset(reason or "cadence", run)
+            info.update({"reset": reset, "restart_before_run": True,
+                         "block_id": self._block_id, "reset_epoch": self._reset_epoch,
+                         "topic_count_after": self._live_topic_count()})
+        self._append_summary("lifecycle", {
+            "utc": utc_iso(), "run_id": run["run_id"], "run_type": run.get("cell_id"),
+            "load_events": load, "load_mode": mode, "cadence": cadence,
+            "runs_since_reset": self._runs_since_reset,
+            "reset_before_run": bool(info["restart_before_run"]),
+            "reset_reason": reason if due else None,
+            "block_id": self._block_id, "reset_epoch": self._reset_epoch,
+            "topics_live_before": live_topics,
+            "topics_live_after": info.get("topic_count_after", live_topics),
+            "git_sha": self.runlog.sha})
+        return info
+
+    def _append_summary(self, name: str, row: dict) -> None:
+        path = os.path.join(self.summaries_dir, f"{name}.csv")
+        exists = os.path.exists(path)
+        with open(path, "a", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=list(row.keys()))
+            if not exists:
+                writer.writeheader()
+            writer.writerow(pathsafe.scrub(row))
+
+    @staticmethod
+    def _dir_bytes(path: str) -> int:
+        total = 0
+        for dirpath, _dirs, files in os.walk(path):
+            for name in files:
+                try:
+                    total += os.path.getsize(os.path.join(dirpath, name))
+                except OSError:
+                    continue
+        return total
 
     # -- dry run ---------------------------------------------------------------------------
     def dry_run_plan(self, fixture_dir: str) -> dict:
@@ -879,6 +1181,34 @@ class Runner:
                 "violating_run": record["violations"]["violating_run"],
                 "digest_manifest": manifest}
 
+    def _disk_footprint(self) -> dict:
+        return {"free_gb": free_space_gb(eos_runtime_root()),
+                "scratch_free_gb": free_space_gb(self.scratch_root)}
+
+    def _lifecycle_block(self, seq, reset_info: dict | None = None) -> dict:
+        """Lifecycle metadata recorded in the run record (prereg §5 config object, additive)."""
+        reset_info = reset_info or {}
+        return {
+            "attempt": getattr(seq, "attempt", 1),
+            "topic_suffix": getattr(seq, "topic_suffix", ""),
+            "source_topic": getattr(seq, "source_topic", None),
+            "sink_topic": getattr(seq, "sink_topic", None),
+            "db_schema": getattr(seq, "schema", None),
+            "restart_before_run": bool(reset_info.get("restart_before_run")),
+            "block_id": int(reset_info.get("block_id", self._block_id)),
+            "reset_epoch": int(reset_info.get("reset_epoch", self._reset_epoch)),
+            "runs_since_reset_before": reset_info.get("runs_since_reset_before"),
+            "reset_cadence": reset_info.get("cadence"),
+            "reset_reason": (reset_info.get("reset") or {}).get("reason"),
+            "topic_count_before": reset_info.get("topic_count_before"),
+            "topic_count_after": reset_info.get("topic_count_after"),
+            "topic_lifecycle": "no per-run deletion (M5); periodic reset-kafka wipe",
+            "max_live_topics": MAX_LIVE_TOPICS,
+            "disk_free_start_gb": getattr(seq, "disk_start", {}).get("free_gb"),
+            "disk_free_end_gb": getattr(seq, "disk_end", {}).get("free_gb"),
+            "scratch_bytes": getattr(seq, "scratch_bytes", None),
+        }
+
     # -- deviations ------------------------------------------------------------------------
     def write_deviations(self) -> str:
         from experiments import deviations as DEV
@@ -893,7 +1223,8 @@ class Runner:
 class LiveSequence:
     """One run attempt against the real native stack."""
 
-    def __init__(self, runner: Runner, run: dict, preflight: dict, attempt: int):
+    def __init__(self, runner: Runner, run: dict, preflight: dict, attempt: int,
+                 reset_info: dict | None = None):
         self.r = runner
         self.run = run
         self.preflight = preflight
@@ -907,15 +1238,28 @@ class LiveSequence:
         self.timings = {k: None for k in VR.TIMING_KEYS}
         self.processes: dict[int, subprocess.Popen] = {}
         self.consumer_pids: dict[int, int] = {}
-        self.source_topic = f"wxeo.src.{self.run_id}"
-        self.sink_topic = f"wxeo.sink.{self.run_id}"
-        self.group = f"wxeo.cg.{self.run_id}"
-        self.schema = f"wxeo_run_{self.run_id}"
+        # Attempt-scoped names: topics/schemas are NEVER deleted per run (Windows KRaft bug),
+        # so a retry must not reuse an attempt's topics. Attempt 1 keeps the CONTRACTS-exact
+        # names; retries add ".aN" (recorded deviation M5).
+        suffix = "" if attempt == 1 else f".a{attempt}"
+        self.topic_suffix = suffix
+        self.source_topic = f"wxeo.src.{self.run_id}{suffix}"
+        self.sink_topic = f"wxeo.sink.{self.run_id}{suffix}"
+        self.group = f"wxeo.cg.{self.run_id}{suffix}"
+        # PostgreSQL identifiers must match [A-Za-z0-9_]{1,63} (S3 SchemaTool contract);
+        # run_ids are lower-case hyphenated for Kafka-topic legality, so map '-' -> '_' for the
+        # schema identifier only. The mapping is deterministic and recorded in the run notes.
+        suffix_schema = "" if attempt == 1 else f"_a{attempt}"
+        self.schema = ("wxeo_run_" + self.run_id.replace("-", "_") + suffix_schema)[:63]
+        self.reset_info = reset_info or {}
+        self.disk_start = runner._disk_footprint()
+        self.attempt = attempt
         self.db_schema_used = self.run["mechanism"] != "M1-kafka"
         self.injector = None
         self.oracle_result = None
         self.exclusions: list[str] = []
-        self.notes: list[str] = []
+        self.notes: list[str] = [f"db schema identifier: {self.schema} "
+                                 f"(run_id hyphens mapped to underscores per SchemaTool pattern)"]
         self.loader_result: dict | None = None
         self.load_proc: subprocess.Popen | None = None
         self.admin = None
@@ -1056,7 +1400,7 @@ class LiveSequence:
                          "--db-url=jdbc:postgresql://127.0.0.1:5433/wxeo",
                          "--db-user=postgres", f"--schema={self.schema}",
                          f"--mechanism={self.run['mechanism']}", "--app-role=wxeo_app",
-                         "--read-role=wxeo_read"],
+                         "--read-role=wxeo_read", "--fault-role=wxeo_fault"],
                         stage=self.stage, run_id=self.run_id, seed=self.seed_hex,
                         purpose="schema-init", check=True, timeout=180)
 
@@ -1065,6 +1409,7 @@ class LiveSequence:
         jar = os.path.join(self.r.repo, "artifact", "target", "wxeo-service.jar")
         java = self.env.get("java") or "java"
         warmup = self._warmup_events()
+        ep = self._endpoints()
         args = [
             java, "-Xms2g", "-Xmx2g", "-XX:+UseG1GC", "-XX:+ExitOnOutOfMemoryError",
             "-jar", jar,
@@ -1072,8 +1417,8 @@ class LiveSequence:
             f"--wxeo.ordering={self.run['ordering_variant']}",
             f"--wxeo.run-id={self.run_id}",
             f"--wxeo.instance-id={instance}",
-            "--wxeo.bootstrap=127.0.0.1:9091,127.0.0.1:9092,127.0.0.1:9093",
-            "--wxeo.db-url=jdbc:postgresql://127.0.0.1:15433/wxeo",
+            f"--wxeo.bootstrap={ep['bootstrap']}",
+            f"--wxeo.db-url={ep['db_url']}",
             "--wxeo.db-user=wxeo_app",
             f"--wxeo.db-schema={self.schema}",
             f"--wxeo.source-topic={self.source_topic}",
@@ -1091,6 +1436,10 @@ class LiveSequence:
                      f"--wxeo.failpoint.after={fp['after']}"]
         else:
             args.append("--wxeo.failpoint.enabled=false")
+        if ep["producer"]:
+            args.append(f"--wxeo.producer-bootstrap={ep['producer']}")
+        if ep["consumer"]:
+            args.append(f"--wxeo.consumer-bootstrap={ep['consumer']}")
         return args
 
     def _warmup_events(self) -> int:
@@ -1207,7 +1556,7 @@ class LiveSequence:
         if self.run["mechanism"] in ("M4", "M4+M3"):
             proc = self._psql(f"SELECT coalesce(sum(next_offset),0) FROM "
                               f"{self.schema}.consumer_progress", "progress marker",
-                              user="postgres", check=False)
+                              user="wxeo_read", check=False)
         else:
             return self.admin.progress_sum(self.group, self.source_topic)
         try:
@@ -1223,7 +1572,7 @@ class LiveSequence:
             proc = self._psql(
                 "UPDATE consumer_progress SET next_offset = GREATEST(0, next_offset - "
                 f"{k}) RETURNING partition, next_offset", "rewind consumer_progress",
-                user="postgres", check=False)
+                user="wxeo_fault", check=False)
             if (proc.returncode or 0) != 0:
                 raise RuntimeError(f"progress rewind failed: {proc.stderr}")
         else:
@@ -1447,11 +1796,13 @@ class LiveSequence:
             bootstrap="127.0.0.1:9091,127.0.0.1:9092,127.0.0.1:9093",
             topic=self.source_topic, out_ndjson=self.p.source_dump,
             group=f"wxeo.dump.{self.run_id}.{self.attempt}")
+        out["sink"] = None
         if self.db_schema_used:
             out["sink"] = O.dump_pg(
                 pg_dsn=self._db_dsn_read(), schema=self.schema,
-                out_csv=self.p.sink_dump, attestation_out=self.p.attestation,
-                app_role="wxeo_app")
+                out_csv=self.p.sink_dump, attestation_out=None)
+            # S3 §8.9: attestation queried as the APPLICATION role via SchemaTool --mode=verify
+            self._write_schema_attestation((out["sink"] or {}).get("db_rows"))
         isolation = ("read_committed"
                      if self.run["mechanism"] in ("M1-kafka", "M1x", "M1x+M3")
                      else "read_uncommitted")
@@ -1461,6 +1812,39 @@ class LiveSequence:
             group=f"wxeo.dump.{self.run_id}.{self.attempt}", isolation=isolation)
         out["publication_isolation"] = isolation
         return out
+
+    def _write_schema_attestation(self, posting_rows: int | None) -> None:
+        jar = os.path.join(self.r.repo, "artifact", "target", "wxeo-service.jar")
+        proc = self.r.call(
+            [self.env.get("java") or "java", "-cp", jar,
+             "com.wxeo.sink.SchemaTool", "--mode=verify",
+             "--db-url=jdbc:postgresql://127.0.0.1:5433/wxeo",
+             "--db-user=wxeo_app", f"--schema={self.schema}",
+             f"--mechanism={self.run['mechanism']}"],
+            stage=self.stage, run_id=self.run_id, seed=self.seed_hex,
+            purpose="schema-attestation (app role)", check=False, timeout=120)
+        checks: dict = {}
+        try:
+            doc = json.loads((proc.stdout or "").strip() or "{}")
+            checks = doc.get("checks") or doc
+        except Exception:  # noqa: BLE001
+            checks = {}
+        att = pathsafe.scrub({
+            "can_update": checks.get("can_update"),
+            "can_delete": checks.get("can_delete"),
+            "posting_triggers": checks.get("append_only_triggers",
+                                           checks.get("posting_triggers")),
+            "posting_rows": (posting_rows if posting_rows is not None
+                             else checks.get("posting_rows")),
+            "app_role": "wxeo_app",
+            "source": "artifact:SchemaTool --mode=verify",
+            "schema": self.schema,
+            "note": "queried as the application role (artifact/README §8.9)",
+            "raw_checks": checks,
+        })
+        with open(self.p.attestation, "w", encoding="utf-8", newline="") as fh:
+            json.dump(att, fh, indent=2)
+            fh.write("\n")
 
     def _run_oracle(self) -> None:
         sink_kind = "kafka" if self.run["mechanism"] == "M1-kafka" else "db"
@@ -1478,6 +1862,35 @@ class LiveSequence:
         if not self.oracle_result["oracle"]["source_integrity"]:
             self.exclusions.append(EXCLUDE_SOURCE)
             self.notes.append("source-integrity gate failed (prereg §8.2 item 2)")
+
+    # -- endpoints and roles (artifact/README §8.2/§8.9) -----------------------------------
+    def _endpoints(self) -> dict:
+        """Service endpoints for this cell: direct by default, proxied only for the fault link.
+
+        F3 -> producer/transaction path through kafka-produce (19093); F4a -> consumer/offset
+        path through kafka-consume (19094); F5 -> DB through db (15433); K2 (unknown outcome)
+        -> db proxy for DB sinks, produce proxy for M1-kafka. All other cells are direct.
+        """
+        fault = self.run["fault"]
+        mech = self.run["mechanism"]
+        ep = {"bootstrap": "127.0.0.1:9091",
+              "producer": None, "consumer": None,
+              "db_url": "jdbc:postgresql://127.0.0.1:5433/wxeo"}
+        if fault == "F3":
+            ep["producer"] = "127.0.0.1:19093"
+        elif fault == "F4a":
+            ep["consumer"] = "127.0.0.1:19094"
+        elif fault == "F5":
+            ep["db_url"] = "jdbc:postgresql://127.0.0.1:15433/wxeo"
+        elif fault == "K2":
+            if mech == "M1-kafka":
+                ep["producer"] = "127.0.0.1:19093"
+            else:
+                ep["db_url"] = "jdbc:postgresql://127.0.0.1:15433/wxeo"
+        return ep
+
+    def _fault_role_dsn(self) -> str:
+        return "host=127.0.0.1 port=5433 dbname=wxeo user=wxeo_fault"
 
     # -- performance pipeline (F-M1) -------------------------------------------------------
     def _performance_block(self) -> dict:
@@ -1592,6 +2005,8 @@ class LiveSequence:
     # -- finish ----------------------------------------------------------------------------
     def _finish(self) -> dict:
         self.timings["t_end"] = utc_ms()
+        self.disk_end = self.r._disk_footprint()
+        self.scratch_bytes = self.r._dir_bytes(self.p.scratch)
         oracle = self.oracle_result
         if oracle is None:
             raise RuntimeError("oracle result missing")
@@ -1621,8 +2036,10 @@ class LiveSequence:
             else None,
         }, retain_map=self._retention_map(oracle))
         record = self.r._base_record(self.run, self.preflight)
+        config_block = self._config_block()
+        config_block["runner"] = self.r._lifecycle_block(self, reset_info)
         record.update({
-            "config": self._config_block(),
+            "config": config_block,
             "process_limits": self._process_limits(),
             "timings": self.timings,
             "quiescence": {
@@ -1708,12 +2125,19 @@ class LiveSequence:
                          "--db-user=postgres", f"--schema={self.schema}"],
                         stage=self.stage, run_id=self.run_id, seed=self.seed_hex,
                         purpose="schema-drop", check=False, timeout=120)
-        for topic in (self.source_topic, self.sink_topic):
-            try:
-                self.admin.delete_topic(topic)
-                self.admin.wait_topic_absent(topic, timeout=120)
-            except Exception as exc:  # noqa: BLE001
-                self.notes.append(f"topic drop failed: {exc}")
+        # M5: topics are NEVER deleted per run (fatal Windows KRaft topic-dir rename bug).
+        # Fresh state is provided by unique attempt-scoped topic names + fresh group + fresh
+        # schema; accumulated topics/segments are reclaimed by periodic `reset-kafka`.
+        self.notes.append(f"topics retained (M5): {self.source_topic}, {self.sink_topic}; "
+                          f"reclaimed by periodic reset-kafka")
+        self.r._append_summary("disk-footprint", {
+            "utc": utc_iso(), "run_id": self.run_id, "load_events": int(self.run["load_events"]),
+            "attempt": self.attempt,
+            "disk_free_start_gb": self.disk_start.get("free_gb"),
+            "disk_free_end_gb": self.disk_end.get("free_gb"),
+            "scratch_bytes": self.scratch_bytes,
+            "topics_live_after": self.r._live_topic_count(),
+            "git_sha": self.r.runlog.sha})
         shutil.rmtree(self.p.scratch, ignore_errors=True)
 
     def _emergency_cleanup(self) -> None:

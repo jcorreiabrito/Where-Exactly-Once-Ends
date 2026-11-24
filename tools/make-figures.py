@@ -38,6 +38,16 @@ PDF_METADATA = {"CreationDate": None, "ModDate": None, "Creator": "tools/make-fi
                 "Producer": "matplotlib (vector PDF)"}
 
 
+def _repo_rel(path: str | None) -> str | None:
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not path:
+        return None
+    rel = os.path.relpath(os.path.abspath(path), repo)
+    if rel.startswith(".."):
+        return "<scratch>/" + os.path.basename(path)
+    return rel.replace(os.sep, "/")
+
+
 def read_csv(path: str) -> list[dict]:
     if not os.path.exists(path):
         return []
@@ -125,7 +135,8 @@ def fig_correctness(rows: list[dict], out_path: str, dataset: str) -> dict | Non
     ax.legend(ncol=min(9, len(mechs)), loc="upper center", bbox_to_anchor=(0.5, -0.22),
               frameon=False)
     save(fig, out_path, dataset)
-    return {"figure": out_path, "n_mechanisms": len(mechs), "n_faults": len(faults)}
+    return {"figure": _repo_rel(out_path), "n_mechanisms": len(mechs),
+            "n_faults": len(faults)}
 
 
 def fig_latency_ecdf(rows: list[dict], out_path: str, dataset: str) -> dict | None:
@@ -150,7 +161,7 @@ def fig_latency_ecdf(rows: list[dict], out_path: str, dataset: str) -> dict | No
     ax.set_title("Fault-free latency ECDF per mechanism")
     ax.legend(ncol=min(3, len(mechs)), frameon=False)
     save(fig, out_path, dataset)
-    return {"figure": out_path, "n_mechanisms": len(mechs)}
+    return {"figure": _repo_rel(out_path), "n_mechanisms": len(mechs)}
 
 
 def fig_cost_coverage(count_rows: list[dict], perf_rows: list[dict], out_path: str,
@@ -186,7 +197,7 @@ def fig_cost_coverage(count_rows: list[dict], perf_rows: list[dict], out_path: s
     ax.set_ylabel("run-level violation count / valid runs")
     ax.set_title("Cost vs invariant coverage")
     save(fig, out_path, dataset)
-    return {"figure": out_path, "n_mechanisms": len(mechs)}
+    return {"figure": _repo_rel(out_path), "n_mechanisms": len(mechs)}
 
 
 def fig_throughput(rows: list[dict], out_path: str, dataset: str) -> dict | None:
@@ -227,7 +238,8 @@ def fig_throughput(rows: list[dict], out_path: str, dataset: str) -> dict | None
     ax.legend(ncol=min(9, len(mechs)), loc="upper center", bbox_to_anchor=(0.5, -0.22),
               frameon=False)
     save(fig, out_path, dataset)
-    return {"figure": out_path, "n_mechanisms": len(mechs), "n_blocks": len(blocks)}
+    return {"figure": _repo_rel(out_path), "n_mechanisms": len(mechs),
+            "n_blocks": len(blocks)}
 
 
 # --------------------------------------------------------------------------------------------
@@ -270,12 +282,13 @@ def main(argv=None) -> int:
         info = fn()
         outputs[name] = info
         print(f"{name}: {'generated' if info else 'SKIPPED (no input data)'}")
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     manifest = {
         "schema": "wxeo.figures-manifest.v1",
         "dataset": dataset,
         "synthetic": dataset != "campaign",
         "warning": ("SYNTHETIC FIXTURE — NOT RESULTS" if dataset != "campaign" else None),
-        "inputs": {"analysis_dir": os.path.relpath(analysis, repo)},
+        "inputs": {"analysis_dir": _repo_rel(analysis)},
         "figures": outputs,
     }
     with open(os.path.join(out_dir, "figures-manifest.json"), "w", encoding="utf-8",

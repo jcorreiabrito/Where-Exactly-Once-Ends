@@ -27,6 +27,13 @@ import hashlib
 import json
 import os
 from collections import Counter, defaultdict
+
+try:  # package import (runner --write-deviations)
+    from experiments.matrix_design import NA_REASONS as _MD_NA_REASONS
+except ImportError:  # direct script execution (`python experiments/deviations.py`)
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from experiments.matrix_design import NA_REASONS as _MD_NA_REASONS
 from datetime import datetime, timezone
 
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -157,7 +164,290 @@ INTERPRETATIONS = [
         "effect": "Provenance only; any change after the first Stage A run becomes a deviation.",
         "paper": "Reproducibility.",
     },
+    {
+        "id": "S5-1",
+        "title": "Stage-A realisation + matrix amendment (S5 F-E1/E2/E3/E4/P4/F-RN1)",
+        "decision": "Stage-A fault tokens are canonical upper-case in run records (K1..K7, none), "
+                    "lower-case only inside run_id/cell_id tokens. Realisations: K1/K3/K4/K7 via "
+                    "app failpoints (K4 = ordering=early probe + before_effect_commit crash); "
+                    "K2 = unknown outcome (Toxiproxy timeout toxic on the effect link at a seeded "
+                    "committed-progress marker); K5 = protocol-level duplicate delivery (stop, "
+                    "rewind k batches, restart). K6 (zombie) is structurally n/a for every "
+                    "mechanism (cannot pause an owner beyond max.poll.interval.ms=300 s within "
+                    "T_max=300 s; model-only claim). M1-kafka: K5 n/a (no external rewind without "
+                    "breaking D5); F6 n/a (rewinding its committed offset duplicates the positive "
+                    "control's ledger). Amended counts: pilot 216/198, Stage A 1,530, Stage B "
+                    "3,960, Stage C 1,800, validation 26 (20 + 6 G1 gate controls).",
+        "reason": "The review showed Stage A could not arm (case mismatch, missing K4), K2 "
+                  "duplicated K3, K5/K6 were pause no-ops, and F6 broke the M1-kafka control and "
+                  "the M4 write path.",
+        "effect": "matrix.yaml/run_order.csv/matrix.sha256 regenerated pre-freeze; N changes are "
+                  "logged here and in the P2 amendment; no hypothesis rule rewritten by S4.",
+        "paper": "Realisation table (S5 §15 item 4); threats.",
+    },
+    {
+        "id": "S5-2",
+        "title": "Fault-receipt protocol v2 (S5 F-I1/I2/I3)",
+        "decision": "Single-owner receipts: S4 external injections write exactly one verified "
+                    "fired + one restored (action_verified + phase block); app failpoints own "
+                    "their fired (and their restored when non-terminal); terminal crash failpoints "
+                    "get the S4 restored after restart; sham = armed + restored, no fired. One "
+                    "validation module (experiments/receipts.py) is used by runner, analysis and "
+                    "deviations.",
+        "reason": "External injectors never wrote fired; L1 pause double-wrote restored; an "
+                  "unverified action could count as attested.",
+        "effect": "G4 and all validity decisions use the protocol.",
+        "paper": "Fault attestation (S5 §15 item 3).",
+    },
+    {
+        "id": "S5-3",
+        "title": "Oracle contract additions (S5 F-O2/O3/O4/O5/O7)",
+        "decision": "The oracle reports v5 = spurious postings as an explicit clause, the I1a "
+                    "structural / I1b signed-sum counts and attribution labels, queries the "
+                    "*application* role privileges for I2(a) (missing attestation on a DB sink is "
+                    "an I2 violation), validates publication content and reports signed divergence "
+                    "(stream records - ledger entries) plus pub_mutated_records, raises hard on "
+                    "malformed sink rows and cross-checks the dump row count against the DB. The "
+                    "v5/I1 split and attestation semantics are submitted for author ratification "
+                    "in amendment A2; the analysis reads violations.violating_run verbatim.",
+        "reason": "Privilege attestation was vacuous, balanced fabrications evaded v1..v4, "
+                  "divergence did not match the documented metric, malformed rows were dropped.",
+        "effect": "Additive oracle/run-record extension; G3 corpus extended.",
+        "paper": "Oracle contract appendix (S5 §15 item 1).",
+    },
+    {
+        "id": "S5-4",
+        "title": "Falsifiable gates and negative controls (S5 F-G1/F-G2/F-E5)",
+        "decision": "G1 per class (K3 and K5 separately, M0, attested) on 6 dedicated pre-Stage-A "
+                    "gate-control validation runs; G4/G5/G8 computed from all *reserved* runs and "
+                    "raw provenance (receipts/digests), never from 'valid' records; G6 compares the "
+                    "app-emitted shared_sha256 across mechanisms within a cell; G7 implemented "
+                    "(rate table, generator-lag p99, T_quiet doubling); G8 uses a real clock probe "
+                    "(wall-vs-monotonic drift + boot time) and real affinity/priority read-back; a "
+                    "purpose-built negative-control set (results/harness/gate-negative-controls.json) "
+                    "proves each gate can FAIL.",
+        "reason": "G4/G5/G8 were tautological, G6 failed on clean data, G7 was hard-coded PENDING, "
+                  "and G1's evidence could only come from Stage A.",
+        "effect": "The gate table becomes a real internal-validity test; +6 validation runs.",
+        "paper": "Harness-validation table T1.",
+    },
+    {
+        "id": "S5-5",
+        "title": "Analysis accounting fixes (S5 F-P5 infrastructure)",
+        "decision": "Censored runs count as violating outcomes (method §7.3); N_planned comes from "
+                    "the frozen reserved-run list; validation runs (cell_id V.*) are excluded from "
+                    "confirmatory tables; cost/latency comparisons are direction-aware; P3 is per "
+                    "cell; H1's clean arm is restricted to its pre-registered cells; H5's "
+                    "non-inferiority machinery rejects vacuous comparisons. No hypothesis "
+                    "decision-rule constant changed by S4 — those await amendment A2.",
+        "reason": "Censoring scored as clean, N_planned silently redefined, validation "
+                  "contamination, direction-blind cost tests.",
+        "effect": "Accounting/mechanics only; decision rules pending A2.",
+        "paper": "Statistics/analysis sections.",
+    },
+    {
+        "id": "S5-6",
+        "title": "Performance pipeline + measurement hooks (S5 F-M1)",
+        "decision": "Runner computes throughput from committed events in the warm-up-excluded "
+                    "steady-state window, records generator-lag from the loader manifest, merges "
+                    "per-instance HdrHistogram percentiles and records time-to-consistent from the "
+                    "quiescence probe. Service-side warm-up exclusion and send timestamps are "
+                    "artifact changes requested from S3 and recorded here until delivered.",
+        "reason": "Performance block was never computed; warm-up was not excluded.",
+        "effect": "Stage C/D performance claims become computable from run records.",
+        "paper": "Measurement section (S5 §15 item 6).",
+    },
+    {
+        "id": "S5-7",
+        "title": "Committed-artefact path hygiene (lead P0 addendum)",
+        "decision": "Every committed JSON/NDJSON/CSV/TeX artefact carries repo-relative paths or "
+                    "<scratch>/<name> placeholders; runner/oracle/analysis scrub paths and the "
+                    "run-record validator rejects absolute drive-letter/UNC/home paths and the "
+                    "local username.",
+        "reason": "The first push was blocked by absolute local paths in dry-run artefacts.",
+        "effect": "No host path leaves a committed artefact; enforced by tests.",
+        "paper": "Reproducibility/artifact appendix.",
+    },
+    {
+        "id": "M5",
+        "title": "Windows-KRaft topic lifecycle: no per-run topic deletion; variable reset cadence",
+        "decision": "Topic deletion is FATAL on this Windows KRaft setup (S3 live acceptance "
+                    "evidence: `Error while renaming dir for <topic>` -> KafkaStorageException -> "
+                    "brokers shut down). Therefore the runner NEVER deletes topics. Fresh logical "
+                    "state comes from unique attempt-scoped topic names (`wxeo.src/sink.<run_id>` "
+                    "for attempt 1, `...<run_id>.aN` for retries), a fresh consumer group and a "
+                    "fresh PostgreSQL schema. Storage is reclaimed only by periodic full-stack "
+                    "`reset-kafka` (wipe + reformat), at a load-dependent cadence: 1k events every "
+                    "50 runs, 10k every 25, 100k every 20, saturation-100k every 20, 1M every run; "
+                    "plus a hard cap of 400 live non-internal topics after which the runner "
+                    "resets before the next run. `restart-all` is replaced by `reset-kafka` so "
+                    "segments are actually reclaimed. Resets are recorded in `fault_restart.log` "
+                    "and in every run record (`config.runner.restart_before_run`/`block_id`/"
+                    "`reset_epoch`). Per-run disk footprint and live-topic counts are measured "
+                    "into `results/raw/summaries/{disk-footprint,lifecycle}.csv` and adjusted "
+                    "only upward if the 3 GB floor holds. Preflight verifies the broker safety "
+                    "properties `delete.topic.enable=false` and "
+                    "`log.retention.check.interval.ms=3600000` and fails loudly otherwise; any "
+                    "topic delete would be a runner bug. A pre-run liveness guard (3 brokers + "
+                    "PG + Toxiproxy) resets once on failure and records the run invalid with "
+                    "reason `environment_stack_down`.",
+        "reason": "Platform constraint found by S3's live acceptance run; per-run deletion and "
+                  "stop/start restarts cannot work safely on this KRaft/Windows combination.",
+        "effect": "Operational only: matrix counts, mechanisms, statistics unchanged. Disclosed "
+                  "at the P2 gate; storage/topic-count measured in the pilot.",
+        "paper": "Threats (environment) + artifact appendix (fresh-state protocol).",
+    },
+    {
+        "id": "S5-9",
+        "title": "PostgreSQL schema identifier sanitisation",
+        "decision": "The run schema identifier is `wxeo_run_<run_id>` with every '-' replaced by "
+                    "'_' (e.g. `wxeo_run_pilot_m2_f0_1k_p3_r00`), because S3's SchemaTool "
+                    "enforces the PostgreSQL identifier pattern [A-Za-z0-9_]{1,63} while run_ids "
+                    "are hyphenated for Kafka-topic legality. The mapping is deterministic, "
+                    "verified unique across all reserved runs, and recorded in every run's notes; "
+                    "the service receives the same sanitised `--wxeo.db-schema`.",
+        "reason": "Discovered by the live end-to-end smoke: the first real run failed with "
+                  "`schema must match [A-Za-z0-9_]{1,63}` (exit 127/1), a defect no fixture "
+                  "exercise could reveal.",
+        "effect": "Naming only; no design change. Schema create/drop/observe all use the same "
+                  "sanitised identifier.",
+        "paper": "Artifact appendix (fresh-state protocol).",
+    },
+    {
+        "id": "S5-10",
+        "title": "Per-fault endpoints, split bootstraps and fault role (artifact README §8.2/§8.8)",
+        "decision": "The runner selects service endpoints per cell from S3's hand-off contract: "
+                    "direct bootstrap/DB by default; F3 → `--wxeo.producer-bootstrap=19093` "
+                    "(kafka-produce); F4a → `--wxeo.consumer-bootstrap=19094` (kafka-consume); "
+                    "F5 → db through the `db` proxy (15433); K2 unknown-outcome → db proxy for DB "
+                    "sinks / produce proxy for M1-kafka. Toxiproxy HTTP requests send an explicit "
+                    "`User-Agent: wxeo-harness/1.0` (2.9.0 rejects the PowerShell default with "
+                    "403). M4/M4+M3 progress rewinds and the K7 outbox resend use the dedicated "
+                    "`wxeo_fault` role (SELECT all + UPDATE on outbox/consumer_progress only, "
+                    "never on posting); the runner passes `--fault-role=wxeo_fault` to SchemaTool "
+                    "and reads the I2(a) attestation via `SchemaTool --mode=verify --db-user="
+                    "wxeo_app`.",
+        "reason": "CONTRACTS §7 predates S3's additive split-bootstrap extension and the fault "
+                  "role; using the wrong link would make F3/F4a toxics no-ops and a superuser "
+                  "rewind would violate the posting-safe design.",
+        "effect": "Endpoint routing only; the measured mechanism configuration is unchanged. "
+                  "Recorded in every run's command log.",
+        "paper": "Artifact appendix (injector realisation).",
+    },
+    {
+        "id": "S5-8",
+        "title": "Freeze re-issued after the S5 fix pass (S5 F-P6)",
+        "decision": "docs/prereg-freeze.json regenerated once after the last fix; the runner "
+                    "preflight runs a freeze --check and refuses to start on drift; the freeze "
+                    "records the artifact jar and Java source-tree digests in addition to the "
+                    "analysis pipeline. Intermediate re-freezes during the fix pass are not "
+                    "post-freeze analysis changes (no run existed, no analysis output produced).",
+        "reason": "Freeze must be regenerated after all fixes and verifiable at preflight.",
+        "effect": "Provenance only; the freeze binds the exact data-producing pipeline.",
+        "paper": "Reproducibility.",
+    },
 ]
+
+
+#: Frozen ORIGINAL author-approved arithmetic (prereg v1.0 as approved at P1).  This is the
+#: baseline for the generated planned-vs-executed delta table; it must never be edited.
+ORIGINAL_PREREG_ARITHMETIC = {
+    "stages": {
+        "pilot": {"runs_planned": 216, "runs_executable": 201,
+                  "cells_total": 72, "cells_executed": 67, "cells_na": 5},
+        "A": {"runs_planned": 1830, "runs_executable": 1830,
+              "cells_total": 61, "cells_executed": 61, "cells_na": 0},
+        "B": {"runs_planned": 4020, "runs_executable": 4020,
+              "cells_total": 268, "cells_executed": 268, "cells_na": 0},
+        "C": {"runs_planned": 1800, "runs_executable": 1800,
+              "cells_total": 72, "cells_executed": 72, "cells_na": 0},
+    },
+    "validation_runs": 20,
+    "totals": {"runs_planned": 7866, "runs_executable": 7851,
+               "runs_executable_plus_validation": 7871},
+}
+
+
+def _amendment_delta(matrix: dict) -> list[str]:
+    """Generated planned-vs-executed delta against the ORIGINAL author-approved arithmetic.
+
+    Required by the lead so the material matrix amendment (S5 fix pass) is explicit at the P2
+    gate: per stage old count -> new count, and every removed/added cell with its reason.
+    """
+    lines: list[str] = []
+    stages = (matrix.get("accounting") or {}).get("stages", {})
+    totals = (matrix.get("accounting") or {}).get("totals", {})
+    lines.append("## 1b. PLANNED-vs-EXECUTED DELTA against the original author-approved "
+                 "prereg (P2 amendment)")
+    lines.append("")
+    lines.append("The S5 fix pass required Stage-A realisation changes. They are a **material "
+                 "amendment** to the P1-approved matrix (presented to the author at the P2 gate "
+                 "together with S2's amendment A2); `docs/prereg.md` itself was not edited by S4.")
+    lines.append("")
+    lines.append("| Stage | planned old → new | executable old → new | Δ executable | cells "
+                 "(total/executed/n-a) | reason |")
+    lines.append("|---|---|---|---|---|---|")
+    reasons = {
+        "pilot": "M1-kafka F6 declared n/a (D5: external rewind duplicates the positive "
+                 "control's own ledger)",
+        "A": "K6 (zombie C7) structurally n/a for all 9 mechanisms (−270 runs); M1-kafka K5 n/a "
+             "(−30 runs: no rewind without breaking D5)",
+        "B": "M1-kafka F6 n/a across core/S1/S2 (−60 runs)",
+        "C": "unchanged",
+    }
+    for key, label in (("pilot", "Pilot"), ("A", "A"), ("B", "B"), ("C", "C")):
+        old = ORIGINAL_PREREG_ARITHMETIC["stages"][key]
+        new = stages.get(key, {})
+        d_exec = (new.get("runs_executable", 0) - old["runs_executable"])
+        lines.append(
+            f"| {label} | {old['runs_planned']} → {new.get('runs_planned', 0)} | "
+            f"{old['runs_executable']} → {new.get('runs_executable', 0)} | {d_exec:+d} | "
+            f"{new.get('cells_total', 0)}/{new.get('cells_executed', 0)}/"
+            f"{new.get('cells_na', 0)} | {reasons[key]} |")
+    old_t = ORIGINAL_PREREG_ARITHMETIC["totals"]
+    lines.append(
+        f"| **Total** | **{old_t['runs_planned']} → "
+        f"{totals.get('runs_planned', 0)}** | **{old_t['runs_executable']} → "
+        f"{totals.get('runs_executable', 0)}** | "
+        f"{totals.get('runs_executable', 0) - old_t['runs_executable']:+d} | | |")
+    lines.append("")
+    lines.append(f"Validated runs: {ORIGINAL_PREREG_ARITHMETIC['validation_runs']} → "
+                 f"{totals.get('validation_runs', 0)} (+6 dedicated G1 gate-control runs: M0 K3 "
+                 f"and M0 K5 × 3 reps, so G1 can be decided per class before Stage A data is "
+                 f"analysed).")
+    lines.append("")
+    lines.append("### Removed cells (n/a, with the reachability reason; never counted as passes)")
+    lines.append("")
+    removed_a = 0
+    for mechanism, classes in (matrix.get("reachability", {})
+                               .get("stage_a_na_classes", {}) or {}).items():
+        for klass, reason in classes.items():
+            # only the cells this amendment removed: K6 for every mechanism and M1-kafka K5
+            if klass == "K6" or (mechanism == "M1-kafka" and klass == "K5"):
+                removed_a += 1
+                lines.append(f"- Stage A `{mechanism}` × `{klass}` (×30 runs): {reason}")
+    removed_b = 0
+    for mechanism, faults in (matrix.get("reachability", {})
+                              .get("pilot_fault_na", {}) or {}).items():
+        for fault in faults:
+            if (mechanism, fault) == ("M1-kafka", "F6"):
+                removed_b += 1
+                lines.append(
+                    f"- pilot/Stage-B `{mechanism}` × `{fault}`: "
+                    f"{_MD_NA_REASONS.get((mechanism, fault), 'n/a per reachability')} "
+                    f"(pilot 3 + B core 30 + S1 10 + S2 20 = 63 runs)")
+    lines.append("")
+    lines.append(f"Stage-A cells removed: {removed_a} (K6 ×9 = 270 runs; M1-kafka K5 = 30 runs); "
+                 f"Stage-B/pilot removed cells: {removed_b} (M1-kafka F6, 63 runs). "
+                 f"Added: 6 validation gate-control runs. Nothing else in the matrix changed: "
+                 f"every other cell keeps its prereg N, load, partitions, ordering variant and "
+                 f"seed. The analyzer never hard-codes these counts — it reads the reserved-run "
+                 f"list emitted by the runner and matrix.yaml.")
+    lines.append("")
+    return lines
+
+
+DES_NA_REASON: dict = {}
 
 
 def _utc_now() -> str:
@@ -297,7 +587,7 @@ def _load_reserved(summaries_dir: str) -> list[dict]:
         return list(csv.DictReader(fh))
 
 
-
+def _cell_plan(matrix: dict) -> dict[str, dict]:
     """cell_id -> {stage, mechanism, condition, rep count, n/a} from matrix.yaml."""
     out: dict[str, dict] = {}
     for cell in matrix.get("cells", []):
@@ -342,7 +632,8 @@ def _executed_by_cell(records: list[dict]) -> dict[str, dict]:
     return agg
 
 
-def render_deviations(*, matrix: dict, records: list[dict], matrix_path: str) -> str:
+def render_deviations(*, matrix: dict, records: list[dict], matrix_path: str,
+                      faults_log: str = "", reserved: list[dict] | None = None) -> str:
     lines: list[str] = []
     plan = _cell_plan(matrix)
     executed = _executed_by_cell(records)
@@ -386,6 +677,7 @@ def render_deviations(*, matrix: dict, records: list[dict], matrix_path: str) ->
                  f"**{totals.get('runs_executable', '—')}** executable (+"
                  f"{totals.get('validation_runs', 20)} validation) |")
     lines.append("")
+    lines.extend(_amendment_delta(matrix))
     lines.append("## 2. Executed diff by cell")
     lines.append("")
     lines.append("Only cells whose valid count differs from the plan (including cells with zero "
@@ -451,6 +743,37 @@ def render_deviations(*, matrix: dict, records: list[dict], matrix_path: str) ->
                          "method §5.6): " + ", ".join(f"`{c}`" for c in sorted(cell_excl)))
         else:
             lines.append("- no cell exceeds the 20 % exclusion flag.")
+    # ---- 3b. fault fire-rate / attestation table (S5 F-I5) --------------------------------
+    try:
+        fire = compute_fire_rates(faults_log, records, reserved)
+    except Exception:  # noqa: BLE001 - the register must still render early in the campaign
+        fire = {"by_cell": [], "totals": {}}
+    injected_rows = [r for r in fire["by_cell"]
+                     if r["fault"] not in ("F0", "none", "ctrl")]
+    lines.append("")
+    lines.append("## 3b. Fault fire-rate and attestation per cell (generated from "
+                 "`results/faults.log`)")
+    lines.append("")
+    if not injected_rows:
+        lines.append("_No injected runs recorded yet._")
+    else:
+        lines.append(f"- injected cells: {len(injected_rows)}; executed injected runs: "
+                     f"{fire['totals'].get('executed_injected')}; fired: "
+                     f"{fire['totals'].get('fired')}; missing receipts: "
+                     f"{fire['totals'].get('missing_receipt')}; fire rate "
+                     f"{fire['totals'].get('fire_rate', 0):.3f}; exclusion rate "
+                     f"{fire['totals'].get('exclusion_rate', 0):.3f}.")
+        lines.append("")
+        lines.append("| stage | mechanism | fault | reserved | executed | valid | excluded | "
+                     "fired | restored | missing receipt | fire rate | exclusion rate |")
+        lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+        for row in injected_rows:
+            lines.append(
+                f"| {row['stage']} | {row['mechanism']} | {row['fault']} | {row['reserved']} | "
+                f"{row['executed']} | {row['valid']} | {row['excluded']} | {row['fired']} | "
+                f"{row['restored']} | {row['missing_receipt']} | "
+                f"{(row['fire_rate'] if row['fire_rate'] is not None else 0):.2f} | "
+                f"{(row['exclusion_rate'] if row['exclusion_rate'] is not None else 0):.2f} |")
     lines.append("")
     lines.append("## 4. Interpretation / erratum register (frozen)")
     lines.append("")
@@ -483,7 +806,12 @@ def render_deviations(*, matrix: dict, records: list[dict], matrix_path: str) ->
 def write_deviations(matrix_path: str, records_dir: str, out_path: str) -> str:
     matrix = _load_plan(matrix_path)
     records = _load_records(records_dir)
-    text = render_deviations(matrix=matrix, records=records, matrix_path=matrix_path)
+    summaries_dir = os.path.join(os.path.dirname(records_dir), "summaries")
+    reserved = _load_reserved(summaries_dir)
+    results_root = os.path.dirname(os.path.dirname(records_dir))
+    faults_log = os.path.join(results_root, "faults.log")
+    text = render_deviations(matrix=matrix, records=records, matrix_path=matrix_path,
+                             faults_log=faults_log, reserved=reserved)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)

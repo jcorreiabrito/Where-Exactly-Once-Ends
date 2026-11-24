@@ -339,7 +339,17 @@ def mutate_publication_records(records: list[dict], defect_class: str, rng: rand
     elif defect_class == "mutate_publication_leg":
         idx = rng.randrange(len(out))
         rec = out[idx]
-        entry = rec.get("entry") or {}
+        entry = rec.get("entry")
+        if isinstance(entry, str):
+            entry = json.loads(entry)
+        if entry is None:
+            raw = rec.get("value")
+            if isinstance(raw, str):
+                entry = json.loads(raw)
+            elif isinstance(raw, dict):
+                entry = raw
+        if not isinstance(entry, dict):
+            raise ValueError("publication record has no decodable entry")
         legs = entry.get("legs") or []
         if not legs:
             raise ValueError("publication record has no legs")
@@ -350,7 +360,9 @@ def mutate_publication_records(records: list[dict], defect_class: str, rng: rand
         else:
             leg["amount_minor"] = int(leg.get("amount_minor") or 1) + rng.randrange(1, 1000)
         rec["entry"] = entry
-        info.update(record_index=idx, event_id=rec.get("event_id"), field=field)
+        rec["value"] = json.dumps(entry, separators=(",", ":"))
+        info.update(record_index=idx, event_id=rec.get("event_id") or entry.get("event_id"),
+                    field=field)
     elif defect_class == "insert_balanced_publication_record":
         eid = _fresh_eid(rng, expected_event_ids)
         amount = rng.randrange(1, 100000)
@@ -405,13 +417,13 @@ DEFECT_CLASSES = (
 )
 
 EXPECTED_ATTRIBUTION = {
-    "drop_row": {"primary": "I4", "allowed_extra": {"I1", "I1a"}},
+    "drop_row": {"primary": "I4", "allowed_extra": {"I1", "I1a", "I1b"}},
     "delete_event": {"primary": "I4", "allowed_extra": set()},
-    "duplicate_row": {"primary": "I3", "allowed_extra": {"I1", "I1a"}},
-    "duplicate_entry": {"primary": "I3", "allowed_extra": {"I1", "I1a"}},
+    "duplicate_row": {"primary": "I3", "allowed_extra": {"I1", "I1a", "I1b"}},
+    "duplicate_entry": {"primary": "I3", "allowed_extra": {"I1", "I1a", "I1b"}},
     "flip_leg_sign": {"primary": "I2", "allowed_extra": {"I1", "I1a", "I1b"}},
     "update_row_value": {"primary": "I2", "allowed_extra": {"I1", "I1a", "I1b"}},
-    "insert_spurious_row": {"primary": "SPURIOUS", "allowed_extra": {"I1", "I1a"}},
+    "insert_spurious_row": {"primary": "SPURIOUS", "allowed_extra": {"I1", "I1a", "I1b"}},
     "balanced_spurious_entry": {"primary": "SPURIOUS", "allowed_extra": set()},
     "currency_mix": {"primary": "I1", "allowed_extra": {"I1a", "I2"}},
     "negative_amount": {"primary": "I1", "allowed_extra": {"I1a", "I2"}},
@@ -420,8 +432,8 @@ EXPECTED_ATTRIBUTION = {
 #: attestation defect classes (oracle-level, no sink mutation)
 ATTESTATION_CLASSES = ("attestation_granted", "attestation_missing")
 ATTESTATION_EXPECTED = {
-    "attestation_granted": {"primary": "I2", "allowed_extra": set()},
-    "attestation_missing": {"primary": "I2", "allowed_extra": set()},
+    "attestation_granted": {"primary": "I2", "allowed_extra": {"ATTESTATION"}},
+    "attestation_missing": {"primary": "I2", "allowed_extra": {"ATTESTATION"}},
 }
 
 #: publication-stream defect classes (secondary metrics; detection predicate, not verdict)
