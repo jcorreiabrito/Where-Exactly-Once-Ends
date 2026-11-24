@@ -5,7 +5,7 @@
 \subsection{Internal validity}
 \label{sec:threats-internal}
 
-\paragraph{Harness defects.} A broken harness can manufacture the result the authors expect. We
+\paragraph{Harness defects.} A broken harness can manufacture the result the author expects. We
 therefore make the negative control (M0 under a crash point that must duplicate) and the positive
 controls (M1-kafka and M4+M3 under fault-free runs, which must not) \emph{hard gates}: if either
 control fails, the campaign halts and no measurement is analysed. The oracle is mutation-tested
@@ -15,7 +15,7 @@ invariant. The checker shares no code with the pipeline and recomputes ground tr
 specification, so a bug in the service cannot propagate into its own scoring.
 
 \paragraph{Faults that did not fire.} A fault-injection run is evidence only if the fault actually
-occurred. Every injector appends a timestamped receipt to \code{results/faults.log} when it fires
+occurred. Every injector appends a timestamped receipt to \path{results/faults.log} when it fires
 and when it is restored; runs without a complete receipt pair are excluded and counted, and the
 exclusion rate is reported per cell. This converts ``the fault fired rarely'' from a hidden threat
 into a measured quantity.

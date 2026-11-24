@@ -15,14 +15,14 @@ the Kafka-internal positive control, through the deployed ``Kafka EOS plus exter
 pattern and the transactional outbox, idempotency-index, database-offset and combined mechanisms
 --- were implemented in one code base, scored by an independent oracle on duplicate postings, lost
 postings, imbalance and append-only mutation, and executed under scripted broker, consumer,
-timeout, commit-order, partition and re-redelivery faults with pre-registered statistics. The
+timeout, commit-order, partition and redelivery faults with pre-registered statistics. The
 hypothesis verdicts are reported in Section~\ref{sec:results}; the resulting practitioner decision
 table in Section~\ref{sec:decision} maps a failure exposure to the minimal mechanism set that
 covers it, together with the measured cost of each guarantee.
 
 Two conclusions follow for practice. First, ``we use Kafka transactions'' is not a statement about
 the ledger; the mechanism must be described in terms of which durable transitions share a site and
-which idempotency or progress-atomicy argument closes the remaining window. Second, no mechanism
+which idempotency or progress-atomicity argument closes the remaining window. Second, no mechanism
 is free: the guarantees that survive a process kill between the effect and the progress cost
 throughput or latency, and the decision table makes that cost explicit rather than hiding it behind
 a single ``exactly once'' label.

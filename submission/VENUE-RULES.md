@@ -85,6 +85,25 @@ Before uploading to SEER: re-fetch S1, S2, S3; diff against this file; update an
 record the new date in this file and `submission/CHECKLIST.md`. If S4 becomes available again,
 prefer the live official archive over the Wayback copy and record its SHA-256.
 
+### 7.1 Re-verification 2026-11-24 (S6 compliance audit)
+S1, S2, S3 were re-read on 2026-11-24 (HTTP 200) with **no substantive drift**; S4 remains HTTP 404
+(Wayback copy authoritative). The About page was read for the first time and yielded four additional
+binding/relevant facts, now recorded here:
+
+| # | Fact | Source | Implication |
+|---|------|--------|-------------|
+| N1 | **Double-blind peer review** ("Manuscripts that pass this initial screening are then sent to specialists for double-blind peer review") | https://seer.ufrgs.br/index.php/rita/about (read 2026-11-24) | The **review PDF must be anonymized**: no author names/affiliations/e-mails, no PDF metadata author, no identifying acknowledgements/funding statements, and any repository link must not reveal identity in the review copy. A separate author-identified copy is kept for the record/acceptance. |
+| N2 | Authors have **20 days** to revise after a major decision | same About page | Not a submission constraint; plan the revision window. |
+| N3 | Published works licensed **CC BY-NC-ND 4.0**, immediate open access | same About page | Template footer already carries the licence line; no author action beyond acceptance. |
+| N4 | Submissions in **Portuguese, Spanish and English** are welcome | same About page | English manuscript is in scope (the Author Guidelines page itself states no language policy; the About page does). |
+
+**Double-blind submission plan.** `submission/` will contain (a) `main-anonymized.pdf` for SEER
+review — generated from the same sources with the author block, affiliation, e-mail and
+acknowledgement identifiers removed and PDF author metadata cleared; and (b) the author-identified
+PDF/source for the record and for acceptance. This is recorded in `submission/CHECKLIST.md`
+(item I4) and checked before upload. The AI, conflict-of-interest and ethics declarations remain
+identical in both versions (they contain no identifying information).
+
 ## 8. Not relied upon / explicitly out of scope
 - No page charges (diamond OA, S6) — no financial disclosure needed.
 - No ethics approval required for this study (no human/animal subjects); the S2 checklist item is

@@ -54,8 +54,15 @@ re-approval of the projected budget before P3.
   fixes; re-freeze only then.
 - Manuscript: all 10 sections drafted and integrated (`sections/`); builds clean apart from the
   analysis artefacts still being generated; ~33 pp and must be compressed to ≤25 in P6/P7.
-- S2: method-heavy sections delivered (system, mechanisms, formal, method). S6 compliance audit
-  started (page budget + checklist + AI/venue rules).
+- S2: method-heavy sections delivered (system, mechanisms, formal, method). Amendment A2 drafted
+  for author approval at the P2 gate (8 items, 8 bounded choices).
+- S6 compliance audit complete: `submission/CHECKLIST.md` (72 items: 38 PASS / 20 FAIL / 14 PENDING)
+  and `docs/compliance-report.md` (page budget: 33 pp measured, ≈36 projected vs 25 ceiling;
+  compression plan −11.9 pp measured by real ablations). Applied: AI-declaration rewrite, COI +
+  ethics statements, bibliography corporate authors/notes, 0.95 cm bib labels, Portuguese
+  "partidas dobradas", PDF metadata, venue facts (double-blind review → anonymized review PDF
+  required; CC BY-NC-ND; 20-day revision; PT/ES/EN). Remaining: results artifacts, page
+  compression, anonymized version, final compliance pass.
 
 ## Activity log
 - 2026-11-24: recon; foundation; template recovery; toolchain bootstrap; substrate validation.
