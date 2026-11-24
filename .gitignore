@@ -1,0 +1,61 @@
+# Toolchain binaries (downloaded, never committed)
+tools/vendor/
+tools/forbidden.local.txt
+paper-template/
+downloads/
+*.zip
+*.tgz
+*.tar.gz
+*.msi
+*.exe
+!artifact/**/*.exe
+
+# Build outputs
+artifact/target/
+artifact/**/target/
+*.class
+paper-build/
+build/
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+main.pdf
+!submission/*.pdf
+
+# Runtime data / logs
+data/kafka/
+data/postgres/
+data/toxiproxy/
+logs/
+*.hprof
+hs_err_pid*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Secrets (never commit)
+.env
+.env.*
+*.pem
+*.key
+!artifact/src/**/*.java

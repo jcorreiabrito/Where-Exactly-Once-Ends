@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this artifact or paper, please cite it as below."
+title: "Where Exactly-Once Ends: Preserving Double-Entry Ledger Invariants When Apache Kafka Pipelines Write to External Stores"
+abstract: >-
+  An empirical and formal study of the boundary of Kafka's exactly-once semantics when a
+  pipeline's side effect lands in an external relational database. The artifact contains a
+  fault-injection harness, five mechanism implementations (M0-M4 plus combinations), an
+  independent ledger oracle, the full experiment matrix, and the analysis/figure code.
+authors:
+  - family-names: "Brito"
+    given-names: "João"
+    affiliation: "Universidade Federal do ABC (UFABC), Santo André, SP, Brazil"
+    email: "correiadebrito.joao@gmail.com"
+version: "1.0.0"
+date-released: "2026-11-24"
+license: MIT
+type: software
+repository-code: "https://github.com/jcorreiabrito/Where-Exactly-Once-Ends"
+keywords:
+  - Apache Kafka
+  - exactly-once semantics
+  - transactional outbox
+  - idempotency
+  - double-entry ledger
+  - distributed transactions
+  - fault injection
