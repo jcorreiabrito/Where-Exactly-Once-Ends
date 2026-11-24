@@ -47,6 +47,7 @@ approval and the P2 hard stop. It is not part of the paper.
   markers; result insertion on the Linux host is estimated at +1.5–2.5 pp, with reserve cuts recorded
   in `submission/CHECKLIST.md` (K2/K6) to stay ≤25 pp. Submission checklist/VENUE-RULES updated;
   anonymized review PDF pending results insertion.
+- Hand-off for the Linux host: docs/HOST-HANDOFF.md (pinned commit 29a33fd, CI run #25 green, 151/151 tests, exact phase order + evidence list).
 - The Windows stack is stopped; no experiment process is running.
 
 ## 2b. S5 Stage-A blocker closure status (review at `docs/redteam-rereview.md` §11)

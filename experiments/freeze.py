@@ -100,6 +100,7 @@ PROVENANCE_FILES = [
     "docs/P1-APPROVAL.md",
     "docs/P2-APPROVAL.md",
     "docs/LINUX-CAMPAIGN-RUNBOOK.md",
+    "docs/HOST-HANDOFF.md",
     "docs/prereg-amendment-A4.md",
     "docs/prereg-amendment-A5.md",
     "docs/prereg-amendment-A6.md",
