@@ -1,0 +1,51 @@
+﻿TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 15 and seed -7071539960509730327 with 2 workers on 12 cores with 3573MB heap and 64MB offheap memory [pid: 16112] (Windows 11 10.0 amd64, Eclipse Adoptium 21.0.13.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\jvtri\OneDrive\Documentos\Projetos\where-exctaly-ones-ends\formal\ledger.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\Naturals.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\Sequences.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\FiniteSets.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\TLC.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module ledger
+Semantic errors:
+
+*** Errors: 6
+
+line 66, col 28 to line 66, col 30 of module ledger
+
+Unknown operator: `Min'.
+
+
+line 115, col 22 to line 115, col 24 of module ledger
+
+Unknown operator: `Min'.
+
+
+line 129, col 22 to line 129, col 24 of module ledger
+
+Unknown operator: `Min'.
+
+
+line 144, col 22 to line 144, col 24 of module ledger
+
+Unknown operator: `Min'.
+
+
+line 159, col 22 to line 159, col 24 of module ledger
+
+Unknown operator: `Min'.
+
+
+line 160, col 22 to line 160, col 24 of module ledger
+
+Unknown operator: `Min'.
+
+
+
+Starting... (2026-11-24 09:46:11)
+Error: Parsing or semantic analysis failed.
+Finished in 00s at (2026-11-24 09:46:11)
+

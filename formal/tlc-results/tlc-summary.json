@@ -1,0 +1,92 @@
+﻿{
+    "checked_utc":  "2026-11-24T12:47:30Z",
+    "tlc_version":  "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)",
+    "tla2tools_sha256":  "936A262061C914694DFD669A543BE24573C45D5AA0FF20A8B96B23D01E050E88",
+    "bounds":  {
+                   "BatchSize":  2,
+                   "partitions":  1,
+                   "N":  3
+               },
+    "results":  [
+                    {
+                        "Config":  "01-naive",
+                        "Expected":  "I3Unique",
+                        "Observed":  "I3Unique",
+                        "Match":  true,
+                        "NoError":  false,
+                        "DistinctStates":  20,
+                        "Exit":  12,
+                        "Seconds":  0.9
+                    },
+                    {
+                        "Config":  "02-dedup",
+                        "Expected":  "none",
+                        "Observed":  "none",
+                        "Match":  true,
+                        "NoError":  true,
+                        "DistinctStates":  18,
+                        "Exit":  0,
+                        "Seconds":  1
+                    },
+                    {
+                        "Config":  "03-atomic",
+                        "Expected":  "none",
+                        "Observed":  "none",
+                        "Match":  true,
+                        "NoError":  true,
+                        "DistinctStates":  8,
+                        "Exit":  0,
+                        "Seconds":  1
+                    },
+                    {
+                        "Config":  "04-atomic-dedup",
+                        "Expected":  "none",
+                        "Observed":  "none",
+                        "Match":  true,
+                        "NoError":  true,
+                        "DistinctStates":  8,
+                        "Exit":  0,
+                        "Seconds":  0.9
+                    },
+                    {
+                        "Config":  "05-kafka-txn",
+                        "Expected":  "none",
+                        "Observed":  "none",
+                        "Match":  true,
+                        "NoError":  true,
+                        "DistinctStates":  8,
+                        "Exit":  0,
+                        "Seconds":  0.9
+                    },
+                    {
+                        "Config":  "06-txn-only",
+                        "Expected":  "I3Unique",
+                        "Observed":  "I3Unique",
+                        "Match":  true,
+                        "NoError":  false,
+                        "DistinctStates":  36,
+                        "Exit":  12,
+                        "Seconds":  0.9
+                    },
+                    {
+                        "Config":  "07-early-probe",
+                        "Expected":  "I4CompleteWhenDone",
+                        "Observed":  "I4CompleteWhenDone",
+                        "Match":  true,
+                        "NoError":  false,
+                        "DistinctStates":  21,
+                        "Exit":  12,
+                        "Seconds":  1
+                    },
+                    {
+                        "Config":  "08-early-dedup",
+                        "Expected":  "I4CompleteWhenDone",
+                        "Observed":  "I4CompleteWhenDone",
+                        "Match":  true,
+                        "NoError":  false,
+                        "DistinctStates":  21,
+                        "Exit":  12,
+                        "Seconds":  0.9
+                    }
+                ]
+}

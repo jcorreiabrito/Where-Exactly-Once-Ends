@@ -1,0 +1,120 @@
+﻿TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 127 and seed 7041373496301967813 with 2 workers on 12 cores with 3573MB heap and 64MB offheap memory [pid: 27108] (Windows 11 10.0 amd64, Eclipse Adoptium 21.0.13.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\jvtri\OneDrive\Documentos\Projetos\where-exctaly-ones-ends\formal\ledger.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\Naturals.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\Sequences.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\FiniteSets.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\TLC.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module ledger
+Starting... (2026-11-24 09:47:27)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-11-24 09:47:28.
+Error: Invariant I3Unique is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ phase = "idle"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 0
+/\ ledger = ( <<1, 1>> :> 0 @@
+  <<1, 2>> :> 0 @@
+  <<2, 1>> :> 0 @@
+  <<2, 2>> :> 0 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 2: <RequestEffect line 101, col 3 to line 105, col 69 of module ledger>
+/\ phase = "effectPending"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 0
+/\ ledger = ( <<1, 1>> :> 0 @@
+  <<1, 2>> :> 0 @@
+  <<2, 1>> :> 0 @@
+  <<2, 2>> :> 0 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 3: <EffectCommit line 112, col 3 to line 118, col 53 of module ledger>
+/\ phase = "effectDurable"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 2
+/\ ledger = ( <<1, 1>> :> 1 @@
+  <<1, 2>> :> 1 @@
+  <<2, 1>> :> 1 @@
+  <<2, 2>> :> 1 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 4: <Crash line 170, col 3 to line 173, col 60 of module ledger>
+/\ phase = "idle"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = TRUE
+/\ effectMax = 2
+/\ ledger = ( <<1, 1>> :> 1 @@
+  <<1, 2>> :> 1 @@
+  <<2, 1>> :> 1 @@
+  <<2, 2>> :> 1 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 5: <Recover line 176, col 3 to line 178, col 67 of module ledger>
+/\ phase = "idle"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 2
+/\ ledger = ( <<1, 1>> :> 1 @@
+  <<1, 2>> :> 1 @@
+  <<2, 1>> :> 1 @@
+  <<2, 2>> :> 1 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 6: <RequestEffect line 101, col 3 to line 105, col 69 of module ledger>
+/\ phase = "effectPending"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 2
+/\ ledger = ( <<1, 1>> :> 1 @@
+  <<1, 2>> :> 1 @@
+  <<2, 1>> :> 1 @@
+  <<2, 2>> :> 1 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 7: <EffectCommit line 112, col 3 to line 118, col 53 of module ledger>
+/\ phase = "effectDurable"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 2
+/\ ledger = ( <<1, 1>> :> 2 @@
+  <<1, 2>> :> 2 @@
+  <<2, 1>> :> 2 @@
+  <<2, 2>> :> 2 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+48 states generated, 36 distinct states found, 5 states left on queue.
+The depth of the complete state graph search is 10.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 3 and the 95th percentile is 3).
+Finished in 00s at (2026-11-24 09:47:28)
+

@@ -1,0 +1,78 @@
+﻿TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 103 and seed -5987155327764486973 with 2 workers on 12 cores with 3573MB heap and 64MB offheap memory [pid: 17548] (Windows 11 10.0 amd64, Eclipse Adoptium 21.0.13.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\jvtri\OneDrive\Documentos\Projetos\where-exctaly-ones-ends\formal\ledger.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\Naturals.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\Sequences.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\FiniteSets.tla
+Parsing file C:\Users\jvtri\AppData\Local\Temp\TLC.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module ledger
+Starting... (2026-11-24 09:47:29)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-11-24 09:47:30.
+Error: Invariant I4CompleteWhenDone is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ phase = "idle"
+/\ done = FALSE
+/\ progress = 0
+/\ crashed = FALSE
+/\ effectMax = 0
+/\ ledger = ( <<1, 1>> :> 0 @@
+  <<1, 2>> :> 0 @@
+  <<2, 1>> :> 0 @@
+  <<2, 2>> :> 0 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 2: <ProgressCommit line 126, col 3 to line 132, col 62 of module ledger>
+/\ phase = "idle"
+/\ done = FALSE
+/\ progress = 2
+/\ crashed = FALSE
+/\ effectMax = 0
+/\ ledger = ( <<1, 1>> :> 0 @@
+  <<1, 2>> :> 0 @@
+  <<2, 1>> :> 0 @@
+  <<2, 2>> :> 0 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 3: <ProgressCommit line 126, col 3 to line 132, col 62 of module ledger>
+/\ phase = "idle"
+/\ done = FALSE
+/\ progress = 3
+/\ crashed = FALSE
+/\ effectMax = 0
+/\ ledger = ( <<1, 1>> :> 0 @@
+  <<1, 2>> :> 0 @@
+  <<2, 1>> :> 0 @@
+  <<2, 2>> :> 0 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+State 4: <Finish line 181, col 3 to line 184, col 70 of module ledger>
+/\ phase = "idle"
+/\ done = TRUE
+/\ progress = 3
+/\ crashed = FALSE
+/\ effectMax = 0
+/\ ledger = ( <<1, 1>> :> 0 @@
+  <<1, 2>> :> 0 @@
+  <<2, 1>> :> 0 @@
+  <<2, 2>> :> 0 @@
+  <<3, 1>> :> 0 @@
+  <<3, 2>> :> 0 )
+/\ stream = <<0, 0, 0>>
+
+26 states generated, 21 distinct states found, 6 states left on queue.
+The depth of the complete state graph search is 6.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 3 and the 95th percentile is 3).
+Finished in 00s at (2026-11-24 09:47:30)
+
