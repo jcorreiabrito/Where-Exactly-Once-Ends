@@ -59,3 +59,8 @@ Thumbs.db
 *.pem
 *.key
 !artifact/src/**/*.java
+
+# Ephemeral audit/build scratch
+.audit-tmp/
+*.tmp
+main.txt

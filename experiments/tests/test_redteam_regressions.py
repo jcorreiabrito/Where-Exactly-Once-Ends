@@ -410,10 +410,10 @@ def test_path_hygiene_module_and_validator():
     from experiments import pathsafe
     from experiments import validate_record as VR
 
-    dirty = {"path": "C:\\Users\\jvtri\\OneDrive\\x\\y.json", "ok": "results/raw/x.json"}
+    dirty = {"path": "C:\\Users\\alice\\workspace\\x\\y.json", "ok": "results/raw/x.json"}
     violations = pathsafe.find_violations(dirty)
     assert violations, "absolute local paths must be detected"
-    bad_rec = {"artifacts": {"gt": "C:\\Users\\jvtri\\OneDrive\\gt.ndjson"}}
+    bad_rec = {"artifacts": {"gt": "C:\\Users\\alice\\workspace\\gt.ndjson"}}
     assert VR.path_violations(bad_rec), "validate_record must reject absolute local paths"
 
 
