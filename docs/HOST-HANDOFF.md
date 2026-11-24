@@ -10,7 +10,7 @@ Stage A (`docs/redteam-rereview.md`, current verdict pending §13).
 | Item | Value at hand-off |
 |---|---|
 | Commit to run | `29a33fd` (`fix(campaign): A5-r2/A6 calibration closure …`) |
-| CI on that commit | GitHub Actions run **#25, all 4 jobs green** (paper build, Maven tests, bibliography, secret scan) |
+| CI on that commit | GitHub Actions run **#27, all 4 jobs green** (paper build, Maven tests, bibliography, secret scan) |
 | Harness suite | `python -m pytest experiments/tests -q` → **151 passed** |
 | Matrix | `experiments/matrix.yaml` sha256 `5d348efe72106eadb538e6ec554bca2623c815ab4ff32661b07fb5cfb933ece6`; `experiments/run_order.csv` sha256 `f4e731a2e2bf2b346803f213944c302c90ab9b6e0d6714bc2eb9d932b79d651a`; `matrix.sha256` `aa9ad0b947589053678581262e33f49970f3c7c1c24d40abf262fcce53ebd250` |
 | Run order | 7,631 rows = 7,514 confirmatory/validation slots + 117 calibration (M7-cal 54 + M7spot 54 + M7sat 9) |
@@ -30,7 +30,7 @@ Ubuntu 22.04/24.04-class, ≥8 vCPU / 16 GB RAM (16/32 recommended for B/C), ≥
 ```bash
 git clone https://github.com/jcorreiabrito/Where-Exactly-Once-Ends.git
 cd Where-Exactly-Once-Ends
-git checkout 29a33fd
+git checkout bd41133
 
 bash deploy/linux/bootstrap.sh      # tools, jar, stack pull/up, container image digests JSON,
                                     # fault-efficacy, artifact unit+integration tests, harness tests,
