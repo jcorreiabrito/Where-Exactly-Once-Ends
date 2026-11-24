@@ -1,0 +1,57 @@
+{
+  "schema": "wxeo.gate-negative-controls.v1",
+  "synthetic": true,
+  "purpose": "prove every harness gate can FAIL (S5 F-G1); the analysis marks a gate PASS only when its negative control fails as required",
+  "generated_by": "experiments/gate_negative_controls.py",
+  "gates": {
+    "G1": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "M0 K3/K5 present but produced no I3 violation"
+    },
+    "G2": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "M1-kafka fault-free control shows a violation"
+    },
+    "G3": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "g3-mutation.json reports passed=false"
+    },
+    "G4": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "injected run with no fired/restored receipts"
+    },
+    "G5": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "executed run with source_integrity=false"
+    },
+    "G6": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "two mechanisms share a cell but have different shared_sha256"
+    },
+    "G7": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "generator lag p99 = 55 ms > 5 ms flag"
+    },
+    "G8": {
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "failed_as_required": true,
+      "reason": "executed run with clock_check=false (wall clock stepped)"
+    }
+  },
+  "all_passed": true
+}

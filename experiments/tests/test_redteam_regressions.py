@@ -222,13 +222,13 @@ def test_f_I2_l1_pause_has_single_owner_receipts():
     recs = [_receipt("fired", "before_effect_commit", source="app"),
             _receipt("restored", "before_effect_commit", source="app")]
     out = R.validate_run_receipts(recs, run_id="x", injector_mode="failpoint",
-                                  fault="K5", fault_level="L1",
+                                  fault="K4", fault_level="L1",
                                   failpoint="before_effect_commit", action="pause:200")
     assert out["attested"] is True, out
     # a second S4 restored must be rejected
     dup = recs + [_receipt("restored", "K5", source="s4")]
     assert R.validate_run_receipts(dup, run_id="x", injector_mode="failpoint",
-                                   fault="K5", fault_level="L1",
+                                   fault="K4", fault_level="L1",
                                    failpoint="before_effect_commit",
                                    action="pause:200")["attested"] is False
 

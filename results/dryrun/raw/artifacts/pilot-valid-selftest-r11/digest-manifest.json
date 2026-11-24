@@ -1,0 +1,49 @@
+{
+  "run_id": "pilot-valid-selftest-r11",
+  "generated_at_utc": "2026-11-24T13:30:37.939Z",
+  "sha256": {
+    "gt": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+    "gt_sha256_sidecar": "37689cc4664cf5c46570b6ba75aa1fe7fa221fcc1b440238c8d346c71cd488d2",
+    "source_dump": "c83cae5aed177b53be95f7943bfa66f821e500da29beb7888638ea0979927cbd",
+    "produced_manifest": "e4b01fde2f5778f0aa477f815d62484f5d8f27949a9bdc4c94e5d91f5968ef5e",
+    "sink_dump": "2371e4c81c1ef310b33e96804634d28aee970a23b4284854e599419ffaec78da",
+    "publication_dump": "2dff2ebb557c56970cd27c641e97e59737334937bd39049c90e7ddfe7ecfa88e",
+    "attestation": "d9123ada39c4b540fb2059703af6055ea859ffa1afa2696bd5d436a323d9c5ab",
+    "manifest": "c6782307f437689a01aaddb419f6833c13784ef5f18861aa71ffabb2668544ad",
+    "oracle": "887c18d85e1b6ae09daef917dc8956d0c577f468ae7cd8e39c5ca36a2d2fcfe5"
+  },
+  "bytes": {
+    "gt": 310686,
+    "gt_sha256_sidecar": 65,
+    "source_dump": 156670,
+    "produced_manifest": 132670,
+    "sink_dump": 129796,
+    "publication_dump": 473246,
+    "attestation": 189,
+    "manifest": 546,
+    "oracle": 5489
+  },
+  "paths": {
+    "gt": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/gt",
+    "gt_sha256_sidecar": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/gt_sha256_sidecar",
+    "source_dump": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/source_dump",
+    "produced_manifest": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/produced_manifest",
+    "sink_dump": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/sink_dump",
+    "publication_dump": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/publication_dump",
+    "attestation": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/attestation",
+    "manifest": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/manifest",
+    "oracle": "results/dryrun/raw/artifacts/pilot-valid-selftest-r11/oracle"
+  },
+  "retained": {
+    "gt": true,
+    "gt_sha256_sidecar": true,
+    "source_dump": true,
+    "produced_manifest": true,
+    "sink_dump": true,
+    "publication_dump": true,
+    "attestation": true,
+    "manifest": true,
+    "oracle": true
+  },
+  "policy": "full dumps retained for violating/control/sample runs (prereg \u00a75); for other runs only digests are kept \u2014 bulk data stays in local non-synced scratch and is deterministically re-generatable (D10/D11)"
+}

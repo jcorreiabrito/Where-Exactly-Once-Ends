@@ -1,0 +1,16 @@
+{
+  "spec": "wxeo.gt-manifest.v1",
+  "run_id": "pilot-valid-quiesce-r15",
+  "master_seed_raw": "124946839105093801",
+  "master_seed": "124946839105093801",
+  "events": 1000,
+  "partitions": 3,
+  "gt_path": "gt_pilot-valid-quiesce-r15.ndjson",
+  "gt_sha256": "7d7456867d7b29b5ee5730b5901653a75089eb96fcbd28c949ef3d16043c70ee",
+  "gt_lines": 2000,
+  "produced_path": "produced_pilot-valid-quiesce-r15.ndjson",
+  "topic": "wxeo.src.pilot-valid-quiesce-r15",
+  "rate": 2000.0,
+  "created_utc": "2026-11-24T13:30:33.156Z",
+  "synthetic": true
+}

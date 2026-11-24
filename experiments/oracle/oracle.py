@@ -1283,13 +1283,14 @@ def dump_source_topic(*, bootstrap: str, topic: str, out_ndjson: str, group: str
 
     md = consumer.list_topics(topic, timeout=30)
     parts = sorted(md.topics[topic].partitions.keys())
-    tps = [TopicPartition(topic, p) for p in parts]
+    # librdkafka >= 2.x rejects seek() right after assign() with a local _STATE error;
+    # assigning with an explicit offset 0 gives the same "read from the beginning" semantics.
+    tps = [TopicPartition(topic, p, 0) for p in parts]
     consumer.assign(tps)
     end_offsets: dict[int, int] = {}
     for tp in tps:
         _low, high = consumer.get_watermark_offsets(tp, timeout=30, cached=False)
         end_offsets[tp.partition] = high
-        consumer.seek(TopicPartition(topic, tp.partition, 0))
     remaining = set(parts)
     rows = []
     deadline = time.time() + timeout_s
@@ -1341,13 +1342,14 @@ def dump_kafka_topic(*, bootstrap: str, topic: str, out_ndjson: str, group: str,
 
     md = consumer.list_topics(topic, timeout=30)
     parts = sorted(md.topics[topic].partitions.keys())
-    tps = [TopicPartition(topic, p) for p in parts]
+    # librdkafka >= 2.x rejects seek() right after assign() with a local _STATE error;
+    # assigning with an explicit offset 0 gives the same "read from the beginning" semantics.
+    tps = [TopicPartition(topic, p, 0) for p in parts]
     consumer.assign(tps)
     end_offsets: dict[int, int] = {}
     for tp in tps:
         _low, high = consumer.get_watermark_offsets(tp, timeout=30, cached=False)
         end_offsets[tp.partition] = high
-        consumer.seek(TopicPartition(topic, tp.partition, 0))
     remaining = set(parts)
     rows = []
     deadline = time.time() + timeout_s

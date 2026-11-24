@@ -1,0 +1,57 @@
+{
+  "run_id": "pilot-valid-g1k3-r22",
+  "generated_at_utc": "2026-11-24T19:08:57.880Z",
+  "sha256": {
+    "gt_manifest": "d82c51125d75cdb88760049552b2db5eb35310f4ee01ca142f1c991a9ff38161",
+    "gt": "293facbd4eacf39a2b8793a27b538272e9c6a91f728a89fff46323c2ef380772",
+    "source_dump": "b29b47d4297b29c1cf958ccfb51b156c522967fd2bf1d76a9b5f9e0cbd8d2b19",
+    "sink_dump": "fd8f6812d5843ac98a27bdbebcafcb4889dc7ea8d4dfe855b590ce35ece8414f",
+    "publication_dump": "2ca7e8f35c0f35bd5542060305ffc05acc259f195c4bc7594e0b2195d221b2f2",
+    "attestation": "0ff7e5574db3d141b11bc77da52dffd4a6f2bd9d2063fbc3b5067a4e7ba5fbda",
+    "oracle": "a65352b032c5cfa2ef6d7b848bf87e4c952b78a6cd413b17c6074115d6f5e2c1",
+    "hist_percentiles": "5eaa753388497dbfcbd2844f01862df0d968e5c663ce31563c19e5a7a263de43",
+    "config": "722c6c0d4b64113b23099631ab0d8fe89e0300f82c41a4d2704c868f128cc75e",
+    "app": "48ebf063cfb3f23bd3bcf664da622c1a5786748aa6a973a9af6a79e5b14854d5",
+    "loader_result": null
+  },
+  "bytes": {
+    "gt_manifest": 744,
+    "gt": 310678,
+    "source_dump": 156670,
+    "sink_dump": 132640,
+    "publication_dump": 417348,
+    "attestation": 504,
+    "oracle": 7134,
+    "hist_percentiles": 1055,
+    "config": 3985,
+    "app": 7014,
+    "loader_result": null
+  },
+  "paths": {
+    "gt_manifest": "results/raw/artifacts/pilot-valid-g1k3-r22/gt_manifest",
+    "gt": "results/raw/artifacts/pilot-valid-g1k3-r22/gt",
+    "source_dump": "results/raw/artifacts/pilot-valid-g1k3-r22/source_dump",
+    "sink_dump": "results/raw/artifacts/pilot-valid-g1k3-r22/sink_dump",
+    "publication_dump": "results/raw/artifacts/pilot-valid-g1k3-r22/publication_dump",
+    "attestation": "results/raw/artifacts/pilot-valid-g1k3-r22/attestation",
+    "oracle": "results/raw/artifacts/pilot-valid-g1k3-r22/oracle",
+    "hist_percentiles": "results/raw/artifacts/pilot-valid-g1k3-r22/hist_percentiles",
+    "config": "results/raw/artifacts/pilot-valid-g1k3-r22/config",
+    "app": "results/raw/artifacts/pilot-valid-g1k3-r22/app",
+    "loader_result": null
+  },
+  "retained": {
+    "gt_manifest": true,
+    "gt": true,
+    "source_dump": true,
+    "sink_dump": true,
+    "publication_dump": true,
+    "attestation": true,
+    "oracle": true,
+    "hist_percentiles": true,
+    "config": true,
+    "app": true,
+    "loader_result": false
+  },
+  "policy": "full dumps retained for violating/control/sample runs (prereg \u00a75); for other runs only digests are kept \u2014 bulk data stays in local non-synced scratch and is deterministically re-generatable (D10/D11)"
+}

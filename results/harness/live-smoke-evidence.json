@@ -1,0 +1,140 @@
+{
+  "schema": "wxeo.live-smoke-evidence.v1",
+  "kind": "live-end-to-end-smoke",
+  "run_id": "pilot-m2-f0-1k-p3-r00",
+  "generated_at_utc": "2026-11-24T19:14:14Z",
+  "passed": true,
+  "checks": {
+    "record_present": true,
+    "record_schema_valid": true,
+    "not_dry_run": true,
+    "valid": true,
+    "excluded": false,
+    "source_integrity": true,
+    "gt_equals_expected": true,
+    "oracle_result_present": true,
+    "oracle_has_counts": true,
+    "artifact_matches_freeze": true,
+    "quiescence_censored": false,
+    "receipts_attested": true
+  },
+  "record": {
+    "path": "results/raw/run-records/run_pilot-m2-f0-1k-p3-r00.json",
+    "sha256": "46f6071525706aa0ee2f18449a482950504c132abbecce09ea3a3548be95054d",
+    "schema_errors": []
+  },
+  "oracle": {
+    "path": "results/raw/oracle/oracle_pilot-m2-f0-1k-p3-r00.json",
+    "sha256": "4a38eeff7363e90a047575fe170cc4e4ffefd626a20e17ab2e747a57a2e99281",
+    "counts": {
+      "produced": 1000,
+      "consumed_estimate": 1000,
+      "expected_postings": 2000,
+      "observed_postings": 2000,
+      "dup_postings": 0,
+      "dup_entries": 0,
+      "lost_postings": 0,
+      "lost_entries": 0,
+      "imbalanced_entries": 0,
+      "structurally_malformed_entries": 0,
+      "imbalanced_sum_entries": 0,
+      "mutated_postings": 0,
+      "spurious_postings": 0,
+      "ledger_entries_total": 1000
+    },
+    "violations": {
+      "v1": false,
+      "v2": false,
+      "v3": false,
+      "v4": false,
+      "v5": false,
+      "violating_run": false
+    },
+    "attribution": [],
+    "result_sha256": "680006f6da4c006c704dd5c08fff307ee1412fe58202fbf9486f599accce0be4"
+  },
+  "run": {
+    "stage": "pilot",
+    "cell_id": "P.M2.f0.1k.p3",
+    "mechanism": "M2",
+    "fault": "F0",
+    "ordering_variant": "strict",
+    "load_events": 1000,
+    "partitions": 3,
+    "data_seed": "87df29bf7cf320a5",
+    "validity": {
+      "valid": true,
+      "excluded": false,
+      "exclude_reason": null
+    },
+    "quiescence": {
+      "lag_per_partition": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "quiet_period_ms": 10000,
+      "censored": false,
+      "t_consistent_ms": 9133,
+      "checks": {
+        "lag_zero": true,
+        "sink_stable": true,
+        "app_idle": true,
+        "relay_drained": true
+      }
+    },
+    "timings": {
+      "t_quiesce": 1795544989088,
+      "t_fault_fire": null,
+      "t_load_end": 1795544968738,
+      "t_load_start": 1795544968516,
+      "t_start": 1795544959312,
+      "t_observation": 1795544989405,
+      "t_end": 1795544995883,
+      "t_restore": null
+    },
+    "hitl": {
+      "violating_run": false,
+      "v1": false,
+      "v2": false,
+      "v3": false,
+      "v4": false,
+      "v5": false
+    }
+  },
+  "artifact": {
+    "jar": {
+      "path": "artifact/target/wxeo-service.jar",
+      "sha256": "6e8223751706d64e7b77752b42df5694d4231ba8bd3522034806bae25e8e50d3",
+      "bytes": 34467687
+    },
+    "source_tree_sha256": "60ef2c711adb3acb17f5ef5b3c75efd386d43b51688c235e531ae6d641f7d447",
+    "matches_freeze": true,
+    "freeze_aggregate": "1ccb5aac713a2cb3a397f0269f62aa824d37e72850e07e4001da305fad4443a9"
+  },
+  "receipt_attestation": [
+    {
+      "run_id": "pilot-valid-g1k3-r22",
+      "fault": "K3",
+      "owner": "app",
+      "attested": true,
+      "reason": null,
+      "fired": 1,
+      "restored": 1,
+      "app_fired": 1,
+      "s4_fired": 0
+    },
+    {
+      "run_id": "a-m3-k2-1k-p3-r02",
+      "fault": "K2",
+      "owner": "s4",
+      "attested": true,
+      "reason": null,
+      "fired": 1,
+      "restored": 1,
+      "app_fired": 0,
+      "s4_fired": 1
+    }
+  ],
+  "warnings": []
+}

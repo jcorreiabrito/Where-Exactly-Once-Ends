@@ -139,6 +139,35 @@ def n_stage_b_cells() -> int:
     return sum(len(FAULTS) - len(STAGE_B_NA.get(m, set())) for m in MECHANISMS)
 
 
+#: Single ownership table for fault receipts (S5 R3).  Keyed by canonical fault token.
+OWNERSHIP = {
+    "K1": "app", "K3": "app", "K4": "app", "K7": "app",   # in-process failpoints
+    "F4b": "app",                                          # deterministic ordering probe
+    "K2": "s4", "K5": "s4", "K6": "s4",                    # S4 external interventions
+    "F1": "s4", "F2": "s4", "F3": "s4", "F4a": "s4", "F5": "s4", "F6": "s4",
+    "F0": "none", "none": "none", "ctrl": "none",
+}
+
+
+def normalize_fault(fault: str) -> str:
+    token = str(fault or "").strip()
+    upper = token.upper()
+    if upper in ("F4A", "F4B"):
+        return "F4a" if upper == "F4A" else "F4b"
+    if upper in ("K1", "K2", "K3", "K4", "K5", "K6", "K7"):
+        return upper
+    return upper
+
+
+def injector_ownership(fault: str, mechanism: str | None = None,
+                       level: str | None = None) -> str:
+    """Return ``app`` | ``s4`` | ``none`` for a fault token — the single source of truth."""
+    token = normalize_fault(fault)
+    if token in OWNERSHIP:
+        return OWNERSHIP[token]
+    raise ValueError(f"unknown fault for ownership: {fault!r}")
+
+
 def record_stage(stage_label: str) -> str:
     """Canonical run-record ``stage`` value from a matrix stage label (S5 F-RN1)."""
     mapping = {"P": "pilot", "V": "pilot", "A": "A", "B": "B", "C": "C"}

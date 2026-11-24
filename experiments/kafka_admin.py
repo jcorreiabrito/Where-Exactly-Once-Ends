@@ -49,6 +49,11 @@ class KafkaAdmin:
         self._client = _admin(bootstrap)
 
     # -- metadata ---------------------------------------------------------------------------
+    def broker_count(self) -> int:
+        """Live broker count from cluster metadata (R7: never trust stale stack-state)."""
+        md = self._client.list_topics(timeout=20)
+        return len(getattr(md, "brokers", {}) or {})
+
     def list_topics(self) -> set[str]:
         return set(self._client.list_topics(timeout=20).topics.keys())
 
@@ -71,21 +76,27 @@ class KafkaAdmin:
     # -- offsets ------------------------------------------------------------------------------
     def topic_offsets(self, topic: str) -> dict[int, int]:
         """High watermark (log end offset) per partition."""
-        from confluent_kafka import TopicPartition
+        from confluent_kafka import TopicPartition, IsolationLevel
+        from confluent_kafka.admin import OffsetSpec
 
-        tps = [TopicPartition(topic, p) for p in self.partitions(topic)]
-        futures = self._client.list_offsets(tps, request_timeout=20.0,
-                                            isolation_level="read_committed")
+        # confluent-kafka >= 2.x changed list_offsets to take a dict
+        # {TopicPartition: OffsetSpec} and an IsolationLevel enum.
+        tpo = {TopicPartition(topic, p): OffsetSpec.latest() for p in self.partitions(topic)}
+        futures = self._client.list_offsets(tpo, request_timeout=20.0,
+                                            isolation_level=IsolationLevel.READ_COMMITTED)
         out: dict[int, int] = {}
         for tp, future in futures.items():
             result = future.result()
-            out[tp.partition] = int(result.high)
+            out[tp.partition] = int(getattr(result, "offset", getattr(result, "high", 0)))
         return out
 
     def group_offsets(self, group: str, topic: str) -> dict[int, int]:
-        from confluent_kafka.admin import ConsumerGroupTopicPartitions
+        # confluent-kafka >= 2.16 moved ConsumerGroupTopicPartitions to the top-level
+        # package and treats an explicit empty partition list as "no partitions";
+        # omitting it (None) means "all partitions of the group".
+        from confluent_kafka import ConsumerGroupTopicPartitions
 
-        request = ConsumerGroupTopicPartitions(group, [])
+        request = ConsumerGroupTopicPartitions(group)
         futures = self._client.list_consumer_group_offsets([request], request_timeout=20.0)
         result = futures[group].result()
         out: dict[int, int] = {}

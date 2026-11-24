@@ -189,3 +189,49 @@ open for this pass.
 publication metrics 2, M1-kafka ledger 4), **1,800/1,800 mutations detected (100 %) and
 1,800/1,800 correctly attributed (100 %)**, clean controls pass (DB sink, M1-kafka ledger),
 input-tamper controls pass. Evidence: `results/harness/g3-mutation.json`.
+
+## Post-R22 live-evidence closure — R5–R9 status against the lead-run evidence
+
+The live-evidence loop was closed by the lead in a single-owner window; the records below are
+schema-valid and oracle-verified, so the previously "pending live evidence" acceptance item is
+**CLOSED**:
+
+| Record | What it proves | Evidence facts |
+|---|---|---|
+| `results/raw/run-records/run_pilot-m2-f0-1k-p3-r00.json` | fault-free path end-to-end | valid=true, `oracle.source_integrity=true`, 2000/2000 postings, dup=0, lost=0; consolidated in `results/harness/live-smoke-evidence.json` (`passed=true`: record_schema_valid, not_dry_run, valid, source_integrity, gt_equals_expected, oracle_result_present, oracle_has_counts, artifact_matches_freeze, quiescence_censored=false, receipts_attested) |
+| `results/raw/run-records/run_pilot-valid-g1k3-r22.json` | **R5** (C=2 single designated failpoint instance) + **R2** (app owns `fired`) | valid=true, source_integrity=true; 2000 expected / 2044 observed, dup=44, lost=0, violating_run=true; **exactly 1 app `fired` + 1 S4 `restored`** (no S4 companion `fired`, no second-instance fire) |
+| `results/raw/run-records/run_a-m3-k2-1k-p3-r02.json` | **R6** (K5-style marker/phase path) and **R4** (real window) for an S4-owned class | valid=true, source_integrity=true; 2000/2000; **one S4 `fired` inside the phase window** (`phase.fire_ms` within [load_start, load_end]), `action_verified=true`, **1 `restored`** |
+
+Status per finding: **R5 FIXED** (runner arms only the designated instance; validator filters by
+`instance=` and rejects off-designated fired receipts — `experiments/receipts.py:65`/`:72`,
+`experiments/runner.py:1444`), **R6 FIXED** (K5 waits for a durable k-batch marker before the
+rewind and raises `InjectionNotVerified` on timeout — `experiments/injectors.py`, tested by
+`test_redteam_fixes_r5_r9.py`), **R7 FIXED** (F1 verification uses live `AdminClient` broker
+count and PowerShell-host restore — `experiments/kafka_admin.py:52`,
+`experiments/injectors.py`), **R8 FIXED** (consumer exit codes captured before handles are
+cleared; `validate_record` enforces `EXIT_KEYS`), **R9 FIXED** (A2 §3.4 equations enforced in
+`experiments/validate_record.py` with positive/negative tests). **R11** (gate-input evidence in
+freeze) implemented with tamper detection in `experiments/freeze.py`.
+
+## Post-R22 platform/API fixes (A3) — with anchors
+
+All are documented normatively in `docs/prereg-amendment-A3.md` (A3.1–A3.6); fairness is
+identical across mechanisms and no confirmatory input changed.
+
+1. **JVM heap** service `-Xms512m -Xmx1g`, load generator `-Xmx1g` (host commit limit, DOS 1455) — A3.1.
+2. **Broker index sizing** `log.index.size.max.bytes=1048576`, `log.index.interval.bytes=1048576` (default 10 MiB index preallocation exhausted 12.5 GB) — A3.2.
+3. **Marker-driven S4 injections** (K2, K5, F2, F4a, F6) run at `max(50, load_events/5)` events/s (~5 s window) when `experiments/rates.json` is absent; observed K2 late by 232 ms pre-fix, 2.36 s into a 30 s bound post-fix — A3.3; M6.
+4. **Pilot periodic reset disabled** `WXEO_DISABLE_PERIODIC_RESET=1`, batch resets by the lead; unique session/attempt-scoped topics/groups/schemas keep per-run freshness — A3.4; M5.
+5. **Receipt attribution hygiene**: final-attempt wall-clock window + identical-receipt dedup (retries share run_id; crash-restart can append the same `fired` twice) — A3.5.
+6. **confluent-kafka 2.16 realisations**: `list_offsets({TopicPartition: OffsetSpec})` + `IsolationLevel` (`experiments/kafka_admin.py:77`, `:86`), `ListOffsetsResultInfo.offset` not `.high`, `ConsumerGroupTopicPartitions` top-level with `topic_partitions=None` (`experiments/kafka_admin.py:93`), oracle live dump uses offset 0 instead of `seek()` (`experiments/oracle/oracle.py:1335`), readiness accepts `status=subscribed` + process-alive + zero lag (`experiments/runner.py:1528`), crashed failpoint restart with `--wxeo.failpoint.enabled=false` (no re-arm loop) and waiting only the restarted instance (`experiments/runner.py:1444`) — A3.6. Preflight also waits up to 30 s for 3 broker configs + all-running stack-state before refusing (`experiments/runner.py:528`).
+
+**Remaining pre-Stage-A conditions (deferred, unchanged):** R12 `experiments/rates.py` generator
+(inputs are pilot outputs; runner already guards Stage B/C) and R10 A2-analyzer implementation
+(requires the author's A2 approval at the P2 gate; freeze follows that approval). M6 (progress-
+based L2 fire timing) and M7 (topic lifecycle/reset cadence, registered as M5) are recorded in
+`results/DEVIATIONS.md`; pilot-period reset policy is A3.4.
+
+**Pilot status:** running in a single-owner window (pid 29460, `pilot.log`, env
+`WXEO_DISABLE_PERIODIC_RESET=1`); no pilot was launched by the fix-pass agent, and Stage A/B/C
+remain gated on P2.
+

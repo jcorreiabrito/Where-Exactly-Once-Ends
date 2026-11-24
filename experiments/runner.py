@@ -441,6 +441,11 @@ class Runner:
         self._block_id = 0
         self._runs_since_reset = 0
         self._last_reset: dict | None = None
+        # M5: topics/schemas are NEVER deleted, so every runner invocation gets a unique
+        # session tag; combined with the attempt number this guarantees fresh names even when
+        # earlier smoke attempts left topics behind (reclaimed by periodic reset-kafka).
+        self._session_tag = hashlib.sha256(
+            (utc_iso() + str(os.getpid())).encode()).hexdigest()[:8]
         self._reserved_written = False
 
     # -- plan -----------------------------------------------------------------------------
@@ -527,6 +532,24 @@ class Runner:
         runner refuses to start if the broker safety properties are not in effect.
         """
         files = broker_property_files()
+        # Lead R3-robustness: harness start/reset/start-toxiproxy can be clobbered by a
+        # concurrent state write; poll up to 30 s for the 3 configs AND an all-running
+        # stack-state before refusing (still fail loudly if it never converges).
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            files = broker_property_files()
+            try:
+                state = read_json(os.path.join(eos_runtime_root(), "run", "stack-state.json"),
+                                  {})
+                comps = state.get("components") or {}
+                all_running = all(
+                    (comps.get(name) or {}).get("status") == "running"
+                    for name in ("kafka", "postgres", "toxiproxy"))
+            except Exception:  # noqa: BLE001
+                all_running = False
+            if len(files) >= 3 and all_running:
+                break
+            time.sleep(1.0)
         if len(files) < 3:
             raise SystemExit(
                 f"BROKER SAFETY CHECK FAILED: expected >=3 broker server.properties under "
@@ -1015,6 +1038,11 @@ class Runner:
         cadence = reset_cadence_for(load, mode)
         live_topics = self._live_topic_count()
         due, reason = should_periodic_reset(self._runs_since_reset, load, mode, live_topics)
+        if os.environ.get("WXEO_DISABLE_PERIODIC_RESET") == "1" and due:
+            # Documented pilot deviation: the pilot set fits in the disk budget with the 1 MB
+            # broker index cap, and the harness reset path is the least reliable component of the
+            # stack; resets are therefore done between batches by the lead, never mid-pilot.
+            due, reason = False, None
         info = {"restart_before_run": due, "block_id": self._block_id,
                 "reset_epoch": self._reset_epoch,
                 "runs_since_reset_before": self._runs_since_reset,
@@ -1201,6 +1229,8 @@ class Runner:
             "reset_cadence": reset_info.get("cadence"),
             "reset_reason": (reset_info.get("reset") or {}).get("reason"),
             "topic_count_before": reset_info.get("topic_count_before"),
+            "failpoint_instance": getattr(seq, "_failpoint_instance", 1),
+            "l2_trigger": "progress-based (M6)",
             "topic_count_after": reset_info.get("topic_count_after"),
             "topic_lifecycle": "no per-run deletion (M5); periodic reset-kafka wipe",
             "max_live_topics": MAX_LIVE_TOPICS,
@@ -1238,24 +1268,27 @@ class LiveSequence:
         self.timings = {k: None for k in VR.TIMING_KEYS}
         self.processes: dict[int, subprocess.Popen] = {}
         self.consumer_pids: dict[int, int] = {}
-        # Attempt-scoped names: topics/schemas are NEVER deleted per run (Windows KRaft bug),
-        # so a retry must not reuse an attempt's topics. Attempt 1 keeps the CONTRACTS-exact
-        # names; retries add ".aN" (recorded deviation M5).
-        suffix = "" if attempt == 1 else f".a{attempt}"
-        self.topic_suffix = suffix
-        self.source_topic = f"wxeo.src.{self.run_id}{suffix}"
-        self.sink_topic = f"wxeo.sink.{self.run_id}{suffix}"
-        self.group = f"wxeo.cg.{self.run_id}{suffix}"
+        # Attempt/session-scoped names: topics/schemas are NEVER deleted per run (Windows KRaft
+        # bug), so every invocation uses a unique session tag + attempt number; fresh state does
+        # not depend on deletion (reclaimed later by periodic reset-kafka).
+        session = getattr(runner, "_session_tag", "s0")
+        self.topic_suffix = f".s{session}.a{attempt}"
+        self.source_topic = f"wxeo.src.{self.run_id}{self.topic_suffix}"
+        self.sink_topic = f"wxeo.sink.{self.run_id}{self.topic_suffix}"
+        self.group = f"wxeo.cg.{self.run_id}{self.topic_suffix}"
         # PostgreSQL identifiers must match [A-Za-z0-9_]{1,63} (S3 SchemaTool contract);
         # run_ids are lower-case hyphenated for Kafka-topic legality, so map '-' -> '_' for the
         # schema identifier only. The mapping is deterministic and recorded in the run notes.
-        suffix_schema = "" if attempt == 1 else f"_a{attempt}"
+        suffix_schema = "" if False else f"_s{getattr(runner, '_session_tag', 's0')}_a{attempt}"
         self.schema = ("wxeo_run_" + self.run_id.replace("-", "_") + suffix_schema)[:63]
         self.reset_info = reset_info or {}
+        self._failpoint_instance = 1
+        self._consumer_exit: dict[int, int | None] = {}
         self.disk_start = runner._disk_footprint()
         self.attempt = attempt
         self.db_schema_used = self.run["mechanism"] != "M1-kafka"
         self.injector = None
+        self._inj_ctx = None
         self.oracle_result = None
         self.exclusions: list[str] = []
         self.notes: list[str] = [f"db schema identifier: {self.schema} "
@@ -1333,7 +1366,9 @@ class LiveSequence:
     def execute(self) -> dict:
         self.clock_before = clock_sanity_probe()
         self.admin = KA.KafkaAdmin()
-        self.injector = INJ.make_injector(self._injector_context())
+        # R4 fix: one context instance whose load window is filled in around the real loader
+        self._inj_ctx = self._injector_context()
+        self.injector = INJ.make_injector(self._inj_ctx)
         self.timings["t_start"] = utc_ms()
         try:
             self._assert_fresh_state()
@@ -1345,7 +1380,8 @@ class LiveSequence:
             self._start_load_generator()
             fire_thread = self._start_injector_thread()
             self._wait_load_generator()
-            fire_thread.join(timeout=600)
+            if fire_thread is not None:
+                fire_thread.join(timeout=600)
             if self.timings["t_load_start"] is None or self.timings["t_load_end"] is None:
                 raise RuntimeError("load generator did not report its load window")
             # 8. restore the injection (fired receipt already written by the injector)
@@ -1405,13 +1441,13 @@ class LiveSequence:
                         purpose="schema-init", check=True, timeout=180)
 
     # -- services --------------------------------------------------------------------------
-    def _service_args(self, instance: int) -> list[str]:
+    def _service_args(self, instance: int, disable_failpoint: bool = False) -> list[str]:
         jar = os.path.join(self.r.repo, "artifact", "target", "wxeo-service.jar")
         java = self.env.get("java") or "java"
         warmup = self._warmup_events()
         ep = self._endpoints()
         args = [
-            java, "-Xms2g", "-Xmx2g", "-XX:+UseG1GC", "-XX:+ExitOnOutOfMemoryError",
+            java, "-Xms512m", "-Xmx1g", "-XX:+UseG1GC", "-XX:+ExitOnOutOfMemoryError",
             "-jar", jar,
             f"--wxeo.mechanism={self.run['mechanism']}",
             f"--wxeo.ordering={self.run['ordering_variant']}",
@@ -1429,13 +1465,16 @@ class LiveSequence:
             f"--wxeo.warmup-events={warmup}",
             "--wxeo.require-append-only-attestation=true",
         ]
-        fp = INJ.failpoint_config_for_run(self._injector_context())
-        if fp and fp.get("enabled"):
+        fp = INJ.failpoint_config_for_run(self._inj_ctx or self._injector_context())
+        if fp and fp.get("enabled") and int(instance) == int(self._failpoint_instance) \
+                and not disable_failpoint:
             args += ["--wxeo.failpoint.enabled=true", f"--wxeo.failpoint.name={fp['name']}",
                      f"--wxeo.failpoint.action={fp['action']}",
                      f"--wxeo.failpoint.after={fp['after']}"]
         else:
             args.append("--wxeo.failpoint.enabled=false")
+        if fp and fp.get("enabled"):
+            args.append(f"--wxeo.failpoint.instance={self._failpoint_instance}")
         if ep["producer"]:
             args.append(f"--wxeo.producer-bootstrap={ep['producer']}")
         if ep["consumer"]:
@@ -1449,9 +1488,30 @@ class LiveSequence:
 
     def _start_services(self) -> None:
         n = int(self.run["consumer_instances"])
+        # Only (re)start instances that are not currently alive. Cleanup is per-instance so a
+        # single-instance restart (K-class failpoint restore) does not delete a healthy peer's
+        # ready marker (observed live: restart of instance 1 made readiness fail 1/2).
+        import glob
+        to_start = []
         for instance in range(1, n + 1):
-            if instance in self.consumer_pids:
+            proc = self.processes.get(instance)
+            if instance in self.consumer_pids and proc is not None and proc.poll() is None:
                 continue
+            to_start.append(instance)
+        for instance in to_start:
+            for stale in glob.glob(os.path.join(self.p.outputs,
+                                                f"stop_{self.run_id}_{instance}.flag")):
+                try:
+                    os.remove(stale)
+                except OSError:
+                    pass
+            for stale in glob.glob(os.path.join(self.p.outputs,
+                                                f"ready_{self.run_id}_{instance}.json")):
+                try:
+                    os.remove(stale)
+                except OSError:
+                    pass
+        for instance in to_start:
             args = self._service_args(instance)
             stdout_path = os.path.join(self.p.logs, f"consumer{instance}.stdout.log")
             stderr_path = os.path.join(self.p.logs, f"consumer{instance}.stderr.log")
@@ -1466,7 +1526,12 @@ class LiveSequence:
         self._wait_ready(timeout=180)
 
     def _wait_ready(self, timeout: float = 180) -> None:
-        """Readiness = assigned partitions AND zero lag for 5 s (prereg §4.1 step 3)."""
+        """Readiness = all instances registered and alive, with zero lag for 5 s (prereg §4.1).
+
+        S3's service writes ``status=subscribed`` when it joins the group and does not
+        necessarily rewrite the file to ``assigned`` afterwards; a later assignment is therefore
+        verified through process liveness and the lag probe rather than only the ready-file label.
+        """
         deadline = time.monotonic() + timeout
         n = int(self.run["consumer_instances"])
         lag_zero_since: float | None = None
@@ -1475,7 +1540,9 @@ class LiveSequence:
             for instance in range(1, n + 1):
                 info = read_json(os.path.join(self.p.outputs,
                                               f"ready_{self.run_id}_{instance}.json"))
-                if info and info.get("status") == "assigned":
+                proc = self.processes.get(instance)
+                alive = proc is not None and proc.poll() is None
+                if info and info.get("status") in ("subscribed", "assigned") and alive:
                     assigned += 1
             lag = self.admin.lag(self.group, self.source_topic)
             lag_zero = bool(lag) and all(v == 0 for v in lag.values())
@@ -1484,15 +1551,20 @@ class LiveSequence:
                 if (time.monotonic() - lag_zero_since) * 1000 >= READY_STABLE_MS:
                     self.r.runlog.append(stage=self.stage, run_id=self.run_id,
                                          seed=self.seed_hex,
-                                         command="[ready] group assigned, lag=0 for 5s",
+                                         command="[ready] instances registered+alive, lag=0 for 5s",
                                          exit_status=0)
                     return
             else:
                 lag_zero_since = None
             time.sleep(0.5)
-        raise RuntimeError(f"consumer readiness timeout: assigned={assigned}/{n} lag={lag}")
+        raise RuntimeError(f"consumer readiness timeout: registered={assigned}/{n} lag={lag}")
 
     def _restart_service(self, instance: int) -> int:
+        """Restart the crashed injection target WITHOUT re-arming the failpoint.
+
+        Re-arming the same failpoint would crash the fresh JVM again (observed live: K3 loop).
+        Only this instance is waited for; its peer is already healthy.
+        """
         proc = self.processes.get(instance)
         if proc is not None:
             try:
@@ -1503,9 +1575,39 @@ class LiveSequence:
                 proc.wait(timeout=60)
             except subprocess.TimeoutExpired:
                 pass
-            self.consumer_pids.pop(instance, None)
-        self._start_services()
-        return self.consumer_pids.get(instance, -1)
+        self.consumer_pids.pop(instance, None)
+        import glob
+        for stale in glob.glob(os.path.join(self.p.outputs,
+                                            f"stop_{self.run_id}_{instance}.flag")):
+            try:
+                os.remove(stale)
+            except OSError:
+                pass
+        for stale in glob.glob(os.path.join(self.p.outputs,
+                                            f"ready_{self.run_id}_{instance}.json")):
+            try:
+                os.remove(stale)
+            except OSError:
+                pass
+        args = self._service_args(instance, disable_failpoint=True)
+        stdout_path = os.path.join(self.p.logs, f"consumer{instance}.stdout.log")
+        stderr_path = os.path.join(self.p.logs, f"consumer{instance}.stderr.log")
+        stdout = open(stdout_path, "wb")
+        stderr = open(stderr_path, "wb")
+        new_proc = subprocess.Popen(args, stdout=stdout, stderr=stderr)
+        self.processes[instance] = new_proc
+        self.consumer_pids[instance] = new_proc.pid
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
+            info = read_json(os.path.join(self.p.outputs,
+                                          f"ready_{self.run_id}_{instance}.json"))
+            alive = new_proc.poll() is None
+            lag = self.admin.lag(self.group, self.source_topic)
+            lag_zero = bool(lag) and all(v == 0 for v in lag.values())
+            if info and info.get("status") in ("subscribed", "assigned") and alive and lag_zero:
+                return new_proc.pid
+            time.sleep(0.5)
+        raise RuntimeError(f"restart readiness timeout for instance {instance}")
 
     def _stop_consumers(self) -> None:
         for instance in list(self.processes):
@@ -1519,6 +1621,7 @@ class LiveSequence:
             except subprocess.TimeoutExpired:
                 proc.kill()
                 raise RuntimeError(f"consumer instance {instance} did not stop gracefully")
+        self._consumer_exit = {inst: proc.returncode for inst, proc in self.processes.items()}
         self.processes.clear()
         self.consumer_pids.clear()
 
@@ -1598,8 +1701,19 @@ class LiveSequence:
             return None
 
     # -- load generator --------------------------------------------------------------------
+    #: S4-owned injections whose fire time is marker-driven: they need a load window long enough
+    #: for the progress probe (a few admin round-trips) to observe the marker mid-load.
+    MARKER_DRIVEN_FAULTS = frozenset({"K2", "K5", "F2", "F4a", "F6"})
+
     def _effective_rate(self) -> str:
         mode = self.run.get("load_mode")
+        # Pilot calibration: at 1k events and rate=max the load finishes in <1 s, leaving no window
+        # in which a marker-driven S4 injection can fire mid-processing (observed live for K2:
+        # fire 232 ms after load end). Pilot marker-driven cells therefore use a fixed rate that
+        # stretches the load to ~5 s; the rate is recorded in the run config and is identical
+        # across mechanisms, so it cannot bias the mechanism comparison.
+        if self.opts_rate_table_missing() and self.run.get("fault") in self.MARKER_DRIVEN_FAULTS:
+            return str(max(50, int(int(self.run["load_events"]) / 5)))
         if self.opts_rate_table_missing():
             if mode == "saturation" or self.stage in ("B", "C"):
                 raise RuntimeError(
@@ -1620,7 +1734,7 @@ class LiveSequence:
         java = self.env.get("java") or "java"
         rate = self._effective_rate()
         args = [
-            java, "-cp", jar, "com.wxeo.load.LoadGenerator",
+            java, "-Xms64m", "-Xmx1g", "-cp", jar, "com.wxeo.load.LoadGenerator",
             f"--run-id={self.run_id}",
             "--bootstrap=127.0.0.1:9091,127.0.0.1:9092,127.0.0.1:9093",
             f"--topic={self.source_topic}",
@@ -1654,6 +1768,18 @@ class LiveSequence:
         self._loader_reader = threading.Thread(target=_reader, daemon=True)
         self._loader_reader.start()
         self.timings["t_load_start"] = utc_ms()
+        # R4: wire the REAL phase window for the injector receipts before any fire can happen
+        if self._inj_ctx is not None:
+            self._inj_ctx.load_start_ms = self.timings["t_load_start"]
+            # S4-owned injectors fire DURING the load, when the real end is not yet known; the
+            # receipt carries the planned upper bound (tight for fixed-rate runs, a wide bound
+            # for rate=max) and the runner enforces the REAL end post-run against the recorded
+            # timings (see _collect_fault_receipts).
+            expected_ms = int(self._expected_load_seconds() * 1000)
+            upper_bound = max(int(expected_ms * 1.5), 30_000)
+            self._inj_ctx.load_end_ms = int(self.timings["t_load_start"] + upper_bound)
+            self._inj_ctx.extra["window_kind"] = "planned_upper_bound"
+            self._inj_ctx.extra["consumers_alive"] = self._consumers_alive()
 
     def _wait_load_generator(self) -> None:
         if self.load_proc is None:
@@ -1673,15 +1799,19 @@ class LiveSequence:
                 self.timings["t_load_start"] = int(self.loader_result["load_start_ms"])
             if isinstance(self.loader_result.get("load_end_ms"), int):
                 self.timings["t_load_end"] = int(self.loader_result["load_end_ms"])
+        # R4: close the phase window with the loader-reported end and real consumer liveness
+        if self._inj_ctx is not None:
+            self._inj_ctx.load_end_ms = self.timings["t_load_end"]
+            self._inj_ctx.extra["consumers_alive"] = self._consumers_alive()
         self.r.runlog.append(stage=self.stage, run_id=self.run_id, seed=self.seed_hex,
                              command="[load] load generator finished", exit_status=rc)
         if rc != 0:
             raise RuntimeError(f"load generator exited {rc}")
 
     # -- injector --------------------------------------------------------------------------
-    def _start_injector_thread(self) -> threading.Thread:
+    def _start_injector_thread(self):
         if self.injector is None:
-            return threading.Thread(target=lambda: None)
+            return None
 
         def _fire():
             try:
@@ -1689,10 +1819,10 @@ class LiveSequence:
                     if self.run["fault"] in ("K2", "K5"):
                         self.injector.fire()      # internal phase marker waits
                     else:
-                        duration = self._expected_load_seconds()
-                        delay = INJ.level2_trigger_time(
-                            self._injector_context(), load_duration_s=duration)
-                        time.sleep(max(0.0, delay))
+                        marker = INJ.seeded_progress_marker(
+                            self.run["injection_seed"], int(self.run["load_events"]))
+                        self._inj_ctx.extra["progress_marker"] = marker
+                        self._wait_progress_marker(marker)
                         self.injector.fire()
                 else:
                     self.injector.wait_for_app_fired(timeout_s=300)
@@ -1704,6 +1834,28 @@ class LiveSequence:
         thread.start()
         return thread
 
+    def _wait_progress_marker(self, marker: int, timeout_s: float = 300.0) -> None:
+        if self._inj_ctx is None or self._inj_ctx.progress_probe is None:
+            raise RuntimeError("progress_probe unavailable for the Level-2 trigger")
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            try:
+                if int(self._inj_ctx.progress_probe()) >= int(marker):
+                    return
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(0.05)
+        raise RuntimeError(f"Level-2 progress marker {marker} never reached")
+
+    def _consumers_alive(self) -> bool:
+        """Real liveness of the consumer instances at phase time (R4)."""
+        if self.processes:
+            return all(proc.poll() is None for proc in self.processes.values())
+        try:
+            return bool(self.admin.group_exists(self.group))
+        except Exception:  # noqa: BLE001
+            return False
+
     def _expected_load_seconds(self) -> float:
         rate = self._effective_rate()
         if rate == "max":
@@ -1713,9 +1865,42 @@ class LiveSequence:
         except (TypeError, ValueError):
             return 60.0
 
+    def _receipts_for_record(self) -> list[dict]:
+        """Receipts of the FINAL attempt only, deduplicated.
+
+        Invalid reruns share the ``run_id`` (prereg §8.3), so the global fault log accumulates
+        receipts from earlier attempts.  The run record must attribute exactly one fired/restored
+        pair per injection; receipts are therefore restricted to the final attempt's wall-clock
+        window and identical app receipts (a crash-restart can append the same fired line twice)
+        are collapsed.
+        """
+        start = int(self.timings.get("t_start") or 0) - 5_000
+        end = int(self.timings.get("t_end") or utc_ms()) + 5_000
+        out = []
+        seen = set()
+        for rec in INJ.read_receipts(self.r.faults_log):
+            if rec.get("run_id") != self.run_id:
+                continue
+            ts = rec.get("ts_utc")
+            if isinstance(ts, str) and ts:
+                try:
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    ts_ms = int(dt.timestamp() * 1000)
+                except ValueError:
+                    ts_ms = None
+                if ts_ms is not None and not (start <= ts_ms <= end):
+                    continue
+            key = (rec.get("fault"), rec.get("event"), rec.get("detail"),
+                   RCPT.classify(rec))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(rec)
+        return out
+
     def _collect_fault_receipts(self) -> None:
-        receipts = INJ.read_receipts(self.r.faults_log)
-        cfg = INJ.failpoint_config_for_run(self._injector_context()) or {}
+        receipts = self._receipts_for_record()
+        cfg = INJ.failpoint_config_for_run(self._inj_ctx or self._injector_context()) or {}
         result = RCPT.validate_run_receipts(
             receipts, run_id=self.run_id,
             injector_mode=self.run.get("injector_mode", "none"),
@@ -1729,12 +1914,20 @@ class LiveSequence:
         s4_fired = [rec for rec in receipts
                     if rec.get("run_id") == self.run_id and rec.get("event") == "fired"
                     and RCPT.classify(rec) == "s4"]
+        real_start = self.timings.get("t_load_start")
+        real_end = self.timings.get("t_load_end")
         for rec in s4_fired:
             phase = rec.get("phase") or {}
-            if phase.get("outside_window") or (
-                    isinstance(phase.get("fire_ms"), int) and
-                    isinstance(phase.get("load_end_ms"), int) and
-                    phase["fire_ms"] > phase["load_end_ms"] - PHASE_MARGIN_MS):
+            fire_ms = phase.get("fire_ms")
+            planned_end = phase.get("load_end_ms")
+            outside = bool(phase.get("outside_window"))
+            if isinstance(fire_ms, int) and isinstance(real_start, int) and \
+                    isinstance(real_end, int):
+                # R4: enforce the REAL load window (receipt carries the planned upper bound)
+                if fire_ms < real_start or fire_ms > real_end + PHASE_MARGIN_MS:
+                    outside = True
+            if outside or (isinstance(fire_ms, int) and isinstance(planned_end, int)
+                           and fire_ms > planned_end):
                 self.exclusions.append(EXCLUDE_WINDOW)
                 self.notes.append("fault fired outside the processing window "
                                   "(uninformative_fire_outside_window)")
@@ -1854,7 +2047,7 @@ class LiveSequence:
             master_seed_u64=self.seed_u64, n_events=int(self.run["load_events"]),
             partitions=int(self.run["partitions"]),
             gt_path=self.p.gt, source_dump_path=self.p.source_dump,
-            produced_manifest_path=self.p.manifest,
+            produced_manifest_path=self.p.produced,
             sink_dump_path=self.p.sink_dump if sink_kind == "db" else None,
             publication_dump_path=self.p.publication_dump,
             attestation_path=self.p.attestation if sink_kind == "db" else None,
@@ -2037,7 +2230,7 @@ class LiveSequence:
         }, retain_map=self._retention_map(oracle))
         record = self.r._base_record(self.run, self.preflight)
         config_block = self._config_block()
-        config_block["runner"] = self.r._lifecycle_block(self, reset_info)
+        config_block["runner"] = self.r._lifecycle_block(self, getattr(self, "reset_info", {}))
         record.update({
             "config": config_block,
             "process_limits": self._process_limits(),
@@ -2055,8 +2248,7 @@ class LiveSequence:
             "violations": oracle["violations"],
             "publication": oracle["publication"],
             "oracle": oracle["oracle"],
-            "fault_receipts": [r for r in INJ.read_receipts(self.r.faults_log)
-                               if r.get("run_id") == self.run_id],
+            "fault_receipts": self._receipts_for_record(),
             "validity": {
                 "valid": valid,
                 "excluded": not valid,
@@ -2067,11 +2259,13 @@ class LiveSequence:
                 "notes": self.notes or ["live run"],
             },
             "artifacts": archived,
-            "stdout_path": pathsafe.repo_rel(self.p.loader_log),
+            "stdout_path": pathsafe.repo_rel(getattr(
+                self, "loader_log",
+                os.path.join(self.p.logs, "loadgenerator.stdout.log"))),
             "stderr_path": pathsafe.repo_rel(os.path.join(self.p.logs,
                                                           "loadgenerator.stderr.log")),
             "exit_status": {
-                "consumer": {inst: proc.returncode for inst, proc in self.processes.items()},
+                "consumer": dict(self._consumer_exit),
                 "load_generator": (self.load_proc.returncode if self.load_proc else None),
             },
         })

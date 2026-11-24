@@ -280,6 +280,8 @@ class InjectorContext:
     progress_probe: Callable[[], int] | None = None        # committed progress marker
     rewind_progress: Callable[[int], dict] | None = None   # k-batch rewind for K5/F6
     verify_broker_count: Callable[[], int] | None = None
+    broker_count_probe: Callable[[], int] | None = None
+    failpoint_instance: int | None = None
     consumer_pids: dict[int, int] = field(default_factory=dict)
     # phase bookkeeping set by the runner while the load generator runs
     load_start_ms: int | None = None
@@ -462,26 +464,31 @@ class F1BrokerKill(Injector):
                 {"broker_count": self.state["after_kill_count"]})
 
     def _broker_count(self) -> int:
-        if self.ctx.verify_broker_count is not None:
+        if self.ctx.broker_count_probe is not None:
             try:
-                return int(self.ctx.verify_broker_count())
+                return int(self.ctx.broker_count_probe())
             except Exception:  # noqa: BLE001
                 pass
         try:
-            state = _read_json(self.ctx.stack_state_path) or {}
-            return len(((state.get("components") or {}).get("kafka") or {}).get("nodes") or [])
+            from experiments.kafka_admin import KafkaAdmin
+            return int(KafkaAdmin(self.ctx.bootstrap).broker_count())
         except Exception:  # noqa: BLE001
             return 0
 
     def _verify(self, before, after):
         pid = int(self.state["target"]["pid"])
-        dead = not _pid_alive(pid)
-        reduced = self._broker_count() < int(before.get("broker_count") or 3)
-        return (dead and reduced), {"pid_dead": dead, "broker_count": self._broker_count()}
+        dead = _wait(lambda: not _pid_alive(pid), timeout=60)
+        base = int(before.get("broker_count") or 3)
+        reduced = _wait(lambda: self._broker_count() < base, timeout=120)
+        return (dead and reduced), {"pid_dead": dead, "brokers_before": base,
+                                    "brokers_after": self._broker_count()}
 
     def _restore(self):
-        self.ctx.run_log("restore F1: start-kafka + brokers=3 + ISR=3")
-        self.ctx.call([self.ctx.native_stack_ps1, "start-kafka"], check=False)
+        self.ctx.run_log("restore F1: start-kafka (PowerShell host) + brokers=3 + ISR=3")
+        import shutil as _shutil
+        host = _shutil.which("pwsh") or _shutil.which("powershell") or "powershell"
+        self.ctx.call([host, "-NoProfile", "-ExecutionPolicy", "Bypass",
+                       "-File", self.ctx.native_stack_ps1, "start-kafka"], check=False)
         ok_count = _wait(lambda: self._broker_count() >= 3, timeout=120)
         ok_isr = True
         source_topic = self.ctx.extra.get("source_topic")
@@ -841,15 +848,37 @@ class K5DuplicateDelivery(Injector):
         self.state["k_batches"] = int(self.ctx.extra.get("rewind_batches", 2))
         self.state["target_id"] = self.ctx.mechanism
 
+    def _wait_marker(self) -> int:
+        if self.ctx.progress_probe is None:
+            raise RuntimeError("runner did not provide progress_probe for K5")
+        events = int(self.ctx.extra.get("load_events") or 1000)
+        k = max(1, int(self.state.get("k_batches", 2)))
+        marker = min(k * MAX_POLL_RECORDS, max(1, events - 1))
+        self.state["k_effective"] = k if marker == k * MAX_POLL_RECORDS else 1
+        self.state["progress_marker"] = marker
+        self.ctx.extra["progress_marker"] = marker
+        deadline = time.monotonic() + float(self.ctx.extra.get("marker_timeout_s", 300))
+        while time.monotonic() < deadline:
+            progress = int(self.ctx.progress_probe())
+            if progress >= marker:
+                self.ctx.extra["progress_at_fire"] = progress
+                return progress
+            time.sleep(0.05)
+        raise InjectionNotVerified(
+            f"K5 progress marker {marker} never reached; rewind would move 0 offsets")
+
     def _fire(self):
         if self.ctx.stop_consumers is None or self.ctx.rewind_progress is None:
             raise RuntimeError("runner did not provide stop_consumers/rewind_progress for K5")
+        progress = self._wait_marker()
         self.ctx.stop_consumers()
-        before = {"progress": self._snapshot()}
-        rewind = self.ctx.rewind_progress(int(self.state["k_batches"]))
+        before = {"progress": self._snapshot(), "marker": progress,
+                  "progress_at_fire": self.ctx.extra.get("progress_at_fire")}
+        k = int(self.state.get("k_effective", self.state["k_batches"]))
+        rewind = self.ctx.rewind_progress(k)
         self.state["rewind"] = rewind
         after = {"progress": self._snapshot()}
-        return (f"consumers stopped; resume point rewound by {self.state['k_batches']} batches",
+        return (f"consumers stopped; rewound {k} batches after durable marker {progress}",
                 before, after)
 
     def _snapshot(self):
@@ -959,16 +988,12 @@ class FailpointWatch(Injector):
                 f"app failpoint {name} fired but action {expected_action!r} not verified")
         self._fired = True
         self.actual_ms = utc_now_ms()
-        self.receipts.append(
-            run_id=self.ctx.run_id, fault=self.fault, event="fired", source="s4",
-            level=self.level, seed=self.ctx.seed_hex,
-            detail=(f"observed app failpoint receipt {name}; action={expected_action} "
-                    f"phase_ok={not phase.get('outside_window')}"),
-            target_role="app-failpoint", action=expected_action, action_verified=True,
-            phase=phase, result="fired",
-            notes=("S4 companion receipt: records that the app fired AND the action was verified; "
-                   "the app's own receipt is the in-process evidence"),
-        )
+        # R2 fix: the APPLICATION is the sole writer of the `fired` receipt for app-owned
+        # failpoints (S3's Failpoints/FaultsLog, frozen).  S4 records only its own verification
+        # in the run notes and writes the `restored` receipt (crash action) after restart.
+        self.state["app_fired_receipt"] = found
+        self.state["phase"] = phase
+        self.state["action"] = expected_action
         return {"fired": True, "app_receipt": found, "phase": phase}
 
     def _verify_app_action(self, action: str) -> bool:
@@ -990,22 +1015,41 @@ class FailpointWatch(Injector):
             return {"restored": True, "noop": True}
         if self._restored:
             return {"restored": True, "already": True}
-        # restart the instances that the crash could have hit, wait for the group
-        stable = True
-        if self.ctx.restart_service is not None:
-            for instance in (1, 2):
-                self.ctx.restart_service(instance)
-        if self.ctx.wait_group_stable:
-            stable = self.ctx.wait_group_stable(timeout=180)
-        if not stable:
-            raise RuntimeError("failpoint restore: group did not stabilise")
-        receipt = self.receipts.append(
-            run_id=self.ctx.run_id, fault=self.fault, event="restored", source="s4",
-            level=self.level, seed=self.ctx.seed_hex,
-            detail=f"instances restarted after failpoint; group_stable={stable}",
-            target_role="app-failpoint", result="restored", action="restart+stable")
-        self._restored = True
-        return {"restored": True, "receipt": receipt}
+        action = self.state.get("action") or self.state.get("config", {}).get("action")
+        if action in TERMINAL_ACTIONS:
+            # crash failpoint: the app halted (fired-only); S4 owns the restored receipt and
+            # restarts the instance(s)
+            stable = True
+            if self.ctx.restart_service is not None:
+                for instance in (1, 2):
+                    self.ctx.restart_service(instance)
+            if self.ctx.wait_group_stable:
+                stable = self.ctx.wait_group_stable(timeout=180)
+            if not stable:
+                raise RuntimeError("failpoint restore: group did not stabilise")
+            receipt = self.receipts.append(
+                run_id=self.ctx.run_id, fault=self.fault, event="restored", source="s4",
+                level=self.level, seed=self.ctx.seed_hex,
+                detail=f"instance restarted after terminal crash failpoint; "
+                       f"group_stable={stable}",
+                target_role="app-failpoint", result="restored", action="restart+stable")
+            self._restored = True
+            return {"restored": True, "receipt": receipt}
+        # non-terminal (pause/throw/abort_txn/none): the app wrote its own restored receipt;
+        # S4 must not duplicate it. Wait for the app receipt and record nothing more.
+        name = self.state.get("config", {}).get("name")
+        deadline = time.monotonic() + float(self.ctx.extra.get("app_restore_timeout_s", 60))
+        while time.monotonic() < deadline:
+            for receipt in read_receipts(self.ctx.faults_log):
+                if (receipt.get("run_id") == self.ctx.run_id
+                        and receipt.get("fault") == name
+                        and receipt.get("event") == "restored"
+                        and RCPT.classify(receipt) == "app"):
+                    self._restored = True
+                    return {"restored": True, "app_receipt": receipt}
+            time.sleep(0.1)
+        raise RuntimeError(
+            f"app-owned non-terminal failpoint {name} did not write its restored receipt")
 
 
 # --------------------------------------------------------------------------------------------
@@ -1036,13 +1080,27 @@ def make_injector(ctx: InjectorContext) -> Injector | None:
             return inst
         return cls(ctx)
     if fault == "F4b":
+        # ordering probe: app-owned failpoint (ordering=early + before_effect_commit crash)
         return FailpointWatch(ctx)
+    # R1 fix: live external faults (F1-F6) and the S4-realised Level-1 classes (K2/K5) dispatch
+    # to their external injector classes; injected_mode "live"/"selftest"/"external" all map
+    # here (the matrix declares K2/K5 as "external" and F1-F6 as "live").
+    if fault in INJECTOR_TYPES and ctx.injector_mode in ("live", "selftest", "external"):
+        return INJECTOR_TYPES[fault](ctx)
     if fault in S4_REALISED_CLASSES:
-        cls = INJECTOR_TYPES[fault]
-        return cls(ctx)
+        return INJECTOR_TYPES[fault](ctx)
     if fault in CRASH_CLASS_FAILPOINT:
         return FailpointWatch(ctx)
-    raise ValueError(f"no injector for fault {ctx.fault!r}")
+    raise ValueError(f"no injector for fault {ctx.fault!r} (mode={ctx.injector_mode!r})")
+
+
+def seeded_progress_marker(seed_hex: str, events: int,
+                           window_fraction: tuple[float, float] = (0.25, 0.75)) -> int:
+    lo, hi = window_fraction
+    rng = random.Random(int.from_bytes(
+        hashlib.sha256(f"progress|{seed_hex}".encode()).digest()[:8], "big"))
+    marker = int(int(events) * rng.uniform(lo, hi))
+    return max(1, min(int(events) - 1, marker))
 
 
 def level2_trigger_time(ctx: InjectorContext, *, load_duration_s: float,

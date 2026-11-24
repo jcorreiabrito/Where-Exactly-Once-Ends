@@ -54,6 +54,31 @@ DEFAULT_ACTION = {
 }
 
 
+try:  # single ownership table (S5 R3)
+    from experiments.matrix_design import injector_ownership as _ownership
+except ImportError:  # pragma: no cover
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from experiments.matrix_design import injector_ownership as _ownership
+
+
+def fault_owner(fault: str) -> str:
+    try:
+        return _ownership(fault)
+    except Exception:  # noqa: BLE001
+        return "s4"
+
+
+def _receipt_instance(receipt: dict) -> int | None:
+    for part in str(receipt.get("detail") or "").replace(";", " ").split():
+        if part.startswith("instance="):
+            try:
+                return int(part.split("=", 1)[1])
+            except ValueError:
+                return None
+    return None
+
+
 def classify(receipt: dict) -> str:
     """Return ``"app"`` or ``"s4"`` for one receipt (explicit ``source`` wins)."""
     source = receipt.get("source")
@@ -77,6 +102,7 @@ def validate_run_receipts(
     fault_level: str,
     failpoint: str | None = None,
     action: str | None = None,
+    failpoint_instance: int | None = None,
     phase_window: tuple[int, int] | None = None,
 ) -> dict:
     """Validate one run's receipts against the single-owner protocol.
@@ -116,19 +142,27 @@ def validate_run_receipts(
 
     fault = (fault or "").upper() if (fault or "").upper() in ("K1", "K2", "K3", "K4", "K5",
                                                                 "K6", "K7") else fault
-    app_owned = (injector_mode == "failpoint") or (fault_level == "L1"
-                                                   and fault in APP_OWNED_FAULTS)
+    app_owned = fault_owner(fault) == "app"
     if app_owned:
         summary["owner"] = "app"
         if not failpoint:
             summary.update(attested=False, reason="app-owned injection without a failpoint name")
             return summary
-        app_fired = [r for r in mine if classify(r) == "app"
-                     and r.get("event") == "fired" and r.get("fault") == failpoint]
+        designated = int(failpoint_instance) if failpoint_instance is not None else None
+        app_fired_all = [r for r in mine if classify(r) == "app"
+                         and r.get("event") == "fired" and r.get("fault") == failpoint]
+        app_fired = [r for r in app_fired_all
+                     if designated is None or _receipt_instance(r) == designated]
+        off_designated = [r for r in app_fired_all
+                          if designated is not None
+                          and _receipt_instance(r) not in (None, designated)]
         app_restored = [r for r in mine if classify(r) == "app"
                         and r.get("event") == "restored" and r.get("fault") == failpoint]
         s4_restored = [r for r in mine if classify(r) == "s4" and r.get("event") == "restored"]
         problems: list[str] = []
+        if off_designated:
+            problems.append(f"{len(off_designated)} app fired receipt(s) from a non-designated "
+                            f"instance (designated={designated}); C=2 arming bug (R5)")
         if len(app_fired) != 1:
             problems.append(f"expected exactly one app fired for {failpoint}, "
                             f"got {len(app_fired)}")

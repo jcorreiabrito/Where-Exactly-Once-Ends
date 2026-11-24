@@ -66,6 +66,9 @@ FROZEN_FILES = [
     "experiments/tests/test_redteam_regressions.py",
     "experiments/tests/test_runner_lifecycle.py",
     "experiments/tests/test_freeze_artifact.py",
+    "experiments/tests/test_redteam_fixes_r1_r4.py",
+    "experiments/tests/test_redteam_fixes_r5_r9.py",
+    "experiments/tests/test_kafka_admin_mapping.py",
     "tools/analyze.py",
     "tools/make-figures.py",
 ]
@@ -83,6 +86,7 @@ PROVENANCE_FILES = [
 #: Pre-freeze harness evidence whose hash is recorded (not part of the pipeline).
 EVIDENCE_FILES = [
     "results/harness/g3-mutation.json",
+    "results/harness/gate-negative-controls.json",
 ]
 
 #: Artifact binding: the measured service is the shipped jar; the freeze records the jar digest
@@ -223,9 +227,12 @@ def build_freeze_document() -> dict:
             provenance[rel] = sha256_file(path)
     evidence = {}
     g3_passed = None
+    for rel in EVIDENCE_FILES:
+        path = os.path.join(_REPO, rel)
+        if os.path.exists(path):
+            evidence[rel] = sha256_file(path)
     g3_path = os.path.join(_REPO, "results", "harness", "g3-mutation.json")
     if os.path.exists(g3_path):
-        evidence["results/harness/g3-mutation.json"] = sha256_file(g3_path)
         try:
             doc = json.load(open(g3_path, encoding="utf-8"))
             g3_passed = bool(doc.get("passed"))
@@ -250,6 +257,7 @@ def build_freeze_document() -> dict:
         "files": files,
         "provenance_hashes": provenance,
         "pre_freeze_harness_evidence": {
+            "files_sha256": evidence,
             "g3_mutation": {"sha256": evidence.get("results/harness/g3-mutation.json"),
                             "passed": g3_passed,
                             "requirement": "100% detection with correct attribution "
@@ -271,6 +279,23 @@ def build_freeze_document() -> dict:
                          "affected analyses; affected results are labelled "
                          "'post-freeze analysis' (docs/prereg.md §10.3).",
     }
+
+
+def evidence_drift(frozen: dict) -> list[dict]:
+    """R11: gate-input evidence tampering detection (sha256 of every EVIDENCE_FILE)."""
+    drift: list[dict] = []
+    frozen_evidence = ((frozen.get("pre_freeze_harness_evidence") or {})
+                       .get("files_sha256") or {})
+    for rel, expected in frozen_evidence.items():
+        path = os.path.join(_REPO, rel)
+        if not os.path.exists(path):
+            drift.append({"file": rel, "problem": "gate-input evidence missing"})
+            continue
+        current = sha256_file(path)
+        if current != expected:
+            drift.append({"file": rel, "problem": "gate-input evidence tampered/changed",
+                          "frozen": expected, "current": current})
+    return drift
 
 
 def artifact_drift(frozen_artifact: dict | None, current: dict | None = None) -> list[dict]:
@@ -315,7 +340,9 @@ def check(verbose: bool = True) -> dict:
     # artifact binding drift (jar rebuilt / sources changed => re-freeze before a live run)
     current_artifact = artifact_binding()
     artifact_changes = artifact_drift(frozen.get("artifact") or {}, current_artifact)
-    report = {"ok": not (drift or missing or artifact_changes), "drift": drift,
+    gate_evidence_changes = evidence_drift(frozen)
+    report = {"ok": not (drift or missing or artifact_changes or gate_evidence_changes),
+              "drift": drift, "gate_evidence_drift": gate_evidence_changes,
               "artifact_drift": artifact_changes,
               "artifact": current_artifact["jar"], "missing": missing,
               "frozen_at_utc": frozen.get("frozen_at_utc"),

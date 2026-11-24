@@ -20,7 +20,7 @@
     "attestation": "attestation_pilot-m2-f0-1k-p3-r00.json"
   },
   "gt_sha256": "151b4aa292da1f70321576f602b1b7a86071e7048b9fd708c73034360b8ac1b9",
-  "generated_at_utc": "2026-11-24T13:01:06.362Z",
+  "generated_at_utc": "2026-11-24T13:30:28.468Z",
   "label": "synthetic-dryrun",
   "note": "SYNTHETIC fixture - not a measurement, never part of results/raw",
   "plan": {

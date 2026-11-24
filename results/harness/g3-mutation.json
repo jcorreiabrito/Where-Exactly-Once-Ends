@@ -1,275 +1,412 @@
 {
-  "schema": "wxeo.g3-mutation.v1",
+  "schema": "wxeo.g3-mutation.v2",
   "gate": "G3",
-  "generated_at_utc": "2026-11-24T12:54:36.376Z",
+  "generated_at_utc": "2026-11-24T13:43:41.828Z",
   "requirement": "100% detection with correct invariant attribution for every defect class; >=100 seeded mutations per class (docs/method.md \u00a77.6)",
   "synthetic": true,
-  "note": "SYNTHETIC mutation corpus on a synthetic fixture - harness validation, not a mechanism measurement",
+  "note": "SYNTHETIC mutation corpus on synthetic fixtures - harness validation, not a mechanism measurement",
   "mutation_base_seed": 20261124,
-  "mutations_per_class": 120,
-  "defect_classes": [
-    "drop_row",
-    "delete_event",
-    "duplicate_row",
-    "flip_leg_sign",
-    "update_row_value",
-    "insert_spurious_row"
-  ],
+  "mutations_per_class": 100,
+  "corpora": {
+    "db_sink": [
+      "drop_row",
+      "delete_event",
+      "duplicate_row",
+      "duplicate_entry",
+      "flip_leg_sign",
+      "update_row_value",
+      "insert_spurious_row",
+      "balanced_spurious_entry",
+      "currency_mix",
+      "negative_amount"
+    ],
+    "attestation": [
+      "attestation_granted",
+      "attestation_missing"
+    ],
+    "publication_metrics": [
+      "pub_record_lost",
+      "pub_content_corrupt"
+    ],
+    "kafka_ledger": [
+      "duplicate_publication_record",
+      "drop_publication_record",
+      "mutate_publication_leg",
+      "insert_balanced_publication_record"
+    ]
+  },
   "fixture": {
     "run_id": "g3-fixture",
     "mechanism": "M2",
     "seed_hex": "0f0e0d0c0b0a0908",
-    "events": 200,
+    "events": 100,
     "partitions": 3,
-    "expected_postings": 400,
-    "gt_sha256": "ccc970f5f5e992fe79076c5b904172bd121c62e98989282c9ad39d492a3d7218",
+    "expected_postings": 200,
+    "gt_sha256": "78a1a322a344ad72de4dba22d6eed5198d1a03e856375bef203be218138bf8aa",
     "source_integrity": true
   },
-  "clean_control": {
-    "violating_run": false,
-    "attribution": [],
-    "counts": {
-      "produced": 200,
-      "consumed_estimate": 200,
-      "expected_postings": 400,
-      "observed_postings": 400,
-      "dup_postings": 0,
-      "dup_entries": 0,
-      "lost_postings": 0,
-      "lost_entries": 0,
-      "imbalanced_entries": 0,
-      "mutated_postings": 0,
-      "spurious_postings": 0
+  "controls": {
+    "db_sink_clean": {
+      "violating_run": false,
+      "attribution": [],
+      "counts": {
+        "produced": 100,
+        "consumed_estimate": 100,
+        "expected_postings": 200,
+        "observed_postings": 200,
+        "dup_postings": 0,
+        "dup_entries": 0,
+        "lost_postings": 0,
+        "lost_entries": 0,
+        "imbalanced_entries": 0,
+        "structurally_malformed_entries": 0,
+        "imbalanced_sum_entries": 0,
+        "mutated_postings": 0,
+        "spurious_postings": 0,
+        "ledger_entries_total": 100
+      },
+      "passed": true
     },
-    "passed": true
+    "kafka_ledger_clean": {
+      "violating_run": false,
+      "attribution": [],
+      "counts": {
+        "produced": 100,
+        "consumed_estimate": 100,
+        "expected_postings": 200,
+        "observed_postings": 200,
+        "dup_postings": 0,
+        "dup_entries": 0,
+        "lost_postings": 0,
+        "lost_entries": 0,
+        "imbalanced_entries": 0,
+        "structurally_malformed_entries": 0,
+        "imbalanced_sum_entries": 0,
+        "mutated_postings": 0,
+        "spurious_postings": 0,
+        "ledger_entries_total": 100
+      },
+      "passed": true
+    },
+    "attestation_valid_clean": {
+      "attribution": []
+    }
   },
-  "classes": {
-    "drop_row": {
-      "mutations": 120,
-      "detected": 120,
-      "detected_pct": 100.0,
-      "correctly_attributed": 120,
-      "attributed_pct": 100.0,
-      "expected_primary_attribution": "I4",
-      "allowed_co_attribution": [
-        "I1"
-      ],
-      "attribution_histogram": {
-        "I1+I4": 120
-      },
-      "metric_ranges": {
-        "dup_postings": {
-          "min": 0,
-          "max": 0
+  "groups": {
+    "db_sink_mutations": {
+      "classes": {
+        "drop_row": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I4",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I1b+I4": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "lost_postings": {
-          "min": 1,
-          "max": 1
+        "delete_event": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I4",
+          "allowed_co_attribution": [],
+          "attribution_histogram": {
+            "I4": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "mutated_postings": {
-          "min": 0,
-          "max": 0
+        "duplicate_row": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I3",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I1b+I3": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "spurious_postings": {
-          "min": 0,
-          "max": 0
+        "duplicate_entry": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I3",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I3": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "imbalanced_entries": {
-          "min": 1,
-          "max": 1
+        "flip_leg_sign": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I2",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I1b+I2": 100
+          },
+          "failures": [],
+          "passed": true
+        },
+        "update_row_value": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I2",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I1b+I2": 51,
+            "I2": 49
+          },
+          "failures": [],
+          "passed": true
+        },
+        "insert_spurious_row": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "SPURIOUS",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I1b+SPURIOUS": 100
+          },
+          "failures": [],
+          "passed": true
+        },
+        "balanced_spurious_entry": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "SPURIOUS",
+          "allowed_co_attribution": [],
+          "attribution_histogram": {
+            "SPURIOUS": 100
+          },
+          "failures": [],
+          "passed": true
+        },
+        "currency_mix": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I1",
+          "allowed_co_attribution": [
+            "I1a",
+            "I2"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I2": 100
+          },
+          "failures": [],
+          "passed": true
+        },
+        "negative_amount": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I1",
+          "allowed_co_attribution": [
+            "I1a",
+            "I2"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I2": 100
+          },
+          "failures": [],
+          "passed": true
         }
-      },
-      "failures": [],
-      "passed": true
+      }
     },
-    "delete_event": {
-      "mutations": 120,
-      "detected": 120,
-      "detected_pct": 100.0,
-      "correctly_attributed": 120,
-      "attributed_pct": 100.0,
-      "expected_primary_attribution": "I4",
-      "allowed_co_attribution": [],
-      "attribution_histogram": {
-        "I4": 120
-      },
-      "metric_ranges": {
-        "dup_postings": {
-          "min": 0,
-          "max": 0
+    "attestation_mutations": {
+      "classes": {
+        "attestation_granted": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I2",
+          "allowed_co_attribution": [
+            "ATTESTATION"
+          ],
+          "attribution_histogram": {
+            "ATTESTATION+I2": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "lost_postings": {
-          "min": 2,
-          "max": 2
-        },
-        "mutated_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "spurious_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "imbalanced_entries": {
-          "min": 0,
-          "max": 0
+        "attestation_missing": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I2",
+          "allowed_co_attribution": [
+            "ATTESTATION"
+          ],
+          "attribution_histogram": {
+            "ATTESTATION+I2": 100
+          },
+          "failures": [],
+          "passed": true
         }
-      },
-      "failures": [],
-      "passed": true
+      }
     },
-    "duplicate_row": {
-      "mutations": 120,
-      "detected": 120,
-      "detected_pct": 100.0,
-      "correctly_attributed": 120,
-      "attributed_pct": 100.0,
-      "expected_primary_attribution": "I3",
-      "allowed_co_attribution": [
-        "I1"
-      ],
-      "attribution_histogram": {
-        "I1+I3": 120
-      },
-      "metric_ranges": {
-        "dup_postings": {
-          "min": 1,
-          "max": 1
+    "publication_mutations": {
+      "classes": {
+        "pub_record_lost": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "lost_records>=1 and divergence<0",
+          "allowed_co_attribution": [],
+          "attribution_histogram": {
+            "metric_detected": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "lost_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "mutated_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "spurious_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "imbalanced_entries": {
-          "min": 1,
-          "max": 1
+        "pub_content_corrupt": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "pub_mutated_records>=1",
+          "allowed_co_attribution": [],
+          "attribution_histogram": {
+            "metric_detected": 100
+          },
+          "failures": [],
+          "passed": true
         }
-      },
-      "failures": [],
-      "passed": true
+      }
     },
-    "flip_leg_sign": {
-      "mutations": 120,
-      "detected": 120,
-      "detected_pct": 100.0,
-      "correctly_attributed": 120,
-      "attributed_pct": 100.0,
-      "expected_primary_attribution": "I2",
-      "allowed_co_attribution": [
-        "I1"
-      ],
-      "attribution_histogram": {
-        "I1+I2": 120
-      },
-      "metric_ranges": {
-        "dup_postings": {
-          "min": 0,
-          "max": 0
+    "kafka_ledger_mutations": {
+      "classes": {
+        "duplicate_publication_record": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I3",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I3": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "lost_postings": {
-          "min": 0,
-          "max": 0
+        "drop_publication_record": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I4",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a"
+          ],
+          "attribution_histogram": {
+            "I4": 100
+          },
+          "failures": [],
+          "passed": true
         },
-        "mutated_postings": {
-          "min": 1,
-          "max": 1
+        "mutate_publication_leg": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "I2",
+          "allowed_co_attribution": [
+            "I1",
+            "I1a",
+            "I1b"
+          ],
+          "attribution_histogram": {
+            "I1+I1a+I1b+I2": 45,
+            "I2": 55
+          },
+          "failures": [],
+          "passed": true
         },
-        "spurious_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "imbalanced_entries": {
-          "min": 1,
-          "max": 1
+        "insert_balanced_publication_record": {
+          "mutations": 100,
+          "detected": 100,
+          "detected_pct": 100.0,
+          "correctly_attributed": 100,
+          "attributed_pct": 100.0,
+          "expected_primary_attribution": "SPURIOUS",
+          "allowed_co_attribution": [],
+          "attribution_histogram": {
+            "SPURIOUS": 100
+          },
+          "failures": [],
+          "passed": true
         }
       },
-      "failures": [],
-      "passed": true
-    },
-    "update_row_value": {
-      "mutations": 120,
-      "detected": 120,
-      "detected_pct": 100.0,
-      "correctly_attributed": 120,
-      "attributed_pct": 100.0,
-      "expected_primary_attribution": "I2",
-      "allowed_co_attribution": [
-        "I1"
-      ],
-      "attribution_histogram": {
-        "I1+I2": 56,
-        "I2": 64
-      },
-      "metric_ranges": {
-        "dup_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "lost_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "mutated_postings": {
-          "min": 1,
-          "max": 1
-        },
-        "spurious_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "imbalanced_entries": {
-          "min": 0,
-          "max": 1
-        }
-      },
-      "failures": [],
-      "passed": true
-    },
-    "insert_spurious_row": {
-      "mutations": 120,
-      "detected": 120,
-      "detected_pct": 100.0,
-      "correctly_attributed": 120,
-      "attributed_pct": 100.0,
-      "expected_primary_attribution": "SPURIOUS",
-      "allowed_co_attribution": [
-        "I1"
-      ],
-      "attribution_histogram": {
-        "I1+SPURIOUS": 120
-      },
-      "metric_ranges": {
-        "dup_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "lost_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "mutated_postings": {
-          "min": 0,
-          "max": 0
-        },
-        "spurious_postings": {
-          "min": 1,
-          "max": 1
-        },
-        "imbalanced_entries": {
-          "min": 1,
-          "max": 1
-        }
-      },
-      "failures": [],
-      "passed": true
+      "note": "the publication stream is the ledger for M1-kafka (method \u00a72.7); mutations exercise the _expand_publication_to_postings path"
     }
   },
   "input_integrity_controls": {
@@ -294,19 +431,19 @@
     "passed": true
   },
   "overview": {
-    "mutations": 720,
-    "detected": 720,
-    "attributed": 720,
-    "failures": 0,
+    "classes": 18,
+    "mutations": 1800,
+    "detected": 1800,
+    "correctly_attributed": 1800,
     "detected_pct": 100.0,
     "attributed_pct": 100.0,
-    "clean_control_passed": true,
-    "input_controls_passed": true,
-    "all_classes_passed": true
+    "all_classes_passed": true,
+    "clean_controls_passed": true,
+    "input_controls_passed": true
   },
   "oracle": {
-    "oracle_script_sha256": "ed1a0bf19fa580ca40e3847d515a2dd332e68caeae71c168c007bd07152a2108",
-    "derive_sha256": "a1fcd080622eafbed94fbdca35e0a751b2720b0a13dabf0ddbed2decc4b9e041"
+    "oracle_script_sha256": "e9490ba0e30ce3157387c3a69c753f62e4557a33d86ff185b91e62d389b4d437",
+    "derive_sha256": "8146c76e4851e4d5c1d58f52514286322b897744c6ed7ffbfe9a1e41de5c805c"
   },
   "passed": true
 }

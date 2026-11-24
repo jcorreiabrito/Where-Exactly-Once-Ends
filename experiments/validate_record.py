@@ -187,6 +187,10 @@ def validate_record(rec: dict, *, path: str = "") -> list[str]:
     else:
         if not isinstance(oracle.get("source_integrity"), bool):
             err("oracle.source_integrity must be a boolean")
+    exit_status = rec.get("exit_status")
+    if not isinstance(exit_status, dict) or not EXIT_KEYS <= set(exit_status):
+        err(f"exit_status must contain {sorted(EXIT_KEYS)} (R9)")
+
     if not isinstance(rec.get("fault_receipts"), list):
         err("fault_receipts must be an array")
     validity = rec.get("validity")
@@ -219,6 +223,24 @@ def validate_record(rec: dict, *, path: str = "") -> list[str]:
             err("source-integrity failure must exclude the run (prereg §8.2 item 2)")
         if violations.get("violating_run") and validity.get("valid") is False and not excluded:
             err("invalid run must be excluded or rerun (prereg §8.2)")
+    # ---- R9: A2 §3.4 consistency equations on the violation vector --------------------
+    if isinstance(violations, dict) and all(k in violations for k in VIOLATION_KEYS):
+        v = violations
+        if v.get("v3") is True and v.get("violating_run") is not True:
+            err("R9: v3=true requires violating_run=true")
+        counts = rec.get("counts") or {}
+        malformed = counts.get("structurally_malformed_entries")
+        if malformed is not None and int(malformed) > 0 and v.get("v1") is not True:
+            err("R9: structurally_malformed_entries>0 requires v1=true")
+        expected_violating = any(v.get(k) is True for k in ("v1", "v2", "v3", "v4", "v5"))
+        if v.get("violating_run") is not expected_violating:
+            err("R9: violating_run must equal v1|v2|v3|v4|v5")
+        sum_bad = counts.get("imbalanced_sum_entries")
+        if malformed is not None and sum_bad is not None:
+            expected_v1 = bool(int(malformed) > 0 or int(sum_bad) > 0)
+            if v.get("v1") is not expected_v1:
+                err("R9: v1 must equal (structurally_malformed_entries>0 or "
+                    "imbalanced_sum_entries>0)")
     for violation in path_violations(rec):
         err(f"path hygiene: {violation}")
     return errors

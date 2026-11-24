@@ -134,8 +134,10 @@ def build_cells() -> list[dict]:
     for mech in DES.MECHANISMS:
         for klass in DES.crash_classes(mech):
             ordering = "early" if klass == "K4" else "strict"
+            # R3: single ownership table decides the injector mode
+            mode = ("failpoint" if DES.injector_ownership(klass) == "app" else "external")
             add("A", "a", mech, klass.lower(), "1k", 1_000, 3, 30,
-                fault_level="L1", ordering=ordering, injector_mode="failpoint",
+                fault_level="L1", ordering=ordering, injector_mode=mode,
                 block="A-crash")
         add("A", "a", mech, "ctrl", "1k", 1_000, 3, 30,
             fault_level="none", ordering="strict", injector_mode="none", block="A-control")
@@ -147,7 +149,12 @@ def build_cells() -> list[dict]:
                 continue
             ordering = "early" if fault == "F4b" else "strict"
             level = "L2" if fault != "F0" else "none"
-            mode = "live" if fault != "F0" else "none"
+            if fault == "F0":
+                mode = "none"
+            elif DES.injector_ownership(fault) == "app":
+                mode = "failpoint"     # F4b deterministic ordering probe (app-owned)
+            else:
+                mode = "live"
             # core: 100k / P=6 / N=30
             add("B", "b", mech, fault.lower(), "100k", 100_000, 6, 30,
                 fault_level=level, ordering=ordering, injector_mode=mode, block="B-core")
@@ -207,9 +214,13 @@ def build_validation_runs() -> list[dict]:
             "consumer_instances": consumer_instances,
             "ordering_variant": ordering,
             "load_mode": "fixed-rate",
-            "injector_mode": "sham" if kind == "sham" else (
-                "selftest" if kind == "selftest" else (
-                    "none" if kind in ("c1", "quiesce") else "fixture")),
+            # g1 gate-control validation runs are app-owned failpoints (M0 K3/K5)
+            # g1k3 = app-owned failpoint; g1k5 = S4-owned protocol replay (ownership table)
+            "injector_mode": ("sham" if kind == "sham" else
+                              "selftest" if kind == "selftest" else
+                              ("failpoint" if fault in ("K3",) else "external")
+                              if kind.startswith("g1") else
+                              "none" if kind in ("c1", "quiesce") else "fixture"),
             "rep": index,
             "notes": notes,
         })

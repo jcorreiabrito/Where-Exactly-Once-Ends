@@ -1,0 +1,139 @@
+{
+  "schema": "wxeo.oracle.v1",
+  "run_id": "pilot-valid-selftest-r11",
+  "mechanism": "M4",
+  "sink_kind": "db",
+  "generated_at_utc": "2026-11-24T13:30:37.323Z",
+  "counts": {
+    "produced": 1000,
+    "consumed_estimate": 1000,
+    "expected_postings": 2000,
+    "observed_postings": 2000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "structurally_malformed_entries": 0,
+    "imbalanced_sum_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0,
+    "ledger_entries_total": 1000
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "v5": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 1000,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0,
+    "pub_mutated_records": 0,
+    "pub_unknown_records": 0,
+    "notes": null
+  },
+  "attestation": {
+    "present": true,
+    "can_update": false,
+    "can_delete": false,
+    "posting_triggers": 1,
+    "failed": false,
+    "note": "synthetic attestation: append-only privileges/trigger as specified",
+    "source": "fixture:attestation",
+    "app_role": null,
+    "posting_rows": null
+  },
+  "attribution": [],
+  "source_integrity_detail": {
+    "gt_file": ".\\results\\dryrun\\fixtures\\pilot-valid-selftest-r11\\gt_pilot-valid-selftest-r11.ndjson",
+    "gt_sha256_file": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+    "gt_sha256_regenerated": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+    "gt_lines_regenerated": 2000,
+    "gt_digest_match": true,
+    "source_dump": ".\\results\\dryrun\\fixtures\\pilot-valid-selftest-r11\\source_dump_pilot-valid-selftest-r11.ndjson",
+    "produced_manifest": ".\\results\\dryrun\\fixtures\\pilot-valid-selftest-r11\\produced_pilot-valid-selftest-r11.ndjson",
+    "source_records": 1000,
+    "source_offsets_contiguous": true,
+    "source_partitions_observed": 3,
+    "source_partitions_expected": 3,
+    "source_partitions_exact": true,
+    "source_event_multiset_matches_manifest": true,
+    "source_event_multiset_matches_derivation": true,
+    "source_dump_digest": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+    "source_dump_digest_match": true,
+    "partition_derivation_mismatches": 0,
+    "value_sha256_checked": true,
+    "value_sha256_mismatches": 0,
+    "malformed_source_lines": 0,
+    "malformed_manifest_lines": 0,
+    "errors": [],
+    "source_integrity": true
+  },
+  "diagnostics": {
+    "dup_key_samples": [],
+    "lost_key_samples": [],
+    "mutated_key_samples": [],
+    "imbalanced_eid_samples": [],
+    "structural_eid_samples": [],
+    "spurious_key_samples": [],
+    "lost_entry_samples": [],
+    "pub_dup_eid_samples": [],
+    "pub_lost_eid_samples": [],
+    "pub_mutated_samples": [],
+    "pub_divergence_eid_samples": [],
+    "observed_malformed_rows": 0,
+    "dup_entry_events": 0,
+    "complete_entries": 1000,
+    "publication_shard_stats": {
+      "records": 1000,
+      "parse_errors": 0,
+      "error_samples": []
+    }
+  },
+  "verdict_rule": "violating_run = v1|v2|v3|v4|v5; v1=imbalanced_entries>0 (I1a structural or I1b signed-sum); v2=(mutated_postings>0 or append-only attestation fails); v3=dup_postings>0; v4=lost_postings>0; v5=spurious_postings>0 (fabricated/fabricated-balanced postings). The I1a/I1b split and v5 are recorded for the author-approved P2 amendment A2; analysis reads violations.violating_run verbatim and never recomputes it. Recorded interpretation per docs/P2-RULINGS.md and results/DEVIATIONS.md.",
+  "warnings": [],
+  "inputs": {
+    "gt": {
+      "path": "results/dryrun/fixtures/pilot-valid-selftest-r11/gt_pilot-valid-selftest-r11.ndjson",
+      "sha256": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+      "bytes": 310686
+    },
+    "source_dump": {
+      "path": "results/dryrun/fixtures/pilot-valid-selftest-r11/source_dump_pilot-valid-selftest-r11.ndjson",
+      "sha256": "c83cae5aed177b53be95f7943bfa66f821e500da29beb7888638ea0979927cbd",
+      "bytes": 156670
+    },
+    "produced_manifest": {
+      "path": "results/dryrun/fixtures/pilot-valid-selftest-r11/produced_pilot-valid-selftest-r11.ndjson",
+      "sha256": "e4b01fde2f5778f0aa477f815d62484f5d8f27949a9bdc4c94e5d91f5968ef5e",
+      "bytes": 132670
+    },
+    "sink_dump": {
+      "path": "results/dryrun/fixtures/pilot-valid-selftest-r11/sink_dump_pilot-valid-selftest-r11.csv",
+      "sha256": "2371e4c81c1ef310b33e96804634d28aee970a23b4284854e599419ffaec78da",
+      "bytes": 129796
+    },
+    "publication_dump": {
+      "path": "results/dryrun/fixtures/pilot-valid-selftest-r11/publication_pilot-valid-selftest-r11.ndjson",
+      "sha256": "2dff2ebb557c56970cd27c641e97e59737334937bd39049c90e7ddfe7ecfa88e",
+      "bytes": 473246
+    },
+    "attestation": {
+      "path": "results/dryrun/fixtures/pilot-valid-selftest-r11/attestation_pilot-valid-selftest-r11.json",
+      "sha256": "d9123ada39c4b540fb2059703af6055ea859ffa1afa2696bd5d436a323d9c5ab",
+      "bytes": 189
+    }
+  },
+  "oracle": {
+    "gt_sha256": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+    "expected_sha256": "79f7c4bd0609ea920182e013041d78d26b5e2d495ede4bde91ac27526841107e",
+    "source_integrity": true,
+    "oracle_script_sha256": "644cd1a3630de5ec4991fa9afbd62c75788bc9d5bbe04431947ca66c4568306c",
+    "result_sha256": "70f7f66beb589c7c40ad516953a978c9d8ebb62793b15d9548cfc255da333f70"
+  }
+}

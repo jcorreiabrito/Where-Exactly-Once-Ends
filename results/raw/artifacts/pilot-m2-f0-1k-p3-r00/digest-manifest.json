@@ -1,0 +1,57 @@
+{
+  "run_id": "pilot-m2-f0-1k-p3-r00",
+  "generated_at_utc": "2026-11-24T18:29:56.663Z",
+  "sha256": {
+    "gt_manifest": "ac95275334166607de0c069d96acce779a7f8370ec600e694ab4691445042798",
+    "gt": "151b4aa292da1f70321576f602b1b7a86071e7048b9fd708c73034360b8ac1b9",
+    "source_dump": "8ba61eadf4d3e72a283904867659a3d5205bfee9e4271d09ae4cf972b6613ae4",
+    "sink_dump": "58a6d87cda837906981b9509aa8693a759d274632616cbac60d9e1f186d28669",
+    "publication_dump": "61cd624d79c204adf48d1a032132cea168e546222ea06bfe49832ea7ead88030",
+    "attestation": "ea796ffe5c5f860deb1990ce38de9fd6ef07e0f6fc08a5b998baae6ca856ca8a",
+    "oracle": "4a38eeff7363e90a047575fe170cc4e4ffefd626a20e17ab2e747a57a2e99281",
+    "hist_percentiles": "da8639908a1f1975dfd03f728a15cabca9e00c42cc3da7492d5be4debbb96d78",
+    "config": "f78b0829554a2ae81b8d2cf7c48b031cdf5d17f95ceb2795d36fc8d631082ded",
+    "app": "052f157bc601ad3edd51a1a72afbca4c6622a55c246258d02eec6714fd895e50",
+    "loader_result": null
+  },
+  "bytes": {
+    "gt_manifest": 749,
+    "gt": 310646,
+    "source_dump": 156670,
+    "sink_dump": 129756,
+    "publication_dump": 870962,
+    "attestation": 558,
+    "oracle": 5803,
+    "hist_percentiles": 1060,
+    "config": 3993,
+    "app": 7038,
+    "loader_result": null
+  },
+  "paths": {
+    "gt_manifest": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/gt_manifest",
+    "gt": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/gt",
+    "source_dump": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/source_dump",
+    "sink_dump": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/sink_dump",
+    "publication_dump": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/publication_dump",
+    "attestation": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/attestation",
+    "oracle": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/oracle",
+    "hist_percentiles": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/hist_percentiles",
+    "config": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/config",
+    "app": "results/raw/artifacts/pilot-m2-f0-1k-p3-r00/app",
+    "loader_result": null
+  },
+  "retained": {
+    "gt_manifest": true,
+    "gt": true,
+    "source_dump": true,
+    "sink_dump": true,
+    "publication_dump": true,
+    "attestation": true,
+    "oracle": true,
+    "hist_percentiles": true,
+    "config": true,
+    "app": true,
+    "loader_result": false
+  },
+  "policy": "full dumps retained for violating/control/sample runs (prereg \u00a75); for other runs only digests are kept \u2014 bulk data stays in local non-synced scratch and is deterministically re-generatable (D10/D11)"
+}

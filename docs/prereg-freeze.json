@@ -2,8 +2,8 @@
   "schema": "wxeo.prereg-freeze.v1",
   "document": "docs/prereg-freeze.json",
   "purpose": "Analysis-code freeze required by docs/prereg.md \u00a710 before the first Stage A run: oracle, metric computation, statistics, figure generators, run-record validator, plus the seeds and their generation procedure.",
-  "frozen_at_utc": "2026-11-24T13:09:53Z",
-  "git_sha": "1873ab12b6df1d9856dc104792d4228cdabaf8e1",
+  "frozen_at_utc": "2026-11-24T19:14:26Z",
+  "git_sha": "5f6f1813176f21933e3095a168e8de3489746b67",
   "host": {
     "platform": "Windows-11-10.0.26300-SP0",
     "python": "3.12.4",
@@ -33,88 +33,132 @@
       "bytes": 13753
     },
     "experiments/oracle/oracle.py": {
-      "sha256": "afa40cdde1d8fdc477d6cc01ddf92cf37c686ab327f34d8cd21f8a7ebf491d76",
-      "bytes": 61666
+      "sha256": "72a158f711eec2cc3fc9eba5f34fe87bcba77cabff0065744e35f9eb34f4ac84",
+      "bytes": 71376
     },
     "experiments/oracle/mutation_test.py": {
-      "sha256": "18ba9d82e0bc07cc42ed79335bc4b1c924468e839fdf0a2f4753b2d55feb3832",
-      "bytes": 15334
+      "sha256": "5edbf8ae2f20a7dc8b889c8045395eb9688a5f907c170937695404a6cf6b9e32",
+      "bytes": 24258
     },
     "experiments/oracle/g5-vectors.json": {
       "sha256": "aef7eba6ed786335d49fd4ff214ee906899bd47ddc690b62293a473585f9355c",
       "bytes": 7078
+    },
+    "experiments/pathsafe.py": {
+      "sha256": "6a5590cbc3ac7f1809eece1168ef20e485b555c8f5e7920ca0cc147e5c67b762",
+      "bytes": 5102
+    },
+    "experiments/receipts.py": {
+      "sha256": "18548c17411ec700dbd737015ac480892585725341cbdf902f7e06e147a5a430",
+      "bytes": 12606
+    },
+    "experiments/kafka_admin.py": {
+      "sha256": "c15435d451c734b611a045158c73f25fe2b00dac4f9070aca6546f9932fdfb62",
+      "bytes": 13882
+    },
+    "experiments/gate_negative_controls.py": {
+      "sha256": "fffc113e5ebcc882f763664a743da67a1cdcda2b63498b5564a271b73eee5b84",
+      "bytes": 8823
+    },
+    "experiments/live_smoke_evidence.py": {
+      "sha256": "9c7e40523394b56430a9453b2ca41624176b4fe8e4433804c8a33a96657726a6",
+      "bytes": 10885
     },
     "experiments/fixtures/__init__.py": {
       "sha256": "8b32dd58fd96a7025f12ebd7e7956651bf388d3921f73b2e07d8e2441e7f90a0",
       "bytes": 85
     },
     "experiments/fixtures/make_fixtures.py": {
-      "sha256": "08cfe2a2f609d3c28076b7a8a6aaa73e01e3c83eb214c9512fad87d63bcaf6f5",
-      "bytes": 14924
+      "sha256": "438a586af7cda4d7978da27c6c07b06af34706fe34edf69bfd19629ae695687b",
+      "bytes": 22609
     },
     "experiments/fixtures/build_dryrun_fixture.py": {
       "sha256": "2ad16e30258e0904a27c4bb4eadcce94694103c68691d816fb4e7155ab7330b7",
       "bytes": 3614
     },
     "experiments/fixtures/make_synthetic_analysis_fixture.py": {
-      "sha256": "8ac630f0e56abd354dfcee8f58c45b9d4965a1e9dcb62b06462f74b229d80fbb",
-      "bytes": 14278
+      "sha256": "1f74d9d339c74cd4aaa6ba7b7bc04a1b80e5531d297a94c7874b75fbf080a9d6",
+      "bytes": 15476
     },
     "experiments/matrix_design.py": {
-      "sha256": "3a10884b90fd0af01dcd340150f08c325afbfa0ab950e02c1ed49e3b9a61f017",
-      "bytes": 5580
+      "sha256": "d7220add7b980ada764bc627d1767267fb702bea93816d269c94c00862347805",
+      "bytes": 10756
     },
     "experiments/matrix.py": {
-      "sha256": "a6a5d770c33fc18d83a91f73c05af15ca0c403d94624f0eda15659fbbc03788f",
-      "bytes": 32028
+      "sha256": "a7a6c9b3676c828aa18fadcb237031446860c7c20b9624a9e5f690048abf97ed",
+      "bytes": 33994
     },
     "experiments/matrix.yaml": {
-      "sha256": "2964957d8eea44fe7cee78a6dbf4e1862d512950e916890607964dfa561736e0",
-      "bytes": 181021
+      "sha256": "ba985717e773b7e46cba7b829dc03b6c91eabc59be02b126d7bf2175ece8be89",
+      "bytes": 180510
     },
     "experiments/run_order.csv": {
-      "sha256": "894d7b8ee20c35368d178f001f509fd55253fde0baf8b70af811c62d4aa25a96",
-      "bytes": 1194627
+      "sha256": "6a0159c6b7999f5c093532ea4536f3913c09d01682f6d25a3a754326f036ffda",
+      "bytes": 1140334
     },
     "experiments/matrix.sha256": {
-      "sha256": "b7180d7434c91d552502d61fe17fb6ab6aa5c8e2532e765d8547f1bce297b20e",
+      "sha256": "83d3b0d4dbcd0b3913cc00e5dc242482a5bee03104d1d0f6bd857f1396be8a3a",
       "bytes": 158
     },
     "experiments/injectors.py": {
-      "sha256": "f1d74aba650378726390d09f88648ce2df07d35785f9cef4ac601f7b23842618",
-      "bytes": 34798
+      "sha256": "9d921abcd354a18f3b40b2de5c591054a25f90bdfc138022a305f63edee28fe9",
+      "bytes": 52456
     },
     "experiments/runner.py": {
-      "sha256": "3c6dd6903e1fa6e4380108abadc07f8f08f7a82189a00d812ab7430bba7fab31",
-      "bytes": 68090
+      "sha256": "ed690369aace93212e30cb4f325c3c07dc2fb687250a7182a6b2d8c4c3f3b729",
+      "bytes": 128475
     },
     "experiments/validate_record.py": {
-      "sha256": "a4e34cab58c9badfcb29a2da810f0f616a6a0214e46dc2a567b7743dc1bb2085",
-      "bytes": 12384
+      "sha256": "9decfdd9a58f2ee18afee90825780037e8c2c374d80b98a198d7212b8c789218",
+      "bytes": 14508
     },
     "experiments/deviations.py": {
-      "sha256": "78af49bf17869ddf96e6fb1343954d9cae58f47a10bd1fd6a22cd7dc4d9f4442",
-      "bytes": 22006
+      "sha256": "8e4d0c2f4d8f1c5d39d880a0778470669847f13da295c19d67a28f5d399e6a78",
+      "bytes": 51885
     },
     "experiments/freeze.py": {
-      "sha256": "757e86a6d1eb1cc9a34fd4b4622e0ec16b6293b8742dee04debb8b5ed5b89f14",
-      "bytes": 11920
+      "sha256": "8f628be4e44057fe5ece41b7dcffca72bf340091b2b4ff503f1b6dc879bbdfae",
+      "bytes": 17046
     },
     "experiments/run-matrix.ps1": {
-      "sha256": "e358f13c7ea9946e51f4aa6863f98d660ea060d327861fd96aee99a4f7d72771",
-      "bytes": 2533
+      "sha256": "ce9948d83d9df1af002bf788f3fb8797ee4bf5b8fe69e98ab4c00690c345ee5c",
+      "bytes": 2597
     },
     "experiments/tests/test_oracle.py": {
-      "sha256": "e5fd87e6a43cc025da70f5f6305599c698e3e72d9b090e34d5d4e53a05c111ff",
-      "bytes": 9922
+      "sha256": "826862f3c69c91c258223b2df371d23b6f0d77ddec7ac03ce5b6cf5172b52529",
+      "bytes": 10005
+    },
+    "experiments/tests/test_redteam_regressions.py": {
+      "sha256": "82c6fa0a72a1aef525d2393839925ad19e0ec5aa85d081b6d47f022353a7b612",
+      "bytes": 19489
+    },
+    "experiments/tests/test_runner_lifecycle.py": {
+      "sha256": "679ebb290c5477f28f261e74b4b18faa8525607cb48d495086c86219654b69a0",
+      "bytes": 5034
+    },
+    "experiments/tests/test_freeze_artifact.py": {
+      "sha256": "26c2095b1e9e78591817576914fbd1a9e935ceb1b71f2964d62c5a484081ee42",
+      "bytes": 2883
+    },
+    "experiments/tests/test_redteam_fixes_r1_r4.py": {
+      "sha256": "b7eabc0be33b226b1a69f8d4171cd56bf636855bc41bbfde3412ee897bd748f1",
+      "bytes": 8339
+    },
+    "experiments/tests/test_redteam_fixes_r5_r9.py": {
+      "sha256": "d4ddacecab410cd52ca31c50e2bc4b4cbc6282dda9049f3532aecd11c1bb78e7",
+      "bytes": 7049
+    },
+    "experiments/tests/test_kafka_admin_mapping.py": {
+      "sha256": "87a63ad12e6383eae5685de0bb80868a3ef7842d88870c46556655fb5b39f7d3",
+      "bytes": 1496
     },
     "tools/analyze.py": {
-      "sha256": "c6ea48ecd82a27a3b43751b1db80e96b211d8d9b49c2732871bc0a7974e412e5",
-      "bytes": 84721
+      "sha256": "fa08b0bc20fe91bff8d2581bf4b348de7e58edbfeeb1298f803acadb7bbebd39",
+      "bytes": 96722
     },
     "tools/make-figures.py": {
-      "sha256": "26172701623995fdfbeeada7c66894a0e6e772fc1ef31979dfd6fe2cde0ba20d",
-      "bytes": 12689
+      "sha256": "40e1509a4fdfe25820fcaa43411314d88f58c0a5f96859b510c5ed243e523b32",
+      "bytes": 13151
     }
   },
   "provenance_hashes": {
@@ -126,8 +170,12 @@
     "docs/P1-APPROVAL.md": "4b3be684b2942b0f6a2550188fa58990f8502cca36ab4471954052ead1a7594d"
   },
   "pre_freeze_harness_evidence": {
+    "files_sha256": {
+      "results/harness/g3-mutation.json": "fc4af4601ac7bd61b2d48ae965f3be1f05a07f67c0d160c0f1e8b8535997c448",
+      "results/harness/gate-negative-controls.json": "6945399e7624af46b3424a1f4892a04cd70855ac66d7755916cf5440191910ef"
+    },
     "g3_mutation": {
-      "sha256": "66942fd5be55a7d644d3156ed9fe6b385ecd1052855b8d680b8708ffde27a23a",
+      "sha256": "fc4af4601ac7bd61b2d48ae965f3be1f05a07f67c0d160c0f1e8b8535997c448",
       "passed": true,
       "requirement": "100% detection with correct attribution (docs/method.md \u00a77.6 G3)"
     },
@@ -137,7 +185,17 @@
       "evidence": "S3 Java GroundTruthDigest reproduced all four committed digests byte-for-byte; normative rows docs/derive-vectors.csv are asserted by experiments/tests/test_oracle.py (14 tests green)"
     }
   },
-  "aggregate_pipeline_sha256": "b8066abfcd143fdb4c4008386c804599ce29ea3a831b8f151d8952feca1ac297",
+  "aggregate_pipeline_sha256": "fd271416aebb6f9cb88da680694e4fd43e692b94db8c1e9f78c3dfd8d84e788a",
+  "artifact": {
+    "jar": {
+      "path": "artifact/target/wxeo-service.jar",
+      "sha256": "6e8223751706d64e7b77752b42df5694d4231ba8bd3522034806bae25e8e50d3",
+      "bytes": 34467687
+    },
+    "source_tree_sha256": "60ef2c711adb3acb17f5ef5b3c75efd386d43b51688c235e531ae6d641f7d447",
+    "source_files_hashed": 66,
+    "note": "jar rebuilt by S3 after service fixes is bound here and verified by the runner preflight; a changed jar/source tree shows up as freeze drift and must be re-frozen before a live run"
+  },
   "analysis_outputs_contract": [
     "results/analysis/macros.tex",
     "results/analysis/tests.json",

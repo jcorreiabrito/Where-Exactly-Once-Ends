@@ -30,6 +30,8 @@ if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
 from experiments import freeze as FZ  # noqa: E402
+from experiments import injectors as INJ  # noqa: E402
+from experiments import receipts as RCPT  # noqa: E402
 from experiments import pathsafe  # noqa: E402
 from experiments import validate_record as VR  # noqa: E402
 
@@ -43,8 +45,48 @@ def sha256_file(path: str) -> str:
     return h.hexdigest()
 
 
+APP_OWNED_FAULTS = {"K1", "K3", "K4", "K7", "F4b"}
+S4_OWNED_FAULTS = {"K2", "K5", "F1", "F2", "F3", "F4a", "F5", "F6"}
+APP_FAILPOINT_BY_CLASS = {"K1": "after_fetch", "K3": "after_effect_commit",
+                          "K4": "before_effect_commit", "K7": "before_relay_mark",
+                          "F4b": "before_effect_commit"},
+APP_ACTION_BY_CLASS = {"K1": "crash", "K3": "crash", "K4": "crash", "K7": "crash",
+                       "F4b": "crash"}
+
+
+def receipt_attestation(record_path: str) -> dict:
+    """Validate the single-owner receipt protocol for an executed smoke run (R2 evidence)."""
+    record = json.load(open(record_path, encoding="utf-8"))
+    fault = record.get("fault")
+    level = record.get("fault_level")
+    receipts = record.get("fault_receipts") or []
+    if fault in ("F0", "none", "ctrl", None):
+        return {"run_id": record.get("run_id"), "fault": fault, "owner": "none",
+                "attested": True, "reason": None}
+    if fault in APP_OWNED_FAULTS:
+        failpoint = {"K1": "after_fetch", "K3": "after_effect_commit",
+                     "K4": "before_effect_commit", "K7": "before_relay_mark",
+                     "F4b": "before_effect_commit"}.get(fault, "after_effect_commit")
+        action = "crash"
+        out = RCPT.validate_run_receipts(
+            receipts, run_id=record.get("run_id") or "", injector_mode="failpoint",
+            fault=fault, fault_level=level or "L1",
+            failpoint=failpoint, action=action)
+        owner = "app"
+    else:
+        out = RCPT.validate_run_receipts(
+            receipts, run_id=record.get("run_id") or "", injector_mode="external",
+            fault=fault, fault_level=level or "L1")
+        owner = "s4"
+    return {"run_id": record.get("run_id"), "fault": fault, "owner": owner,
+            "attested": bool(out.get("attested")), "reason": out.get("reason"),
+            "fired": out.get("fired"), "restored": out.get("restored"),
+            "app_fired": out.get("app_fired"), "s4_fired": out.get("s4_fired")}
+
+
 def collect_evidence(*, record_path: str, oracle_path: str, run_id: str,
-                     freeze_path: str | None = None) -> dict:
+                     freeze_path: str | None = None,
+                     attested_run_paths: list[str] | None = None) -> dict:
     """Pure evidence collector (unit-testable): returns the evidence dict with ``passed``."""
     freeze_path = freeze_path or os.path.join(_REPO, "docs", "prereg-freeze.json")
     record = json.load(open(record_path, encoding="utf-8"))
@@ -75,10 +117,13 @@ def collect_evidence(*, record_path: str, oracle_path: str, run_id: str,
         "artifact_matches_freeze": not artifact_changes,
         "quiescence_censored": bool(quiescence.get("censored")),
     }
+    receipt_checks = [receipt_attestation(p) for p in (attested_run_paths or [])]
+    checks["receipts_attested"] = all(r["attested"] for r in receipt_checks)
     passed = bool(checks["record_schema_valid"] and checks["not_dry_run"]
                   and checks["source_integrity"] and checks["gt_equals_expected"]
                   and checks["oracle_result_present"] and checks["oracle_has_counts"]
-                  and checks["artifact_matches_freeze"] and checks["valid"])
+                  and checks["artifact_matches_freeze"] and checks["valid"]
+                  and checks["receipts_attested"])
     evidence = pathsafe.scrub({
         "schema": "wxeo.live-smoke-evidence.v1",
         "kind": "live-end-to-end-smoke",
@@ -115,6 +160,7 @@ def collect_evidence(*, record_path: str, oracle_path: str, run_id: str,
                      "source_tree_sha256": artifact["source_tree_sha256"],
                      "matches_freeze": not artifact_changes,
                      "freeze_aggregate": freeze.get("aggregate_pipeline_sha256")},
+        "receipt_attestation": receipt_checks,
         "warnings": ([w for w in ((record.get("validity") or {}).get("notes") or [])]
                      if validity.get("excluded") else []),
     })
@@ -127,6 +173,9 @@ def main(argv=None) -> int:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--results-dir", default=os.path.join(repo, "results"))
     parser.add_argument("--out", default=None)
+    parser.add_argument("--attested-runs", default="",
+                        help="comma-separated extra smoke run_ids whose receipt ownership "
+                             "attestation must be recorded (e.g. K3 app-owned, K2 S4-owned)")
     args = parser.parse_args(argv)
     record_path = os.path.join(args.results_dir, "raw", "run-records",
                                f"run_{args.run_id}.json")
@@ -136,8 +185,15 @@ def main(argv=None) -> int:
         print(f"NO RECORD: {pathsafe.repo_rel(record_path)} — run the live smoke first",
               file=sys.stderr)
         return 2
+    extra_paths = []
+    for rid in [r.strip() for r in (args.attested_runs or "").split(",") if r.strip()]:
+        p = os.path.join(args.results_dir, "raw", "run-records", f"run_{rid}.json")
+        if not os.path.exists(p):
+            print(f"MISSING attested run record: {rid}", file=sys.stderr)
+            return 2
+        extra_paths.append(p)
     evidence = collect_evidence(record_path=record_path, oracle_path=oracle_path,
-                                run_id=args.run_id)
+                               run_id=args.run_id, attested_run_paths=extra_paths)
     out = args.out or os.path.join(args.results_dir, "harness", "live-smoke-evidence.json")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     pathsafe.assert_clean(evidence, "live-smoke-evidence")

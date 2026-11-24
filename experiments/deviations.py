@@ -298,6 +298,46 @@ INTERPRETATIONS = [
         "paper": "Threats (environment) + artifact appendix (fresh-state protocol).",
     },
     {
+        "id": "M6",
+        "title": "Level-2 fault fire timing is progress-based, not wall-clock",
+        "decision": "For S4-owned external faults (F1-F6) the Level-2 fire trigger is a seeded "
+                    "fraction (25-75 %, derived from injection_seed) of the INTENDED event "
+                    "count: the runner polls durable committed progress and fires when that "
+                    "marker is reached, then stamps the receipt with the actual observed window "
+                    "(load_start, planned upper bound, fire time, progress at fire) and the "
+                    "runner post-checks the fire against the REAL load window. Wall-clock "
+                    "scheduling (the prereg's 'random recorded times') is replaced because the "
+                    "pilot runs at rate=max where the load duration is unknown, and because a "
+                    "fixed 60 s delay would fire after a real 1k-event load has ended.",
+        "reason": "R4 (S5 re-review): with rates.json absent in the pilot, time-based triggers "
+                  "fired outside the load window and were rejected by the F-I3 window check.",
+        "effect": "Operational only: the fault still fires at a pre-registered random position "
+                  "in the stream (seeded, recorded, reproducible); no cell/N/statistic changes. "
+                  "Disclosed to the author at the P2 gate. (M7 = topic lifecycle/reset cadence "
+                  "is already registered as M5.)",
+        "paper": "Threats (fault injection timing) + artifact appendix.",
+    },
+    {
+        "id": "S5-11",
+        "title": "Matrix injector-mode correction (S5 R3) and re-issued hashes",
+        "decision": "Stage-A `injector_mode` is corrected to match the injector semantics: "
+                    "K1/K3/K4/K7 are app-owned in-process failpoints (`failpoint`), K2 "
+                    "(unknown-outcome Toxiproxy intervention) and K5 (protocol replay) are "
+                    "S4-owned (`external`), F1-F6 are `live`, controls are `none`; the 6 G1 "
+                    "gate-control validation runs are app-owned failpoints. matrix.yaml/"
+                    "run_order.csv/matrix.sha256 were regenerated: sha256 "
+                    "matrix.yaml=bce2568a59406499c100ec2fd90c136f00071be0b4fa187fd638a24006e69894, "
+                    "run_order.csv=520b119053e3fc3e5b0878dcdd8ff3f2f998287b4773101371c4006e62f06af7. "
+                    "Counts are unchanged (7,506 planned / 7,488 executable / +26 validation; "
+                    "§4.3 constraints verified).",
+        "reason": "The S5 re-review found Stage-A K2/K5 rows classified as `failpoint`, making "
+                  "the receipt validator treat S4-owned interventions as app-owned and fail "
+                  "their attestation (R3).",
+        "effect": "Matrix metadata only; no cell, N, factor or statistic changes. S2 re-pins A2 "
+                  "and the freeze is re-issued with these hashes.",
+        "paper": "Artifact appendix (injector ownership table).",
+    },
+    {
         "id": "S5-9",
         "title": "PostgreSQL schema identifier sanitisation",
         "decision": "The run schema identifier is `wxeo_run_<run_id>` with every '-' replaced by "
