@@ -9,8 +9,12 @@ the approved M7 calibration block and adds one small validation block.
 
 The frozen rule (AC-2 / R12) is: fixed rate for a run type = 50 % of the minimum measured mechanism
 capacity at that stage's load/partitions (capacity from committed events in the warm-up-excluded
-streaming window). Stage B/C use eight fixed-rate blocks: (1k,P3) for A/pilot parity, (10k,P3),
-(10k,P6), (10k,P12), (100k,P3), (100k,P6), (100k,P12), (1M,P6), plus saturation at (100k,P6). The
+streaming window). Stage B/C use six measurable fixed-rate blocks: (10k,P3), (10k,P6), (10k,P12), (100k,P3),
+(100k,P6), (100k,P12), (1M,P6), plus saturation at (100k,P6). The 1k/P3 block is **not calibrated**:
+the frozen warm-up rule max(2000, 10 %) swallows all 1,000 events, and Stage A/pilot 1k runs execute
+at 
+ate=max by design (approved M7 proposal item iii / M6), so no 1k capacity sample exists or is
+needed. The
 approved M7 block measures capacity directly only at (10k,P6) and (100k,P6) (9 mechanisms × 2 loads ×
 N=3 = 54 runs). Direct measurement of all eight blocks would need 243 runs; the author rejected that
 cost and approved a recorded mapping rule with validation.
@@ -37,8 +41,9 @@ For a mechanism m and load L with partitions P:
 ## A5.3 Validation spot-check block (`M7spot`, 63 runs)
 
 To test assumptions 2-3, the author approved 63 additional calibration runs:
-9 mechanisms × 7 uncalibrated blocks × N=1 = 63 runs, one per (mechanism, block):
-(1k,P3), (10k,P3), (10k,P12), (100k,P3), (100k,P12), (1M,P6), and one saturation check at (100k,P6).
+9 mechanisms × 6 uncalibrated blocks × N=1 = **54 runs** (revision r2; the originally drafted list
+included (1k,P3), which is not calibratable — see A5.1): (10k,P3), (10k,P12), (100k,P3), (100k,P12),
+(1M,P6), and one saturation spot at (100k,P6) per mechanism.
 Each spot-check run measures capacity under the same frozen protocol; acceptance test is
 fail-closed:
 
@@ -48,9 +53,9 @@ fail-closed:
 * the saturation spot check passes if the 2.5×max rate sustains the run without load-generator failure
   (G7 generator-lag bound).
 
-Accounting: the confirmatory counts stay 7,506 planned / 7,488 executable + 26 validation. M7 core
-(54) and M7spot (63) are reported separately as calibration blocks; run_order grows from 7,568 to
-7,631 rows. They are recorded as `stage: "m7"`, `stage_label: "M7"`, blocks `M7-cal` and `M7spot`,
+Accounting: the confirmatory counts stay 7,506 planned / 7,488 executable + 26 validation. Calibration
+blocks are M7-cal (54), M7spot (54) and M7sat (9, Amendment A6) = 117 runs; run_order grows to
+**7,631 rows** (7,514 + 117). They are recorded as `stage: "m7"`, `stage_label: "M7"`, blocks `M7-cal` and `M7spot`,
 and are excluded from every confirmatory table by the analyzer's matrix pin (A5.4).
 
 ## A5.4 Analysis consequences

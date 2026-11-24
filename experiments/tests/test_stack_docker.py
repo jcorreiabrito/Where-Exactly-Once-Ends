@@ -74,18 +74,16 @@ def test_kafka_listeners_route_every_client_connection_through_a_proxy():
         assert "127.0.0.1:909%d:2909%d" % (node_id, node_id) in doc["services"]["kafka-%d" % node_id]["ports"]
 
 
-def test_toxiproxy_proxies_and_contract_compat_bootstrap_alias():
+def test_toxiproxy_proxies_are_per_broker_plus_db_only():
+    # A6/B7: the deprecated `kafka-bootstrap` alias (19094) was removed once the runner's Kafka
+    # endpoints became group-member proxies; every Kafka endpoint must now be inside a toxic group.
     proxies = _toxiproxy()
-    assert set(proxies) == {"kafka-1", "kafka-2", "kafka-3", "kafka-bootstrap", "db"}
+    assert set(proxies) == {"kafka-1", "kafka-2", "kafka-3", "db"}
     for node_id in (1, 2, 3):
         name = "kafka-%d" % node_id
         assert proxies[name]["listen"] == "0.0.0.0:1909%d" % node_id
         assert proxies[name]["upstream"] == "kafka-%d:2909%d" % (node_id, node_id)
         assert proxies[name]["enabled"] is True
-    # Frozen runner consumer-bootstrap endpoint 127.0.0.1:19094 must stay usable; it is a bootstrap
-    # alias only (never in a toxic group, since traffic follows the advertised kafka-N proxies).
-    assert proxies["kafka-bootstrap"]["listen"] == "0.0.0.0:19094"
-    assert proxies["kafka-bootstrap"]["upstream"] == "kafka-1:29091"
     assert proxies["db"]["listen"] == "0.0.0.0:15433"
     assert proxies["db"]["upstream"] == "postgres:5432"
     assert all(p["enabled"] is True for p in proxies.values())
@@ -97,8 +95,8 @@ def test_toxiproxy_service_has_a_healthcheck_and_loopback_ports():
     assert "healthcheck" in toxi
     ports = set(toxi["ports"])
     assert {"127.0.0.1:8474:8474", "127.0.0.1:19091:19091", "127.0.0.1:19092:19092",
-            "127.0.0.1:19093:19093", "127.0.0.1:19094:19094",
-            "127.0.0.1:15433:15433"} <= ports
+            "127.0.0.1:19093:19093", "127.0.0.1:15433:15433"} <= ports
+    assert "127.0.0.1:19094:19094" not in ports  # deprecated alias removed (A6/B7)
 
 
 def test_proxy_groups_cover_the_logical_fault_vocabulary():
@@ -139,8 +137,9 @@ def test_stack_proxy_groups_and_host_ports_match_the_deployment():
     assert stack.proxy_host_port("kafka-1") == 19091
     assert stack.proxy_host_port("kafka-2") == 19092
     assert stack.proxy_host_port("kafka-3") == 19093
-    assert stack.proxy_host_port("kafka-bootstrap") == 19094
     assert stack.proxy_host_port("db") == 15433
+    with pytest.raises(KeyError):
+        stack.proxy_host_port("kafka-bootstrap")  # deprecated alias removed (A6/B7)
     with pytest.raises(KeyError):
         stack.proxy_host_port("does-not-exist")
 

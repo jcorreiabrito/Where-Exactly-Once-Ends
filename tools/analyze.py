@@ -1878,8 +1878,20 @@ def main(argv=None) -> int:
     with open(os.path.join(out_dir, "tests.json"), "w", encoding="utf-8", newline="") as fh:
         json.dump(tests, fh, indent=2, sort_keys=False)
         fh.write("\n")
-    with open(os.path.join(out_dir, "hypotheses.json"), "w", encoding="utf-8", newline="") as fh:
-        json.dump({"dataset": dataset, "hypotheses": hypotheses}, fh, indent=2)
+    # B4: A2 verdicts are authoritative paper inputs; legacy objects are superseded
+    a2_out = _run_a2(a2_records, out_dir, _matrix_pin_ok(args.freeze), dataset)
+    a2_hyp = {"dataset": dataset, "source": "A2", "hypotheses": {
+        k: {"verdict": v} for k, v in (a2_out.get("verdicts") or {}).items()}}
+    with open(os.path.join(out_dir, "hypotheses.json"), "w", encoding="utf-8",
+              newline="") as fh:
+        json.dump(a2_hyp, fh, indent=2)
+        fh.write("\n")
+    with open(os.path.join(out_dir, "a2-legacy-noncitable.json"), "w", encoding="utf-8",
+              newline="") as fh:
+        json.dump({"non_citable": ["tests.json.families", "tests.json.hypotheses",
+                                   "decision-table.csv (legacy)", "macros.tex (legacy)"],
+                   "authoritative": ["a2-analysis.json", "a2-hypotheses.json",
+                                     "hypotheses.json"]}, fh, indent=2)
         fh.write("\n")
     write_csv(os.path.join(out_dir, "correctness-by-cell.csv"), by_cell)
     write_csv(os.path.join(out_dir, "validation-by-cell.csv"), validation_by_cell)
@@ -1893,7 +1905,7 @@ def main(argv=None) -> int:
 
     _g7_rates_check(out_dir)
     pin_ok = _matrix_pin_ok(args.freeze)
-    a2 = _run_a2(a2_records, out_dir, pin_ok, dataset)
+    a2 = a2_out
     macros = write_macros(os.path.join(out_dir, "macros.tex"), hypotheses, recs, dataset)
     tables = write_tables(out_dir, gates=gates, cbmf=cbmf, counts=counts, perf=perf,
                           decision=decision, hypotheses=hypotheses, recs=recs,

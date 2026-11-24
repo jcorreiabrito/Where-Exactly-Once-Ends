@@ -39,9 +39,9 @@ approval and the P2 hard stop. It is not part of the paper.
 - **S5 Stage-A conditions being closed:** R10 A2 analyzer implemented and tested (AC-3b pooled
   stratified sign test, H5-A + non-vacuity, canonical H2/H4, P3, v1a/v1b+P11, matrix pin, record
   re-validation); R12 `experiments/rates.py` implemented (refuses to write until the M7 block exists);
-  M7 54-run calibration block added as a separate accounting block (confirmatory counts untouched:
+  M7 calibration blocks (M7-cal 54 + M7spot 54 + M7sat 9 = 117 runs; Amendments A5/A6) added as a separate accounting block (confirmatory counts untouched:
   7,506/7,488 + 26); injector fixes: F1/F3/F5 now marker-driven, F4b threshold scaled to effect-
-  transaction geometry. Harness tests: **86/86 green**.
+  transaction geometry. Harness tests: **151/151 green**.
 - **Paper:** S6 completed the 33 pp → **24 pp** compression (≤25 pp target met) with 0 undefined
   references/citations and no fabricated data: §7 carries a `Data status` paragraph and 19 `PENDING`
   markers; result insertion on the Linux host is estimated at +1.5–2.5 pp, with reserve cuts recorded

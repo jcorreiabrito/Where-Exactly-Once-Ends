@@ -19,6 +19,13 @@ S5-review accounting (recorded in results/DEVIATIONS.md and the P2 amendment):
   pilot 216 planned / 198 executable; Stage A 1,530; Stage B 3,960; Stage C 1,800;
   validation 26 (20 + 6 G1 gate-control runs).  Totals: 7,506 planned / 7,488 executable
   + 26 validation.
+
+Calibration blocks (outside the confirmatory counts, docs/prereg-amendment-A5.md r2 + A6):
+  M7-cal 54 (9 mechanisms x {10k,100k} x P6 x N=3); M7spot 54 (9 mechanisms x 6 spot blocks
+  x N=1: five uncalibrated fixed-rate blocks + one saturation spot per mechanism); M7sat 9
+  (Amendment A6: one 100k/P6 saturation-validation run per mechanism) = 117 runs.
+  NOTE: the 1k/P3 block is deliberately NOT calibrated (A5.1: the frozen warm-up rule
+  max(2000, 10 %) swallows all 1,000 events and Stage A/pilot run at max by design).
 """
 
 from __future__ import annotations
@@ -215,6 +222,20 @@ def validate_design() -> list[str]:
     na_cells = sum(len(PILOT_NA.get(m, set())) for m in MECHANISMS)
     if na_cells != 6:
         problems.append(f"pilot n/a cells {na_cells} != 6")
+    # A5/A6 calibration arithmetic (fail loudly if a design constant drifts)
+    if M7_CAL_RUNS != 54:
+        problems.append(f"M7-cal runs {M7_CAL_RUNS} != 54")
+    if (1_000, 3) in M7_SPOT_BLOCKS:
+        problems.append("1k/P3 must not be a spot-check block (A5.1: not calibratable)")
+    if M7_SPOT_RUNS != 54:
+        problems.append(f"M7spot runs {M7_SPOT_RUNS} != 54")
+    if M7_SAT_RUNS != 9:
+        problems.append(f"M7sat runs {M7_SAT_RUNS} != 9")
+    if M7_CALIBRATION_RUNS != 117:
+        problems.append(f"calibration runs {M7_CALIBRATION_RUNS} != 117")
+    if CONFIRMATORY_EXECUTABLE != 7_488 or ORDER_ROWS != 7_631:
+        problems.append(f"confirmatory/order accounting {CONFIRMATORY_EXECUTABLE}/"
+                        f"{ORDER_ROWS} != 7488/7631")
     for mechanism, classes in STAGE_A_NA.items():
         reachable = set(crash_classes(mechanism))
         if reachable & set(classes):
@@ -234,10 +255,24 @@ STAGE_C_RUNS = 1_800
 VALIDATION_RUNS = 26
 #: M7 calibration block (author-approved at P2): 9 mechanisms x {10k,100k} x P6 x N=3.
 M7_CAL_RUNS = 9 * 2 * 3
-#: A5 spot-check block: 6 (L,P) blocks + one saturation check per mechanism, N=1.
-M7_SPOT_BLOCKS = ((1_000, 3), (10_000, 3), (10_000, 12), (100_000, 3),
+#: A5.3 (revision r2) uncalibrated fixed-rate spot blocks: the 1k/P3 block was drafted
+#: originally but is NOT calibratable (A5.1) and was dropped by revision r2.  The M7spot
+#: block pairs these five (L,P) blocks with one saturation spot at (100k,P6) per mechanism:
+#: 9 mechanisms x (5 + 1) spot blocks x N=1 = 54 runs.
+M7_SPOT_BLOCKS = ((10_000, 3), (10_000, 12), (100_000, 3),
                   (100_000, 12), (1_000_000, 6))
-M7_SPOT_RUNS = 9 * (len(M7_SPOT_BLOCKS) + 1)   # 6 fixed-rate + 1 saturation = 63
+M7_SPOT_RUNS = 9 * (len(M7_SPOT_BLOCKS) + 1)   # 5 fixed-rate + 1 saturation = 54
+#: A6.1 post-rates saturation-validation block: 9 mechanisms x 1 run (100k/P6, saturation, N=1),
+#: offered exactly rates.json.saturation_rate["100000|p6|sat"].rate (the candidate 2.5x max).
+M7_SAT_RUNS = 9
+#: A5/A6 calibration total: M7-cal 54 + M7spot 54 + M7sat 9 = 117 runs.
+M7_CALIBRATION_RUNS = M7_CAL_RUNS + M7_SPOT_RUNS + M7_SAT_RUNS
+#: Confirmatory accounting is unchanged by A5/A6 (planned/executable + validation runs).
+CONFIRMATORY_PLANNED = PILOT_PLANNED + STAGE_A_RUNS + STAGE_B_RUNS + STAGE_C_RUNS
+CONFIRMATORY_EXECUTABLE = PILOT_EXECUTABLE + STAGE_A_RUNS + STAGE_B_RUNS + STAGE_C_RUNS
+ORDER_SLOTS = CONFIRMATORY_EXECUTABLE + VALIDATION_RUNS
+#: Total run_order rows (7,514 confirmatory/validation slots + 117 calibration runs = 7,631).
+ORDER_ROWS = ORDER_SLOTS + M7_CALIBRATION_RUNS
 
 
 if validate_design():

@@ -1,0 +1,33 @@
+{
+  "schema": "wxeo.endpoints.v1",
+  "comment": "Single shared source of truth for host-side endpoints used by the frozen runner, the S4 injectors and the fault-efficacy proof. The Kafka fault path is a group-member Toxiproxy proxy (127.0.0.1:19091); the former bootstrap-only alias on 19094 was removed after the runner switched every Kafka endpoint to a group member (A6/B7 follow-up). All ports bind loopback only.",
+  "repo_root_relative": {
+    "proxy_groups": "deploy/docker/proxy-groups.json",
+    "toxiproxy_config": "deploy/docker/toxiproxy.json",
+    "compose_file": "deploy/docker/docker-compose.yml"
+  },
+  "kafka": {
+    "direct_bootstrap": [
+      "127.0.0.1:9091",
+      "127.0.0.1:9092",
+      "127.0.0.1:9093"
+    ],
+    "group_member_proxies": [
+      "127.0.0.1:19091",
+      "127.0.0.1:19092",
+      "127.0.0.1:19093"
+    ],
+    "fault_bootstrap": "127.0.0.1:19091",
+    "fault_bootstrap_rule": "fault_bootstrap MUST be one of group_member_proxies (a member of every Kafka proxy group) so the bootstrap connection itself is inside the injected toxic group; after metadata all broker connections follow the advertised 127.0.0.1:19091-19093 proxies anyway. Used by F3, F4a and K2 (M1-kafka) Kafka paths."
+  },
+  "postgres": {
+    "direct_host_port": 5433,
+    "proxy_host_port": 15433,
+    "database": "wxeo",
+    "jdbc_direct": "jdbc:postgresql://127.0.0.1:5433/wxeo",
+    "jdbc_proxy": "jdbc:postgresql://127.0.0.1:15433/wxeo"
+  },
+  "toxiproxy": {
+    "api": "http://127.0.0.1:8474"
+  }
+}

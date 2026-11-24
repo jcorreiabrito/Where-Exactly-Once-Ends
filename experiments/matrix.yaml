@@ -1,5 +1,5 @@
 schema: wxeo.matrix.v1
-generated_at_utc: '2026-11-24T20:12:16Z'
+generated_at_utc: '2026-11-24T20:45:21Z'
 generator: experiments/matrix.py
 normative_sources:
   matrices: docs/prereg.md §2
@@ -7,7 +7,9 @@ normative_sources:
   reachability: docs/method.md §5.3
   rulings: docs/P2-RULINGS.md R1–R4
   interface: docs/CONTRACTS.md §2, §4
-prereg_version: 1.0-draft + P1 approval + P2 rulings R1–R4
+  rate_calibration: docs/prereg-amendment-A5.md (revision r2)
+  saturation_validation: docs/prereg-amendment-A6.md
+prereg_version: 1.0-draft + P1 approval + P2 rulings R1–R4 + amendments A5(r2)/A6
 seeds:
   master_seed: 90650742b511adfb662272117444cf43
   order_seed: 08e2a8d70090d93770cdcb15833b08fa
@@ -82,6 +84,39 @@ factors:
     sensitivity: 10
     stage_c_core: 30
     stage_c_blocks: 10
+    m7_cal: 3
+    m7_spot: 1
+    m7_sat: 1
+calibration_blocks:
+  M7-cal:
+    runs: 54
+    loads:
+    - 10k
+    - 100k
+    partitions: 6
+    reps: 3
+    purpose: R12 capacity measurement (fixed/saturation rates)
+  M7spot:
+    runs: 54
+    blocks:
+    - 10000|p3
+    - 10000|p12
+    - 100000|p3
+    - 100000|p12
+    - 1000000|p6
+    - 100000|p6|sat
+    reps: 1
+    run_id_prefix: m7sopt
+    purpose: A5.3 mapping-rule spot checks (+/-25 %) incl. saturation spot
+  M7sat:
+    runs: 9
+    block: 100000|p6|sat
+    load_mode: saturation
+    reps: 1
+    run_id_prefix: m7sat
+    purpose: A6.2 post-rates saturation validation at the derived 2.5x-max rate (offered rate recorded per run)
+  total_runs: 117
+  excluded_from_confirmatory: true
 reachability:
   stage_a_crash_classes:
     M0:
@@ -249,8 +284,13 @@ accounting:
     runs: 117
     blocks:
       M7-cal: 54
-      M7spot: 63
-    note: author-approved P2 calibration block; separate from the 7,506/7,488 confirmatory counts; used only to derive fixed/saturation rates (R12)
+      M7sat: 9
+      M7spot: 54
+    amendments:
+    - A5 (revision r2)
+    - A6
+    note: author-approved A5/A6 calibration blocks (M7-cal 54 + M7spot 54 + M7sat 9 = 117); separate from the 7,506/7,488 confirmatory counts; used only to derive fixed/saturation rates (R12) and to exercise
+      the derived saturation rate (A6)
 cells:
 - cell_id: P.M0.f0.1k.p3
   stage: pilot
@@ -9334,28 +9374,6 @@ cells:
   na_reason: null
   block: M7-cal
   calibration: true
-- cell_id: M7.M0.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M0
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M0.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -9489,28 +9507,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M1-kafka.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M1-kafka
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M1-kafka.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -9644,28 +9640,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M1x.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M1x
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M1x.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -9799,28 +9773,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M2.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M2
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M2.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -9954,28 +9906,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M3.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M3
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M3.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -10109,28 +10039,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M4.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M4
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M4.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -10264,28 +10172,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M2+M3.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M2+M3
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M2+M3.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -10419,28 +10305,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M4+M3.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M4+M3
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M4+M3.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -10574,28 +10438,6 @@ cells:
   spot_check: true
   run_id_prefix: m7sopt
   sat_token: false
-- cell_id: M7.M1x+M3.cal.1k.p3
-  stage: m7
-  stage_label: M7
-  mechanism: M1x+M3
-  condition: cal
-  fault: none
-  fault_level: none
-  load_token: 1k
-  load_events: 1000
-  partitions: 3
-  consumer_instances: 2
-  ordering_variant: strict
-  load_mode: fixed-rate
-  injector_mode: none
-  reps: 1
-  n_planned_slots: 1
-  executed: true
-  na_reason: null
-  block: M7spot
-  calibration: true
-  spot_check: true
-  run_id_prefix: m7sopt
 - cell_id: M7.M1x+M3.cal.10k.p3
   stage: m7
   stage_label: M7
@@ -10728,6 +10570,213 @@ cells:
   calibration: true
   spot_check: true
   run_id_prefix: m7sopt
+  sat_token: false
+- cell_id: M7.M0.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M0
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M1-kafka.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M1-kafka
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M1x.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M1x
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M2.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M2
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M3.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M3
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M4.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M4
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M2+M3.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M2+M3
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M4+M3.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M4+M3
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
+  sat_token: false
+- cell_id: M7.M1x+M3.cal.100k.p6.sat.m7sat
+  stage: m7
+  stage_label: M7
+  mechanism: M1x+M3
+  condition: cal
+  fault: none
+  fault_level: none
+  load_token: 100k
+  load_events: 100000
+  partitions: 6
+  consumer_instances: 2
+  ordering_variant: strict
+  load_mode: saturation
+  injector_mode: none
+  reps: 1
+  n_planned_slots: 1
+  executed: true
+  na_reason: null
+  block: M7sat
+  calibration: true
+  saturation_validation: true
+  run_id_prefix: m7sat
   sat_token: false
 validation:
 - kind: sham

@@ -117,7 +117,7 @@ re-confirms the re-freeze. See `docs/redteam-rereview.md` §10.
    model-and-argument only; no K6 data will be claimed.
 4. **Budget plan** for `H` per §3 — including the measured feasibility warning: the full programme
    does not fit; choose the reduced design or extend budget/host.
-5. **M7 calibration block** (54 runs: 9 mechanisms × {10k,100k} × P6 × N=3) — approve so Stage B/C
+5. **M7 calibration blocks** (M7-cal 54 + M7spot 54 + M7sat 9 = 117 runs; Amendments A5/A6) — approve so Stage B/C
    can be projected from measured 100k times and so `rates.py` (R12) can derive the fixed rates.
 6. **S5 re-review verdict** is a precondition: current status PASS-WITH-CONDITIONS for the pilot gate
    and BLOCK for Stage A/B/C until the five §10.5 conditions are closed.

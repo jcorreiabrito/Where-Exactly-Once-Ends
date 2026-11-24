@@ -1,10 +1,24 @@
 {
   "schema": "wxeo.proxy-groups.v1",
-  "comment": "Logical fault groups consumed by experiments/injectors.py (S4) via experiments/stack.py proxy_groups(). Every Kafka group maps to the same three per-broker proxies: Kafka clients receive advertised addresses 127.0.0.1:19091..19093 after bootstrap, so ALL client<->broker traffic traverses exactly these proxies regardless of which group (kafka / kafka-produce / kafka-consume) the injector targets. role-specific group names are kept as the frozen injector vocabulary; they are aliases over the same physical proxy set because a Kafka client multiplexes produce and fetch on broker connections. kafka-bootstrap (19094) is a bootstrap-only compatibility alias and is deliberately NOT in any toxic group.",
+  "comment": "Logical fault groups consumed by experiments/injectors.py (S4) via experiments/stack.py proxy_groups(). Every Kafka group maps to the same three per-broker proxies: Kafka clients receive advertised addresses 127.0.0.1:19091..19093 after bootstrap, so ALL client<->broker traffic traverses exactly these proxies regardless of which group (kafka / kafka-produce / kafka-consume) the injector targets. Role-specific group names are the frozen injector vocabulary; they are aliases over the same physical proxy set because a Kafka client multiplexes produce and fetch on broker connections. The old bootstrap-only alias on 19094 was removed (A6/B7): every Kafka endpoint now uses a group member.",
   "groups": {
-    "kafka": ["kafka-1", "kafka-2", "kafka-3"],
-    "kafka-produce": ["kafka-1", "kafka-2", "kafka-3"],
-    "kafka-consume": ["kafka-1", "kafka-2", "kafka-3"],
-    "db": ["db"]
+    "kafka": [
+      "kafka-1",
+      "kafka-2",
+      "kafka-3"
+    ],
+    "kafka-produce": [
+      "kafka-1",
+      "kafka-2",
+      "kafka-3"
+    ],
+    "kafka-consume": [
+      "kafka-1",
+      "kafka-2",
+      "kafka-3"
+    ],
+    "db": [
+      "db"
+    ]
   }
 }

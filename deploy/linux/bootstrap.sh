@@ -11,6 +11,11 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO"
 echo "== repo: $REPO"
+# S5 §12.2 requires a bootstrap host log with versions, image digests and test summaries.
+mkdir -p results/phase-logs
+BOOT_LOG="results/phase-logs/bootstrap-$(date -u +%Y%m%dT%H%M%SZ).log"
+exec > >(tee -a "$BOOT_LOG") 2>&1
+echo "bootstrap log: $BOOT_LOG"
 
 need_sudo=""
 if [[ "$(id -u)" -ne 0 ]]; then need_sudo="sudo"; fi
@@ -76,10 +81,16 @@ JAR="artifact/target/wxeo-service.jar"
 test -f "$JAR"
 sha256sum "$JAR"
 
-echo "== start the container campaign stack"
+echo "== pull + start the container campaign stack"
 export WXEO_STACK_MODE=docker
 export EOS_RUNTIME_ROOT="${EOS_RUNTIME_ROOT:-$HOME/eos-runtime}"
 mkdir -p "$EOS_RUNTIME_ROOT/run"
+mkdir -p results/harness
+docker compose -f deploy/docker/docker-compose.yml -p wxeo-campaign pull
+# B5: bind the repo digests of the three pinned images (fail closed if a digest is missing).
+python deploy/linux/record_container_images.py --out results/harness/container-images.json
+test -s results/harness/container-images.json
+docker compose -f deploy/docker/docker-compose.yml -p wxeo-campaign images --digests
 python -m experiments.stack up
 python -m experiments.stack status
 
@@ -133,8 +144,10 @@ python -m pytest experiments/tests -q
 echo "== runner preflight"
 python experiments/runner.py --check-env
 
-echo "== PROVISIONAL freeze only (no --require-evidence); the single FINAL freeze is T2,"
-echo "   after T0 smoke + T1 M7/M7spot + rates.py --write (validated)."
+echo "== PROVISIONAL freeze only (no --require-evidence); the single FINAL freeze is T2:"
+echo "   T0 smoke -> T0b fault-efficacy -> T1 calibrate (rates validated) -> T3 gate-controls"
+echo "   -> T2 freeze.py --write --force --require-evidence (last step before T4 pilot)."
+echo "   B5 image digests recorded at results/harness/container-images.json (bind in the final freeze)."
 python experiments/freeze.py --write --force
 python experiments/freeze.py --check
 echo "bootstrap complete."

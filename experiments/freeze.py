@@ -65,12 +65,14 @@ FROZEN_FILES = [
     "experiments/freeze.py",
     "experiments/run-matrix.ps1",
     "deploy/docker/docker-compose.yml",
+    "deploy/docker/endpoints.json",
     "deploy/docker/toxiproxy.json",
     "deploy/docker/proxy-groups.json",
     "deploy/docker/postgres-init.sql",
     "deploy/linux/bootstrap.sh",
     "deploy/linux/run-campaign.sh",
     "deploy/linux/fault-efficacy.py",
+    "deploy/linux/record_container_images.py",
     "deploy/linux/requirements.txt",
     "experiments/tests/test_oracle.py",
     "experiments/tests/test_redteam_regressions.py",
@@ -100,6 +102,7 @@ PROVENANCE_FILES = [
     "docs/LINUX-CAMPAIGN-RUNBOOK.md",
     "docs/prereg-amendment-A4.md",
     "docs/prereg-amendment-A5.md",
+    "docs/prereg-amendment-A6.md",
 ]
 
 #: Pre-freeze harness evidence whose hash is recorded (not part of the pipeline).  Entries are
@@ -112,6 +115,7 @@ EVIDENCE_FILES = [
     "results/harness/live-smoke-evidence.json",
     "results/harness/linux-fault-efficacy.json",
     "results/harness/linux-gate-controls.json",
+    "results/harness/container-images.json",
     "experiments/rates.json",
 ]
 
@@ -407,6 +411,7 @@ def main(argv=None) -> int:
         required = [rel for rel in ("results/harness/live-smoke-evidence.json",
                                     "results/harness/linux-fault-efficacy.json",
                                     "results/harness/linux-gate-controls.json",
+                                    "results/harness/container-images.json",
                                     "experiments/rates.json")]
         absent = [rel for rel in required if rel not in bound]
         if absent:

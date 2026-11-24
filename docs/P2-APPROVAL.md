@@ -14,7 +14,8 @@ BLOCKED), and the measured projection in `docs/P2-GATE.md` §3.
 | 4 | **M7 calibration block** — 54 runs: 9 mechanisms × {10k, 100k} × P6 × N=3, then `rates.py` derives the fixed rates | **APPROVED** (separate measurement block, not folded into the confirmatory counts) |
 | 5 | **Budget / scope** — measured infeasibility of the full 7,506-run programme within H = 8–24 h on the Windows host | **Move the campaign to a Linux/container host and execute the FULL frozen design there** |
 | 6 | **Amendment A5** — rate-calibration coverage: frozen mapping rule `A5.partition-scale.v1` (partition scaling, load anchors, 1M from 100k/P6) + 63-run M7spot validation block, fail-closed ±25 %; saturation = 2.5 × max measured capacity | **APPROVED** (option "mapping rule + 63 spot-check runs") |
-| 7 | S5 Stage-A conditions (R10 analyzer, R12 `rates.py` + M7, evidence/provenance close-out, complete gate evidence K5 / post-freeze K3 / F1-F3-F5 live validation, re-freeze re-confirmation) | Accepted as **preconditions**; they are being closed before any Stage A run |
+| 7 | **Amendment A6** — post-rates saturation validation: 9 calibration runs (one per mechanism at 100k/P6) offered exactly the derived 2.5×max saturation rate; `rates.json` is `validated=true` only if all sustain it (fail-closed); phase order T1a → T1b → T3 → T2 | **APPROVED** (option "9 post-rates saturation validation runs") |
+| 8 | S5 Stage-A conditions (R10 analyzer, R12 `rates.py` + M7, evidence/provenance close-out, complete gate evidence K5 / post-freeze K3 / F1-F3-F5 live validation, re-freeze re-confirmation) | Accepted as **preconditions**; closed in the tree, host execution + final freeze re-confirmation pending |
 
 Stage A/B/C are therefore **approved in principle** and remain blocked in practice until the S5
 conditions are closed on the campaign host and the final re-freeze is re-confirmed. No confirmatory
@@ -38,6 +39,7 @@ are disclosed in `results/DEVIATIONS.md` (M14–M16).
 - [x] K6 limitation acknowledged — author, 2026-11-24
 - [x] M7 calibration block approved — author, 2026-11-24
 - [x] Amendment A5 (rates coverage: mapping rule + 63 spot checks) approved — author, 2026-11-24
+- [x] Amendment A6 (9 post-rates saturation validation runs) approved — author, 2026-11-24
 - [x] Budget/scope decided: Linux/container host, full design — author, 2026-11-24
 - [ ] Final re-freeze aggregate recorded on the campaign host: `docs/prereg-freeze.json` → `<pending host run>`
 - [ ] S5 re-confirmation of the final re-freeze → `<pending>`

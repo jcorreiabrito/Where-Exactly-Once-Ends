@@ -9,8 +9,12 @@ Two modes
     Kafka/PostgreSQL/Toxiproxy is touched.  Records are schema-valid but labelled ``DRY-RUN`` in
     ``validity.notes`` and written outside ``results/raw/``.
 
-``--stage pilot|A|B|C`` (live)
+``--stage pilot|A|B|C|M7cal|M7sat`` (live)
     Real native stack, exactly as frozen.  Post-S5 fix-pass changes:
+
+    * **Calibration stages** (A5/A6): ``M7cal`` executes the M7 core + M7spot runs at max (T1a);
+      ``M7sat`` executes the 9 A6 saturation-validation runs at exactly the candidate
+      ``rates.json`` 2.5x-max rate (T1b; fail-closed if the candidate table/key is missing).
 
     * **Fresh state with assertions** (F-RN2): topics/groups/schema are created fresh and their
       absence is *asserted* before the run; readiness requires ``assigned`` status and zero lag
@@ -212,6 +216,119 @@ def sha256_file(path: str) -> str:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+# --------------------------------------------------------------------------------------------
+# endpoint contract (S5 B7 / A6): deploy/docker/endpoints.json is the single shared source of
+# truth for the runner, the S4 injectors and the Linux fault-efficacy proof.  The Kafka fault
+# paths (F3, F4a and K2 for M1-kafka) must use the contract's group-member Toxiproxy bootstrap
+# (``kafka.fault_bootstrap``); the old bootstrap-only alias on 19094 is removed.  Any missing or
+# malformed contract fails closed before a fault run can touch the stack.
+# --------------------------------------------------------------------------------------------
+ENDPOINTS_CONTRACT_PATH = os.path.join(_REPO, "deploy", "docker", "endpoints.json")
+ENDPOINTS_SCHEMA = "wxeo.endpoints.v1"
+KAFKA_FAULT_BOOTSTRAP_KEY = "kafka.fault_bootstrap"
+#: faults whose Kafka client paths must traverse the injected Toxiproxy group
+KAFKA_FAULT_PATH_FAULTS = frozenset({"F3", "F4a"})
+
+
+def endpoints_contract_path() -> str:
+    """Path of the endpoint contract (``WXEO_ENDPOINTS_FILE`` override for tests/ops)."""
+    return os.environ.get("WXEO_ENDPOINTS_FILE") or ENDPOINTS_CONTRACT_PATH
+
+
+def load_endpoints_contract(path: str | None = None) -> dict:
+    """Load ``deploy/docker/endpoints.json`` (S5 B7); fail closed on missing/malformed input.
+
+    Returns ``{path, sha256, fault_bootstrap, doc}`` where ``path`` is repo-relative (path
+    hygiene: run records must never carry absolute host paths).
+    """
+    ep_path = path or endpoints_contract_path()
+    if not os.path.exists(ep_path):
+        raise RuntimeError(
+            f"endpoint contract missing: {ep_path} (S5 B7); the Kafka fault paths cannot be "
+            f"routed through a group-member Toxiproxy bootstrap -- refusing to run")
+    try:
+        with open(ep_path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"endpoint contract unreadable: {ep_path}: {exc}") from exc
+    if not isinstance(doc, dict) or doc.get("schema") != ENDPOINTS_SCHEMA:
+        raise RuntimeError(
+            f"endpoint contract must be a {ENDPOINTS_SCHEMA} object: {ep_path}")
+    kafka = doc.get("kafka")
+    if not isinstance(kafka, dict):
+        raise RuntimeError(f"endpoint contract has no 'kafka' object: {ep_path}")
+    fault_bootstrap = kafka.get("fault_bootstrap")
+    if not isinstance(fault_bootstrap, str) or not fault_bootstrap.strip():
+        raise RuntimeError(
+            f"endpoint contract has no {KAFKA_FAULT_BOOTSTRAP_KEY!r} string: {ep_path} "
+            f"(S5 B7 fail-closed)")
+    fault_bootstrap = fault_bootstrap.strip()
+    members = kafka.get("group_member_proxies")
+    if not isinstance(members, list) or fault_bootstrap not in members:
+        raise RuntimeError(
+            f"endpoint contract {KAFKA_FAULT_BOOTSTRAP_KEY}={fault_bootstrap!r} is not a member "
+            f"of kafka.group_member_proxies={members!r} (B7: the bootstrap connection itself "
+            f"must be inside the injected proxy group)")
+    return {"path": pathsafe.repo_rel(ep_path), "sha256": sha256_file(ep_path),
+            "fault_bootstrap": fault_bootstrap, "doc": doc}
+
+
+def run_block(run: dict) -> str:
+    """Calibration block token of a run-order row (A5/A6 stage split, S5-B7 follow-up).
+
+    ``matrix.yaml`` cells carry the ``block`` token; ``run_order.csv`` is the frozen runner plan
+    and does not add a column for it, so the block is recovered from the frozen run-id prefix
+    (``m7sat-`` = A6 T1b, ``m7sopt-`` = A5 T1a spot checks, ``m7-`` = A5 T1a core block).
+    """
+    block = str(run.get("block") or "")
+    if block:
+        return block
+    run_id = str(run.get("run_id") or "")
+    if run_id.startswith("m7sat-"):
+        return "M7sat"
+    if run_id.startswith("m7sopt-"):
+        return "M7spot"
+    if run_id.startswith("m7-"):
+        return "M7-cal"
+    return ""
+
+
+def is_kafka_fault_path(run: dict) -> bool:
+    """True for the runs whose Kafka client path must go through the fault Toxiproxy group."""
+    fault = str(run.get("fault") or "")
+    if fault in KAFKA_FAULT_PATH_FAULTS:
+        return True
+    return fault == "K2" and str(run.get("mechanism") or "") == "M1-kafka"
+
+
+def endpoints_for_run(run: dict, fault_bootstrap: str | None) -> dict:
+    """Service endpoints for a run: direct by default, proxied only for the fault link.
+
+    B7/A6: the Kafka fault paths (F3 producer, F4a consumer, K2 for M1-kafka producer) use the
+    contract's ``kafka.fault_bootstrap`` (a group-member Toxiproxy proxy); non-fault/native paths
+    keep the pre-registered direct endpoints (bootstrap 127.0.0.1:9091, DB 5433).
+    """
+    ep = {"bootstrap": "127.0.0.1:9091",
+          "producer": None, "consumer": None,
+          "db_url": "jdbc:postgresql://127.0.0.1:5433/wxeo"}
+    if is_kafka_fault_path(run):
+        if not fault_bootstrap:
+            raise RuntimeError(
+                "Kafka fault path requires the endpoint-contract group-member fault bootstrap "
+                "(S5 B7); refusing to route a fault through a direct/bootstrap alias")
+        fault = str(run.get("fault") or "")
+        if fault == "F4a":
+            ep["consumer"] = fault_bootstrap
+        else:  # F3 producer path, K2 unknown-outcome producer path for M1-kafka
+            ep["producer"] = fault_bootstrap
+    elif str(run.get("fault") or "") == "F5":
+        ep["db_url"] = "jdbc:postgresql://127.0.0.1:15433/wxeo"
+    elif str(run.get("fault") or "") == "K2":
+        # K2 for DB-sink mechanisms: DB-link proxy (unchanged, A4 fault realisation)
+        ep["db_url"] = "jdbc:postgresql://127.0.0.1:15433/wxeo"
+    return ep
 
 
 def free_space_gb(path: str) -> float:
@@ -516,10 +633,16 @@ class Runner:
             if self.opts.stage == "pilot":
                 runs = [r for r in runs if r["stage"] == "pilot"]
             elif self.opts.stage == "M7cal":
-                # Author-approved M7 calibration block (54 runs, 9 mechanisms x {10k,100k} x P6).
-                # It is a measurement block outside the confirmatory counts; see P2-GATE 3.
+                # Amendment A5 (r2) T1a: M7 core + M7spot only (54 + 54 = 108 runs).  The A6
+                # M7sat saturation-validation block is T1b and must NOT run before the candidate
+                # rates.json exists (--stage M7sat).
                 runs = [r for r in runs if r.get("stage") == "m7"
-                        or r.get("stage_label") == "M7"]
+                        and run_block(r) in ("M7-cal", "M7spot")]
+            elif self.opts.stage == "M7sat":
+                # Amendment A6 T1b: the 9 post-rates saturation-validation runs (100k/P6,
+                # one per mechanism), offered exactly the candidate 2.5x-max saturation rate.
+                runs = [r for r in runs if r.get("stage") == "m7"
+                        and run_block(r) == "M7sat"]
             elif self.opts.stage in ("A", "B", "C"):
                 runs = [r for r in runs if r["stage_label"] == self.opts.stage]
             elif self.opts.stage != "all":
@@ -634,6 +757,22 @@ class Runner:
                            exit_status=0, outputs="; ".join(
                                pathsafe.repo_rel(f) or "" for f in files))
         return {"ok": True, "files": len(files), "values": values}
+
+    def endpoint_contract(self, *, strict: bool = False) -> dict | None:
+        """Endpoint contract summary for ``config.runner.endpoint_contract`` (S5 B7).
+
+        ``strict=True`` fails closed (Kafka fault paths must never run without the contract);
+        the record writer uses the non-strict form so a missing contract cannot suppress a
+        run record (which would itself be an evidence loss).
+        """
+        try:
+            contract = load_endpoints_contract()
+        except RuntimeError:
+            if strict:
+                raise
+            return None
+        return {"path": contract["path"], "sha256": contract["sha256"],
+                "fault_bootstrap": contract["fault_bootstrap"]}
 
     def verify_freeze(self) -> dict:
         freeze_path = os.path.join(self.repo, "docs", "prereg-freeze.json")
@@ -1313,6 +1452,11 @@ class Runner:
             "reset_reason": (reset_info.get("reset") or {}).get("reason"),
             "topic_count_before": reset_info.get("topic_count_before"),
             "rate_mode": getattr(seq, "rate_mode", None),
+            # A6.1/A6.2: the saturation-validation runs record the EXACT rate offered to the
+            # load generator, so rates.py --write can prove the derived rate was exercised.
+            "offered_rate": getattr(seq, "offered_rate", None),
+            # S5 B7: endpoint contract path + sha (repo-relative) for provenance/fail-closed audit.
+            "endpoint_contract": self.endpoint_contract(),
             "failpoint_instance": getattr(seq, "_failpoint_instance", 1),
             "l2_trigger": "progress-based (M6)",
             "topic_count_after": reset_info.get("topic_count_after"),
@@ -1367,6 +1511,10 @@ class LiveSequence:
         self.schema = ("wxeo_run_" + self.run_id.replace("-", "_") + suffix_schema)[:63]
         self.reset_info = reset_info or {}
         self._failpoint_instance = 1
+        # rate provenance (config.runner.rate_mode / config.runner.offered_rate): the offered
+        # rate is only set by the A6 saturation-validation path so its absence is meaningful.
+        self.rate_mode: str | None = None
+        self.offered_rate: int | None = None
         self._consumer_exit: dict[int, int | None] = {}
         self.disk_start = runner._disk_footprint()
         self.attempt = attempt
@@ -1801,6 +1949,25 @@ class LiveSequence:
 
     def _effective_rate(self) -> str:
         mode = self.run.get("load_mode")
+        stage_label = str(self.run.get("stage_label") or "")
+        stage_lower = str(self.run.get("stage") or "")
+        # Amendment A6 (T1b): the M7sat block EXERCISES the derived saturation rate.  It carries
+        # stage_label "M7" (calibration record) but must NOT run at max: it is offered exactly
+        # rates.json.saturation_rate["100000|p6|sat"].rate (the candidate 2.5x max), fail-closed.
+        if stage_label == "M7" and run_block(self.run) == "M7sat":
+            return self._saturation_validation_rate()
+        # B1/B2 (S5 §12): calibration rows are ALWAYS at max, before any rates.json guard;
+        # pilot and Stage-A 1k rows also run at max (frozen M6/A3.3 semantics).
+        if stage_label == "M7":
+            self.rate_mode = ("calibration-saturation" if mode == "saturation"
+                              else "calibration-max")
+            return "max"
+        if stage_lower == "pilot":
+            self.rate_mode = "pilot-max"
+            return "max"
+        if stage_lower == "a" and int(self.run["load_events"]) == 1000:
+            self.rate_mode = "stage-a-max"
+            return "max"
         # Pilot calibration: at 1k events and rate=max the load finishes in <1 s, leaving no window
         # in which a marker-driven S4 injection can fire mid-processing (observed live for K2:
         # fire 232 ms after load end). Pilot marker-driven cells therefore use a fixed rate that
@@ -1839,6 +2006,32 @@ class LiveSequence:
 
     def opts_rate_table_missing(self) -> bool:
         return not os.path.exists(self.r.opts.rate_table)
+
+    def _saturation_validation_rate(self) -> str:
+        """A6.1: offer EXACTLY the candidate rates.json 2.5x-max saturation rate.
+
+        T1b runs after T1a has written the CANDIDATE table (``rates.py --derive``).  The runner
+        must never fall back to ``max`` here: a missing candidate file/key would silently turn
+        the saturation-validation block into a capacity measurement and let the derived rate go
+        unexercised, which is exactly the S5 §12 B1 blocker A6 closes (fail closed).
+        """
+        path = self.r.opts.rate_table
+        if not os.path.exists(path):
+            raise RuntimeError(
+                "A6 saturation validation: candidate experiments/rates.json is missing; run "
+                "`python experiments/rates.py --derive` after --stage M7cal (T1a) before "
+                "--stage M7sat (T1b); refusing the max fallback (S5 §12 B1 / A6.2)")
+        table = read_json(path, {}) or {}
+        entry = (table.get("saturation_rate") or {}).get("100000|p6|sat")
+        rate = entry.get("rate") if isinstance(entry, dict) else entry
+        if isinstance(rate, bool) or not isinstance(rate, int) or rate < 1:
+            raise RuntimeError(
+                "A6 saturation validation: candidate rates.json has no integer "
+                "saturation_rate['100000|p6|sat'].rate; refusing the max fallback "
+                "(S5 §12 B1 / A6.2)")
+        self.rate_mode = "saturation-validation"
+        self.offered_rate = int(rate)
+        return str(int(rate))
 
     def _start_load_generator(self) -> None:
         jar = os.path.join(self.r.repo, "artifact", "target", "wxeo-service.jar")
@@ -2169,29 +2362,19 @@ class LiveSequence:
 
     # -- endpoints and roles (artifact/README §8.2/§8.9) -----------------------------------
     def _endpoints(self) -> dict:
-        """Service endpoints for this cell: direct by default, proxied only for the fault link.
+        """Service endpoints for this cell (S5 B7/A6 endpoint contract).
 
-        F3 -> producer/transaction path through kafka-produce (19093); F4a -> consumer/offset
-        path through kafka-consume (19094); F5 -> DB through db (15433); K2 (unknown outcome)
-        -> db proxy for DB sinks, produce proxy for M1-kafka. All other cells are direct.
+        Direct by default; the Kafka fault link is proxied: F3 -> producer F4a -> consumer,
+        K2 (M1-kafka) -> producer, all via the contract's group-member ``kafka.fault_bootstrap``
+        (127.0.0.1:19091, read from deploy/docker/endpoints.json, fail-closed if missing).
+        F5 -> DB through db (15433); K2 for DB sinks -> db proxy. Non-fault/native unchanged.
         """
-        fault = self.run["fault"]
-        mech = self.run["mechanism"]
-        ep = {"bootstrap": "127.0.0.1:9091",
-              "producer": None, "consumer": None,
-              "db_url": "jdbc:postgresql://127.0.0.1:5433/wxeo"}
-        if fault == "F3":
-            ep["producer"] = "127.0.0.1:19093"
-        elif fault == "F4a":
-            ep["consumer"] = "127.0.0.1:19094"
-        elif fault == "F5":
-            ep["db_url"] = "jdbc:postgresql://127.0.0.1:15433/wxeo"
-        elif fault == "K2":
-            if mech == "M1-kafka":
-                ep["producer"] = "127.0.0.1:19093"
-            else:
-                ep["db_url"] = "jdbc:postgresql://127.0.0.1:15433/wxeo"
-        return ep
+        if is_kafka_fault_path(self.run):
+            contract = self.r.endpoint_contract(strict=True)
+            fault_bootstrap = contract["fault_bootstrap"]
+        else:
+            fault_bootstrap = None
+        return endpoints_for_run(self.run, fault_bootstrap)
 
     def _fault_role_dsn(self) -> str:
         return "host=127.0.0.1 port=5433 dbname=wxeo user=wxeo_fault"
@@ -2617,7 +2800,7 @@ def _merge_hist_percentiles(paths: "RunnerPaths") -> dict | None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="WXEO experiment runner")
     p.add_argument("--stage", default="pilot",
-                   choices=["pilot", "M7cal", "A", "B", "C", "all"])
+                   choices=["pilot", "M7cal", "M7sat", "A", "B", "C", "all"])
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--run-id", default=None)
     p.add_argument("--dry-run", action="store_true")

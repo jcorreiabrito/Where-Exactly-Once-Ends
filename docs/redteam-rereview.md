@@ -1235,3 +1235,210 @@ contacted; nothing was executed beyond the pure tests above.
 
 *End of stage-conditions re-review. Verdict: **BLOCK** for Stage A on the Linux host as of
 `c23a03f`; PASS is reachable after the §11.3–§11.8 fixes and the §11.7 freeze-evidence confirmation.*
+
+---
+
+## 12. FINAL RE-REVIEW — commit `5b5bc68` (2026-11-24, ~20:25–21:20Z)
+
+**Reviewer:** S5. **Tree under review:** `5b5bc68` (HEAD `5b5bc68116151cd4…`; previous `06b9b41`,
+`9969e49`, `c23a03f`). **Method:** code/docs inspection only; **no stack or runner command executed**;
+no freeze written; read-only git; pure imports/tests only (`python -m pytest experiments/tests -q` →
+**110 passed**, matching the lead's report; throwaway checks under `%TEMP%\wxeo-s5-final\`).
+
+### 12.0 Verdict
+
+> # **BLOCK** — the fixed tree may **not yet** proceed to the Linux host to run T0/T1/T3 and issue
+> the final freeze. Four §11 blockers are genuinely closed in code (A2 CLI wiring, M7 stage/
+> `committed_events`/fail-closed rates, Linux F1/F2 + proxy routing, Windows archive/freeze
+> bindings), and the matrix/accounting/tests are correct, but **T1 cannot complete as coded** and
+> **T2 cannot be issued after T0/T1 because it demands T3 evidence that the runbook schedules after
+> T2**; the A2 verdicts are also not yet the values the paper-facing artefacts carry. All are small,
+> local fixes + one author clarification (§12.2 N1–N3); after them the §11.7 freeze procedure is
+> acceptable and the host freeze can be confirmed PASS.
+
+**New blocking issues found in `5b5bc68`**
+
+- **B1 (critical) — the saturation calibration rows cannot execute, so `rates.py` cannot derive a
+  validated table.** `runner.LiveSequence._effective_rate()` checks the missing-rates guard
+  **before** the `stage == "M7"` calibration branch: for the 9 M7spot saturation cells
+  (`load_mode="saturation"`, 100k/P6) with `rates.json` absent (T1 state) it raises
+  `RuntimeError("rates.json is missing: fixed-rate/saturation modes …")` (lines ~1806–1818); the
+  `stage == "M7"` → `rate_mode="calibration-max"` return is only reached afterwards. Therefore no
+  saturation samples exist, and `rates.derive_rates()` necessarily raises
+  `SystemExit("no saturation-mode samples at 100k/P6 … SAT-2.5x-max")`: whichever order the M7 rows
+  execute in, the 9 saturation rows raise at load start so T1 cannot complete, and the trailing
+  `rates.py --write` exits non-zero → T2 impossible. A second-order gap: A5.3 says the saturation
+  spot-check passes "if the 2.5×max rate sustains the run", but no run in T1 is ever offered the
+  derived 2.5× rate (T1 precedes derivation; the spot cell measures unthrottled capacity) — the
+  check as worded is not executed by any code path. *Fix:* handle `stage == "M7"` before the guard
+  (saturation → `rate_mode="calibration-saturation"`, rate `max`/unthrottled), map that mode to
+  "saturation" in `rates._load_records`, and either (a) add a post-rates saturation validation run
+  (T0b/T3 extension + author-approved amendment) that offers the derived 2.5× rate, or (b) revise
+  A5.3 to the measurable claim actually made (unthrottled measured capacity × 2.5, with G7
+  generator-lag bound). Author decision needed for (b).
+- **B2 (critical) — the mandated (1k,P3) spot-check cannot yield capacity, and A5 contradicts
+  itself about Stage A/pilot rates.** The frozen warm-up is `max(2000, 10 % of events)`
+  (`runner._warmup_events`, unchanged; no calibration override and `run-campaign.sh calibrate` passes
+  no `--warmup-events`). For a 1,000-event spot run all events are warm-up → `steady=[]` →
+  `performance.committed_events=None` → `rates._load_records` skips it →
+  `missing_spot_checks=["1000|p3"]` → `validated=false` → T1 fails even after B1 is fixed.
+  Simultaneously A5.2(3) says the 1k block is "only used for Stage A/pilot, which run at `max`",
+  while A5.1 lists (1k,P3) among the eight fixed-rate blocks, `rates.REQUIRED_BLOCKS` includes
+  `("A",1000,3,"fixed")`, and with `rates.json` present the runner will run Stage-A 1k cells at the
+  derived fixed rate (not max). *Fix:* decide one semantics — either (i) Stage A/pilot 1k run at
+  `max` (then drop the 1k/P3 fixed block and its spot check, special-case stage A/pilot 1k in
+  `_effective_rate`, and amend A5.1/A5.2 text), or (ii) 1k uses the derived fixed rate (then define
+  and author-ratify a calibration-specific warm-up, e.g. `--warmup-events` = 10 % of load for
+  M7/M7spot, recorded as a new amendment). Either way the paper/pilot projection must state which.
+- **B3 (critical, procedural) — T2 final freeze and T3 gate-controls are circular.** `freeze.py
+  --require-evidence` requires `results/harness/linux-gate-controls.json` (lines 405–415) in addition
+  to live smoke, fault-efficacy and rates; but the runbook and `run-campaign.sh` order is
+  **T2 freeze before T3 gate-controls** (runbook §9.4 line 247 vs 248; `run-campaign.sh` phases
+  `freeze` then `gate-controls`). `linux-gate-controls.json` does not exist at T2 → freeze refuses
+  (`REFUSING final freeze: campaign evidence missing`). *Fix (recommended):* run T3 before T2 (T3
+  under the provisional bootstrap freeze; T3 is harness-validation evidence, not confirmatory),
+  i.e. sequence T0 → T0b → T1 → T3 → final freeze → T4/T5; update runbook and script order and make
+  `freeze` refuse if T3 evidence is missing (already does). Alternative: drop gate-controls from
+  `--require-evidence` and bind it post-freeze via DEVIATIONS — weaker; not recommended.
+- **B4 (major, blocking for the R10 condition's purpose) — A2 verdicts are still not what the
+  paper-facing artefacts carry.** `main()` now correctly calls A2 and writes
+  `a2-analysis.json`/`a2-hypotheses.json` (+ `a2_analysis` in the manifest), enforces the matrix pin
+  (`_matrix_pin_ok`, `SystemExit` on mismatch), re-validates records (`_path` stripped) and filters
+  M7 — all verified. **But** it still computes the legacy `families = build_test_families(...)` /
+  `hypotheses = decide_hypotheses(...)` and feeds those to `write_macros(...)`,
+  `write_tables(hypotheses=...)`, `tests.json`, `hypotheses.json` and the decision table; the A2
+  verdicts live only in the supplementary JSON files. The paper inputs (`macros.tex`, tables,
+  `tests.json`, `decision-table.csv`) therefore remain **pre-A2**, which is exactly what the R10
+  amendment was meant to replace. *Fix:* make A2 authoritative for the hypothesis/decision artefacts
+  (macros/decision table/tests/hypotheses from `a2_analyze`; keep the old functions only for
+  explicitly labelled descriptive tables, if needed) **or** update the paper build and runbook to
+  consume `a2-hypotheses.json` and mark the legacy artefacts non-citable; add a CLI-level regression
+  that asserts A2 verdicts appear where the paper reads them. This small fix is required before the
+  final freeze (the frozen CLI is the analysis unit of record).
+- **B5 (major, reproducibility) — container image digests are not bound by the freeze** although the
+  runbook (Revision R2 line 258) says the final freeze binds "the container image digests". The
+  compose file pins **tags** (`apache/kafka:3.7.2`, `postgres:16`, `ghcr.io/shopify/toxiproxy:2.9.0`),
+  `freeze.py` has no image-digest collection (only compose/proxy/PG files in `FROZEN_FILES`), and
+  `bootstrap.sh` does not record `docker image inspect` repo digests. *Fix:* capture the three repo
+  digests in the bootstrap phase log **and** in the freeze document (e.g. an `images` block in
+  `pre_freeze_harness_evidence`/artifact provenance), or amend the runbook to state tag-only pinning
+  with recorded digests in the host log as the binding evidence. A tag can be re-pointed; digests are
+  the reproducibility claim.
+- **B6 (minor) — `rates._load_records` accepts stage `pilot`, `B`, `C` as calibration samples**
+  (filter is `stage in ("M7","pilot","B","C")`). Harmless during T1 (nothing else exists yet), but a
+  later `rates.py --write` re-run would ingest confirmatory or pilot data into the frozen rule.
+  Restrict to `M7`/`M7spot` records (and fail closed otherwise).
+- **B7 (minor) — fault-endpoint aliases**: `_endpoints()` still returns `producer=127.0.0.1:19093`
+  (now the *kafka-3* per-broker proxy) and `consumer=127.0.0.1:19094` (the `kafka-bootstrap` alias
+  that is deliberately **not** in any toxic group). The redesign's group-wide toxics on
+  19091–19093 make F3/F4a/K2 effective after metadata (verified in the design and in
+  `fault-efficacy.py`'s group checks), but the frozen endpoints should be re-expressed as
+  "bootstrap via the any-proxy alias and route via advertised 19091–19093" in `CONTRACTS`/runner so
+  the fault cell's bootstrap path is not accidentally outside the injected group; the efficacy gate
+  should exercise exactly the runner's endpoint path (it currently bootstraps at 19091, not 19094).
+- **B8 (minor/doc) — A5.2 Stage-A/pilot rate sentence** (see B2) and **A5.3 saturation wording**
+  (see B1) need corrections; also the T0 smoke "M0 fault-free E2E" mapping in runbook §9.5 uses the
+  F4b *fault-driven* row for the end-to-end claim — acceptable as coverage evidence but it is not a
+  clean M0 positive path; either add a clean M0 1k smoke row or reword the mapping.
+
+**What is now genuinely closed (verified, not taken from the summary)**
+
+| §11 item | Status | Evidence checked |
+|---|---|---|
+| R10 CLI wiring | **CLOSED except B4** | `main()` calls `_run_a2` (line ~1895, writes `a2-analysis.json`/`a2-hypotheses.json`); `--stage` choices incl. `all`; M7 rows filtered (`stage.upper() != "M7"` twice); `_matrix_pin_ok` fail-closed `SystemExit`; `a2_validate_records` strips `_path`; M7 calibration excluded from confirmatory in A2 |
+| R12/M7 chain | **CLOSED except B1/B2/B6** | `record_stage("M7")="M7"` matches `validate_record.STAGES`; runner writes `performance.committed_events` (steady-state acked events) and writes `rates.json`-independent calibration at `max` for stage M7 fixed cells (`rate_mode="calibration-max"`); missing fixed-rate key → `RuntimeError` (no `max` fallback); missing saturation → `RuntimeError`; `rates.py` rule `A5.partition-scale.v1` (P/6 scaling, 1k←10k/P6, 1M←100k/P6, floor 0.5×min, ±25 % spot checks, `validated` flag, saturation `SAT-2.5x-max`) and `g7_checks` fail-closed; `run-campaign.sh calibrate` fails if `validated!=true` |
+| M7/M7spot accounting | **CLOSED** | matrix **9f3055b4…**, order **b0ec9f29…** (equal to `matrix.sha256`); **81 M7 cells / 117 runs** = 18 core cells/54 runs + 63 spot cells/63 runs (9 mechanisms × 7 spot blocks, incl. 9 saturation cells); order **7,631 rows**; confirmatory accounting unchanged 7,506/7,488 + 26; A5 approved in `P2-APPROVAL`; M17/M18 recorded in DEVIATIONS |
+| F1/F2 on Linux | **CLOSED (code)** | `F1BrokerKill` docker branch: `_arm` uses broker ids 1–3, `_fire` calls `STACK.broker_kill`, verify by broker count, `_restore` `STACK.broker_start` + ISR; no `taskkill` on docker; `F2` uses `STACK.pid_kill_linux`; `stack.py` implements `broker_kill/start/restart/pid_kill_linux/proxy_groups/proxy_host_port`; tests present |
+| Kafka proxy routing | **CLOSED (design)** | compose: per-broker EXTERNAL listeners 29091–93 advertised **`127.0.0.1:19091–93`** (Toxiproxy host ports), INTERNAL 29095, controller 9192–94, loopback-only port bindings, toxiproxy healthcheck; `toxiproxy.json` upstreams `kafka-N:2909N`; `proxy-groups.json` all three proxies per logical group; injectors apply toxics to every member and fail closed; `deploy/linux/fault-efficacy.py` proves produce/consume timeout, DB partition, F1 kill/restart, F2 SIGKILL with a `passed` JSON gate (required at freeze) |
+| Provenance/archive | **CLOSED except B3/B5** | Windows outputs moved to `results/windows-pilot/` (records/oracle/summaries/evidence/logs); `results/raw/` contains only `.gitkeep`+README; M17 recorded; bootstrap defensively archives; `freeze.py` binds A4/A5, runbook, deploy/stack files and **EVIDENCE_FILES** rates.json, live-smoke-evidence, linux-fault-efficacy, linux-gate-controls; `--require-evidence` implemented |
+| Tests / CI | 110/110 locally verified; CI on `5b5bc68` must be green (not verifiable here) | `pytest experiments/tests -q` → 110 passed |
+| P2 sign-off | correctly **pending** | `docs/P2-APPROVAL.md` freeze aggregate and S5 re-confirmation boxes unchecked |
+
+### 12.1 Answers to (a): the five Stage-A conditions
+
+1. **Approvals (matrix M1, A2, K6, M7, A5, Linux/full design)** — **CLOSED** (P2-APPROVAL, A5).
+2. **R10 A2 analyzer** — **PARTIALLY CLOSED**: wiring/fail-closed/record re-validation/M7 exclusion verified; **B4** (legacy pre-A2 macros/tables/tests still primary) blocks the condition's purpose.
+3. **R12 + M7 rates** — **PARTIALLY CLOSED**: accounting/rule/fail-closed code verified; **B1/B2** make T1 impossible as coded; **B6** minor filter fix.
+4. **Evidence/provenance + freeze** — **PARTIALLY CLOSED**: archive, bindings and single-freeze procedure implemented; **B3** circularity must be fixed; **B5** image digests must be recorded/bound; `live-smoke-evidence`/rates/gate-controls are in the required-evidence list.
+5. **Complete gate evidence on the host** — **OPEN by design** (T0/T0b/T3/T4 not run); code path exists (`live_smoke_evidence`, `fault-efficacy`, `gate-controls` phase writes `linux-gate-controls.json`, T0 smoke now covers M2/M3/M1-kafka + F4b + F2, acceptance substitution mapped §9.5) and F1/F2/routing blockers are code-closed.
+
+### 12.2 (b) What I need to confirm the host freeze (supersedes §11.7 list; same spirit)
+
+When the lead reports the final `freeze.py --write --force --require-evidence` on the Linux host, I will
+re-verify (read-only) and confirm **only if all** of the following are present:
+
+1. **Freeze document at the reported HEAD:** file SHA-256; `aggregate_pipeline_sha256`; `frozen_at_utc`;
+   `git_sha` = the commit containing it; `missing_at_freeze: []`; artifact jar SHA-256 + source-tree
+   digest; `pre_freeze_harness_evidence.files_sha256` containing **rates.json, live-smoke-evidence.json,
+   linux-fault-efficacy.json, linux-gate-controls.json**; and (post-B5) container image repo digests.
+2. **Independent recomputation:** my recomputation of the documented aggregate from the reported file
+   hashes equals the claim; every individual file hash matches the tree; `freeze.py --check` prints
+   `ok:true` (drift + gate-evidence drift empty); jar bytes match; `git status --porcelain` clean at
+   that commit (only ignored `results/raw/artifacts` allowed); **CI green on that exact commit**.
+3. **Bootstrap host log** (`results/phase-logs/bootstrap-*.log`): OS/kernel; docker + compose versions;
+   **repo digests of kafka/postgres/toxiproxy images** (or `docker compose images --digests`) ; JDK 21 /
+   Maven / Python / psql versions; jar build + `sha256sum`; `mvn package` test summary; `pytest` count;
+   `runner --check-env`; stack liveness (3 brokers, proxy inventory 19091–93+19094+15433); Toxiproxy
+   health; compose ps.
+4. **T0/T0b evidence:** `live-smoke-evidence.json` `passed=true` for post-provisional-freeze records
+   (fault-free M2/M3/M1-kafka + app-owned F4b + S4-owned F2 attested) and
+   `linux-fault-efficacy.json` `passed=true` (produce/consume timeout actually fails; db toggle; F1
+   kill/restart; F2 SIGKILL), with the run ids and hashes.
+5. **T1 evidence:** 117 M7/M7spot records schema-valid (stage M7) with `performance.committed_events`;
+   `experiments/rates.json` `validated=true`, rule `A5.partition-scale.v1`, saturation
+   `SAT-2.5x-max`, full fixed-block coverage for all Stage A/B/C blocks, spot checks present with
+   relative errors (or the author-ratified alternative for B1/B2); `rates.py --check` G7 ok;
+   measured generator capability/G7 lag evidence.
+6. **T3 evidence:** `linux-gate-controls.json` `passed=true` (G1 M0 K3/K5 attested violations, sham,
+   self-tests, M3/M1-kafka clean T0 rows, G5 read path) — produced **before** the final freeze per
+   B3-order.
+7. **Procedure/commits:** M17 archive present, `results/raw` empty of Windows rows; A4/A5/P2-APPROVAL
+   hashes bound in the freeze; RUNLOG rows for freeze/smoke/calibrate/gate-controls with aggregate +
+   git SHA; P2-APPROVAL boxes still pending until my confirmation; no post-freeze edits.
+
+If any item is missing or a recomputation disagrees, the freeze is **not confirmed** and T4/T5 stay
+blocked.
+
+### 12.3 Required fixes before the host run (in order)
+
+1. **B1** `_effective_rate`: move the `stage=="M7"` calibration branch before the missing-rates guard;
+   saturation calibration → `rate_mode="calibration-saturation"`, rate `max`; `rates._load_records`
+   maps it to saturation; decide/authorise the A5.3 saturation-check semantics (post-rates 2.5×
+   validation run or revised wording).
+2. **B2** resolve 1k/P3 semantics (A/pilot `max` vs derived fixed) and either drop the 1k spot block or
+   add a calibration warm-up override for M7/M7spot (author-ratified amendment); align A5.1/A5.2,
+   `REQUIRED_BLOCKS`, runner and spot-check list.
+3. **B3** reorder T3 before T2 in `run-campaign.sh` and runbook (T0 → T0b → T1 → T3 → final freeze →
+   T4/T5), or alternatively relax `--require-evidence` and bind gate-controls post-freeze via
+   DEVIATIONS (not recommended).
+4. **B4** make A2 verdicts the paper-facing artefacts (macros/T6/hypotheses/tests) or re-point the
+   paper build to `a2-hypotheses.json` + label legacy descriptive outputs non-citable; add CLI
+   regression.
+5. **B5** record/bind container image repo digests (bootstrap log + freeze), or amend the runbook claim.
+6. **B6** restrict `rates._load_records` to M7/M7spot.
+7. **B7/B8** align fault endpoint paths with proxy groups and fix A5/runbook wording; add a clean M0
+   E2E smoke row (or reword the acceptance mapping).
+
+After these, the code path is ready for the Linux host; the host-run and freeze-evidence confirmation
+then follow §12.2 and the P2 sign-off boxes stay pending until I confirm.
+
+### 12.4 Commands used (read-only; no stack/runner)
+
+```powershell
+Get-Content .git/refs/heads/main ; git log --oneline -3 ; git status --porcelain
+python -m pytest experiments/tests -q -p no:cacheprovider        # 110 passed
+python %TEMP%\wxeo-s5-final\m7b.py                               # M7 cells/runs/blocks + order rows 7,631
+hash of matrix.yaml = 9f3055b4…, run_order.csv = b0ec9f29… (matches matrix.sha256)
+# file reads: docs/P2-APPROVAL.md, A5, A4, runbook R2, DEVIATIONS M17/M18;
+#   deploy/docker/{docker-compose.yml,toxiproxy.json,proxy-groups.json,postgres-init.sql};
+#   deploy/linux/{bootstrap.sh,run-campaign.sh,fault-efficacy.py};
+#   experiments/{rates.py,stack.py,runner.py,injectors.py,freeze.py,matrix_design.py,validate_record.py};
+#   tools/analyze.py (main vs A2 section); tests
+```
+
+**No repository file was created or modified except this memo.** No stack/runner command was executed;
+the Linux host was not contacted.
+
+*End of final re-review. Verdict at `5b5bc68`: **BLOCK** pending B1–B5 (small, local fixes + two
+author clarifications). After the fixes, proceed T0 → T0b → T1 → T3 → final freeze, report the §12.2
+evidence, and S5 confirms the host freeze before T4/Stage A.*

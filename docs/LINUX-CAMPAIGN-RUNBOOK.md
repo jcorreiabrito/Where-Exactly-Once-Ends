@@ -51,7 +51,7 @@ platform deviation (A4).
 |---|---|---|
 | `kafka-1..3` | 9091/9092/9093 | `apache/kafka:3.7.2`, KRaft static quorum, RF=3, `min.insync=2`, transaction-state RF=3, `auto.create.topics.enable=false`, `delete.topic.enable=false`, index caps 1 MiB (A3/M9 parity), retention 2 h |
 | `postgres` | 5433 | `postgres:16`, database `wxeo`, roles `wxeo_app`/`wxeo_read`/`wxeo_fault`, trust auth bound to loopback only |
-| `toxiproxy` | 8474 + 19092/19093/19094/15433 | `ghcr.io/shopify/toxiproxy:2.9.0` with the four proxies the fault endpoints use (`deploy/docker/toxiproxy.json`) |
+| `toxiproxy` | 8474 + 19091/19092/19093/15433 | `ghcr.io/shopify/toxiproxy:2.9.0` with the four proxies the fault endpoints use (`deploy/docker/toxiproxy.json`) |
 
 The stack is **only** reached on `127.0.0.1` (the compose port mappings); no external exposure is
 intended. A reset is `docker compose down -v && up -d --wait`, performed by the runner at the frozen
@@ -82,9 +82,10 @@ tmux new -s wxeo
 | # | Command | What it produces | Gate to the next phase |
 |---|---|---|---|
 | T0 | `bash deploy/linux/run-campaign.sh smoke` | fault-free 1k run + one app-owned and one S4-owned fault run + `results/harness/live-smoke-evidence.json passed=true` | evidence green; artifact jar matches freeze |
-| T1 | `bash deploy/linux/run-campaign.sh calibrate` | the approved **M7 block (54 runs: 9 mechanisms × {10k,100k} × P6 × N=3)** and `experiments/rates.json` derived by `experiments/rates.py` (50 % of the minimum measured mechanism capacity; deterministic rule) | calibration records valid; rates.json written |
-| T2 | `python experiments/freeze.py --write --force` then `--check` | re-issued freeze binding rates.json + the M7/R10/R12 code; records `git_sha` | freeze aggregate recorded in `docs/prereg-freeze.json`; **S5 re-confirms it** before Stage A |
-| T3 | Gate-control runs (G1/G4 per class: M0 K3/K5 attested, sham, self-tests; the reserved validation slate) | G1–G8 positive evidence | S5's Stage-A conditions closed |
+| T1a | `bash deploy/linux/run-campaign.sh calibrate` | M7/M7spot **108 runs** (`--stage M7cal`, M7-cal 54 + M7spot 54); `rates.py --derive` writes the CANDIDATE fixed-rate table; fails closed unless the A5 block coverage/spot checks pass (the table must be `validated=false` here) |
+| T1b | `bash deploy/linux/run-campaign.sh saturation-validate` | **A6**: `rates.py --derive` candidate write, then `runner.py --stage M7sat` (9 mechanisms x 100k/P6 saturation at the derived 2.5x-max rate), then `rates.py --write`; fails closed unless `validated=true` **and** `saturation_validation.validated=true` |
+| T3 | Gate-control runs (G1/G4 per class: M0 K3/K5 attested, sham, self-tests; the reserved validation slate) | G1â€“G8 positive evidence | S5's Stage-A conditions closed |
+| T2 | `python experiments/freeze.py --write --force --require-evidence` then `--check` | **FINAL freeze, after T3** (see §9.4; bootstrap freeze is provisional). Bind rates.json (validated), live-smoke-evidence, fault-efficacy, gate-controls and (B5) container-images.json |
 | T4 | `bash deploy/linux/run-campaign.sh pilot` | 216 planned / 198 executable + 26 validation pilot rows; projection worksheet via `tools/projection.py` | pilot complete; P2 projection updated with measured 10k/100k times |
 | T5 | `bash deploy/linux/run-campaign.sh A` then `B` then `C` | confirmatory matrix 7,488 executable runs (Stage A 1,530; B 3,960; C 1,800) | every row has a schema-valid record; exclusion rate within AC-8 |
 | T6 | `bash deploy/linux/run-campaign.sh analysis` | A2 analyzer results (AC-3b pooled stratified sign test, H5-A with vacuity rejection), `tools/analyze.py` tables, `tools/make-figures.py` vector figures, `macros.tex` filled from results | analysis outputs traceable to records; RUNLOG rows complete |
@@ -171,14 +172,13 @@ Toxiproxy proxies (`deploy/docker/toxiproxy.json`, JSON array):
 |---|---|---|---|
 | `kafka-1` | 19091 | `kafka-1:29091` | broker-1 client path |
 | `kafka-2` | 19092 | `kafka-2:29092` | broker-2 client path |
-| `kafka-3` | 19093 | `kafka-3:29093` | broker-3 client path; also the frozen runner's producer-bootstrap endpoint 19093 |
-| `kafka-bootstrap` | 19094 | `kafka-1:29091` | bootstrap-only alias so the frozen runner's consumer-bootstrap endpoint 19094 stays usable; never in a toxic group |
+| `kafka-3` | 19093 | `kafka-3:29093` | broker-3 client path |
 | `db` | 15433 | `postgres:5432` | F5 / DB sink path |
 
 **Why every client connection traverses Toxiproxy:** Kafka advertises the three proxy ports
 (`127.0.0.1:19091..19093`), so after the initial metadata exchange a host client (service, runner,
 loader, oracle) connects to brokers only through Toxiproxy, regardless of which endpoint it used to
-bootstrap (`9091..9093` direct, `19091..19094` proxy, or the frozen split bootstraps). The direct
+bootstrap (`9091..9093` direct, `19091..19093` proxy, or the runner's `fault_bootstrap`). The direct
 `127.0.0.1:9091..9093` published ports exist only for bootstrap/admin calls (broker-count probes,
 `TopicTool`); they cannot carry partition/coordinator traffic after metadata.
 
@@ -196,6 +196,15 @@ Container names are pinned in the compose file and are the F1/F2 injector target
 Kafka/PG/Toxiproxy have healthchecks; `--wait` returns only when they are healthy.
 
 ### 9.2 Fault realisations (S4 injectors consume `experiments/stack.py`)
+
+**Endpoint contract (S5 B7):** `deploy/docker/endpoints.json` (`wxeo.endpoints.v1`) is the single
+shared source of truth for the runner, the injectors and the fault-efficacy proof. `fault_bootstrap`
+is `127.0.0.1:19091` and MUST be a member of every Kafka proxy group (so the bootstrap connection
+itself is inside the injected toxics); `group_member_proxies` are the three proxy ports 19091-19093;
+The former bootstrap-only alias on 19094 is **removed** (A6/B7 follow-up) now that the runner uses
+`kafka.fault_bootstrap` = `127.0.0.1:19091` (a group member) for every Kafka path.
+`fault-efficacy.py --check-endpoints` validates the contract against the deployed proxy configs
+without Docker; the full run asserts the same before any toxic is applied.
 
 Logical fault groups live in `deploy/docker/proxy-groups.json` and are read via
 `stack.proxy_groups()`; `stack.proxy_host_port(name)` returns the loopback host port. All Kafka role
@@ -235,29 +244,41 @@ python deploy/linux/fault-efficacy.py --out results/harness/linux-fault-efficacy
 
 Exit 0 == `passed: true`; any failed check exits 1 and must block all campaign phases. The JSON
 path `results/harness/linux-fault-efficacy.json` is **required evidence** at the final freeze
-(`freeze.py --require-evidence` refuses without it).
+(`freeze.py --require-evidence` refuses without it). Likewise `results/harness/container-images.json`
+(B5; three pinned images with `repo_digests` + `image_id`) is required evidence at the final freeze;
+it is produced by `deploy/linux/record_container_images.py` from `bootstrap.sh` after `docker compose
+pull`, and `bootstrap.sh` fails closed if any repo digest is missing.
 
 ### 9.4 Phase list amendments (supersedes section 4)
 
 | # | Command | Additional gates in Revision R2 |
 |---|---|---|
-| T0 | `run-campaign.sh smoke` | now runs fault-free rows for M2, M3 (dedup index), M1-kafka (stream ledger), plus app-owned F4b and S4-owned F2; `live_smoke_evidence.py` unchanged |
+| T0 | `run-campaign.sh smoke` | now runs fault-free rows for M2, M3 (dedup index), M1-kafka (stream ledger), plus app-owned F4b and S4-owned F2; `live_smoke_evidence.py` unchanged ; includes the clean fault-free M0 row `pilot-m0-f0-1k-p3-r00` (B8) |
 | T0b | `run-campaign.sh fault-efficacy` | the 9.3 proof; run after every stack restart change (image/version change) |
-| T1 | `run-campaign.sh calibrate` | Amendment **A5**: `--stage M7cal` now executes **117 runs** (M7-cal 54 + M7spot 63) that derive and validate the fixed-rate mapping rule; T1 **fails closed** if `experiments/rates.json.validated is not true` (spot-check failed). `rates.json` records the rule id |
-| T2 | `run-campaign.sh freeze` | single **final** freeze: `python experiments/freeze.py --write --force --require-evidence`, issued **after T0 smoke + T1 (rates.json validated)** and **before T3/Stage A**; bootstrap's freeze is provisional (`--write --force` without `--require-evidence`); S5 re-confirms |
-| T3 | `run-campaign.sh gate-controls` | runs the 26 reserved validation rows and writes `results/harness/linux-gate-controls.json`; fails closed unless: M0 K3/K5 negative control shows a violation (G1), M3 dedup index is attested on the live stack, M1-kafka F0 ledger is clean (G2), and all validation classes are present |
+| T1a | `run-campaign.sh calibrate` | Amendment **A5**: `--stage M7cal` executes **108 runs** (M7-cal 54 + M7spot 54); `rates.py --derive` writes the CANDIDATE table (A5 validated, A6 pending) and fails closed unless the A5 spot checks pass |
+| T1b | `run-campaign.sh saturation-validate` | Amendment **A6**: `rates.py --derive` + `runner.py --stage M7sat` (9 runs, 100k/P6 saturation at the derived 2.5x-max rate) + `rates.py --write`; fails closed unless `validated=true` **and** `saturation_validation.validated=true` |
+| T3 | `run-campaign.sh gate-controls` | runs the 26 reserved validation rows **under the provisional bootstrap freeze and BEFORE T2** (S5 B3); writes `results/harness/linux-gate-controls.json`; fails closed unless G1 M0 K3/K5 shows the expected violation, M3 dedup index is attested, M1-kafka F0 ledger is clean (G2) and all validation classes are present |
+| T2 | `run-campaign.sh freeze` | **FINAL** freeze `python experiments/freeze.py --write --force --require-evidence`; runs **AFTER T0+T0b+T1+T3** and is the **last procedural step before T4**; requires `rates.json` (validated), `results/harness/live-smoke-evidence.json`, `results/harness/linux-fault-efficacy.json`, `results/harness/linux-gate-controls.json` and (B5) `results/harness/container-images.json`; bootstrap freeze is provisional; S5 re-confirms |
 | T4 | `run-campaign.sh pilot` | unchanged; requires T2 freeze confirmed |
 | T5 | `A` then `B` then `C` | unchanged |
 | T6 | `run-campaign.sh analysis` | `python tools/analyze.py` (single frozen CLI; no `--stage` argument) then `tools/make-figures.py` |
 
-Freeze procedure (Revision R2): (1) `bootstrap.sh` writes a **provisional** freeze with
-`freeze.py --write --force` (no evidence requirement); (2) run T0 smoke and T1 calibration
-(`--stage M7cal` = 117 runs, then `rates.py --write`, validated=true); (3) issue the single FINAL
-freeze with `python experiments/freeze.py --write --force --require-evidence` -- freeze.py refuses
-unless `experiments/rates.json` (validated), `results/harness/live-smoke-evidence.json` and
-`results/harness/linux-fault-efficacy.json` are present; it binds those as required evidence plus the
-container image digests and the T0/T3 evidence; (4) S5 re-confirms the reported freeze before T3/
-Stage A. No campaign phase may run between T1 and the final freeze.
+Freeze procedure (Revision R3, S5 B3/B5): (1) `bootstrap.sh` writes a **provisional** freeze with
+`freeze.py --write --force` (no evidence requirement) and records the container image repo digests at
+`results/harness/container-images.json` (schema `wxeo.container-images.v1`; fail closed if any digest
+is missing); (2) run **T0 smoke**, then **T0b fault-efficacy**; (3) run **T1** calibration
+(`--stage M7cal` = 108 runs, then `rates.py --derive`, candidate table); (3b) run **T1b**
+`saturation-validate` (A6: `rates.py --derive` -> `runner.py --stage M7sat` 9x 100k/P6 at the derived
+2.5x-max rate -> `rates.py --write`; must print `validated=true` and
+`saturation_validation.validated=true`); (4) run **T3**
+`gate-controls` **under the provisional freeze** -- it writes `results/harness/linux-gate-controls.json`;
+(5) issue the single **FINAL** freeze with `python experiments/freeze.py --write --force
+--require-evidence`; freeze.py refuses unless `experiments/rates.json` (validated),
+`results/harness/live-smoke-evidence.json`, `results/harness/linux-fault-efficacy.json` and
+`results/harness/linux-gate-controls.json` are present, and the lead's freeze binds
+`results/harness/container-images.json` as required evidence; this final freeze MUST be the last
+procedural step before T4 pilot; (6) S5 re-confirms the reported freeze before T4/Stage A. No campaign
+phase may run between T3 and the final freeze; T2-before-T3 ordering is superseded.
 
 Windows-results archive (red-team L5, **precondition**): the lead has archived the Windows evidence
 under `results/windows-pilot/` (run-records, oracle, summaries, evidence-only, artifacts, fault logs,
@@ -273,7 +294,7 @@ populated `results/raw/run-records/` would let the runner's resume logic skip sa
 | 1. `mvn -B -ntp test` (unit tests, no Docker) | identical (host is Linux, no services needed) | `mvn -f artifact/pom.xml test` (bootstrap) |
 | 2. `mvn -B -ntp package` (runnable jar) | identical + recorded `sha256sum` and jar hash bound to the freeze | `mvn -f artifact/pom.xml package`; `sha256sum artifact/target/wxeo-service.jar` |
 | 3. native-stack Kafka smoke (start-kafka, Java-client produce/consume) | container stack live probe + artifact integration ITs: `KafkaSmokeIT` (create/produce/consume against the stack; its topic-delete cleanup is expected to be refused because `delete.topic.enable=false` and is caught by the IT) and `PostgresSchemaIT` (DDL/append-only trigger/dedup index/idempotent insert against PG 5433) | `mvn -f artifact/pom.xml verify -Pintegration -Dwxeo.it.kafka.bootstrap=127.0.0.1:29091 -Dwxeo.it.db.url=jdbc:postgresql://127.0.0.1:5433/postgres` (bootstrap) |
-| 4. fault-free 1,000-event E2E for M0 and M3 (postings in PG, GT+manifest+app artefacts) | T0 smoke rows `pilot-m0-f4b-1k-p3-r00` (fault-driven but end-to-end) + `pilot-m2-f0-1k-p3-r00`, `pilot-m3-f0-1k-p3-r00`, `pilot-m1-kafka-f0-1k-p3-r00`; oracle + run-record + artefact digests are validated by the runner, and the M3 dedup index is asserted in T3 | `run-campaign.sh smoke` then `run-campaign.sh gate-controls` |
+| 4. fault-free 1,000-event E2E for M0 and M3 (postings in PG, GT+manifest+app artefacts) | T0 smoke slate now includes the **clean fault-free** row `pilot-m0-f0-1k-p3-r00` plus `pilot-m2-f0-1k-p3-r00`, `pilot-m3-f0-1k-p3-r00`, `pilot-m1-kafka-f0-1k-p3-r00`, and the fault-driven `pilot-m0-f4b-1k-p3-r00`; concrete checks: oracle verdict clean for the F0 rows, 1,000 events / 2,000 postings for M0 and M3, M3 `posting_dedup_idx` present in the run schema (T3 SQL attestation), M1-kafka one entry record per event on the read_committed stream, and run-record + artefact digests validated by the runner | `run-campaign.sh smoke` (T0) -> `run-campaign.sh gate-controls` (T3) |
 | 5. failpoint crash smoke (`before_effect_commit`+crash: exit 99, one fired receipt) | covered by the T0 app-owned F4b row (app-owned failpoint receipts attested by `live_smoke_evidence.py`), the T3 `V.selftest` rows and the G4 attestation in `linux-gate-controls.json`; the crash subprocess path itself remains covered by `artifact/pom.xml` unit test `FailpointCrashTest` | `run-campaign.sh smoke` + `run-campaign.sh gate-controls` |
 
 Anything not covered by these substitutes (e.g. the exact PowerShell harness verbs) is Windows-only
@@ -281,22 +302,45 @@ and is recorded as a platform deviation in A4/DEVIATIONS; the Linux acceptance e
 bootstrap log, `results/harness/linux-fault-efficacy.json`, the T0/T3 evidence above and the
 artifact IT/unit logs.
 
+### 9.5a Exact operator sequence (labels are the runbook phase ids)
+
+```bash
+bash deploy/linux/bootstrap.sh                          # tools/jar/stack/images.json/effiacy/provisional freeze
+bash deploy/linux/run-campaign.sh smoke                 # T0
+bash deploy/linux/run-campaign.sh fault-efficacy        # T0b
+bash deploy/linux/run-campaign.sh calibrate             # T1a  (candidate rates)
+bash deploy/linux/run-campaign.sh saturation-validate   # T1b  (A6; final validated rates)
+bash deploy/linux/run-campaign.sh gate-controls         # T3   (under the provisional freeze)
+bash deploy/linux/run-campaign.sh freeze                # T2   FINAL freeze; last step before T4
+bash deploy/linux/run-campaign.sh pilot                 # T4
+bash deploy/linux/run-campaign.sh A && bash deploy/linux/run-campaign.sh B && bash deploy/linux/run-campaign.sh C
+bash deploy/linux/run-campaign.sh analysis              # T6
+```
+
+The final `freeze.py --write --force --require-evidence` binds as required evidence: `experiments/rates.json`
+(with `validated=true` and `saturation_validation.validated=true`), `results/harness/live-smoke-evidence.json`,
+`results/harness/linux-fault-efficacy.json`, `results/harness/linux-gate-controls.json` and
+`results/harness/container-images.json` (`wxeo.container-images.v1`, repo digests of the three pinned images).
+
 ### 9.6 Operator notes
 
 1. Docker group membership must be effective in the current shell: `docker info` must succeed;
    `bootstrap.sh` now hard-fails with instructions instead of continuing (red-team L7).
 2. Liveness/health: `python -m experiments.stack status`; `docker compose ... ps --format` shows the
    pinned container names. Toxiproxy has a compose healthcheck (`toxiproxy-cli list`).
-3. Toxiproxy REST: use `curl`/urllib with an explicit User-Agent on any host whose PowerShell clients
+3. Endpoint contract: never hard-code 19094 for a fault path -- read `deploy/docker/endpoints.json` (or `experiments.stack.proxy_host_port`) so bootstrap and traffic are
+inside the same proxy group (B7). The deprecated `kafka-bootstrap` alias may be removed from
+`toxiproxy.json` once the runner no longer references 19094.
+4. Toxiproxy REST: use `curl`/urllib with an explicit User-Agent on any host whose PowerShell clients
    are used (the Windows 403 UA quirk does not apply on Linux; still send
    `User-Agent: wxeo-runner/1.0` for consistency). List proxies: `curl -s 127.0.0.1:8474/proxies`.
-4. Never delete topics: `delete.topic.enable=false`; use `docker compose down -v` (runner reset
+5. Never delete topics: `delete.topic.enable=false`; use `docker compose down -v` (runner reset
    cadence) to reclaim storage. Deleting consumer groups is safe.
-5. If `fault-efficacy` fails: do not start the campaign; capture the JSON, check
+6. If `fault-efficacy` fails: do not start the campaign; capture the JSON, check
    `docker compose ps`/logs, and treat it as a substrate defect (requiring an amendment + re-freeze
    after the fix). The most common causes are a missing proxy (config shape) or a stale stack.
-6. `M1-kafka` ledger definition for quiescence/oracle is unchanged: one `wxeo.entry.v1` record per
+7. `M1-kafka` ledger definition for quiescence/oracle is unchanged: one `wxeo.entry.v1` record per
    entry, key `event_id`, same partition, inside the offsets transaction, read with
    `read_committed`; completion is LSO/lag-based (the R20 limitation note still applies).
-7. Record `docker image inspect` repo digests for kafka/postgres/toxiproxy in the bootstrap log; the
+8. `results/harness/container-images.json` (B5) is produced by bootstrap with `docker image inspect` repo digests for kafka/postgres/toxiproxy in the bootstrap log; the
    final freeze binds them (container-image equivalent of the A4 image-digest pinning).

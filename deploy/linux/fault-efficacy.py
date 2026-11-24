@@ -8,8 +8,12 @@ and that removing it restores service -- not merely that a toxic object exists.
 
 Checks (all fail-closed; top-level ``passed`` only if every check passes):
 
-* ``produce.<group>``  -- confluent-kafka producer against ``127.0.0.1:19091`` (bootstrap through a
-  Toxiproxy proxy; Kafka advertises the three proxy ports so every broker connection is proxied).
+* ``endpoints.contract`` -- the fault endpoints come from ``deploy/docker/endpoints.json`` and are
+  asserted against the deployed proxy configuration: the Kafka fault bootstrap MUST be a member of
+  every Kafka proxy group (B7); the old bootstrap-only alias 19094 is removed (A6/B7 follow-up).
+* ``produce.<group>``  -- confluent-kafka producer bootstrapped through the same group-member proxy
+  endpoint the runner uses (Kafka advertises the three proxy ports so every broker connection is
+  proxied).
   With a ``timeout`` toxic on every proxy of the group, an ``acks=all`` produce must fail within the
   bound; after removing the toxics it must succeed again.
 * ``consume.<group>``  -- consumer fetch/commit through the same group; with the toxic active a
@@ -26,6 +30,7 @@ Checks (all fail-closed; top-level ``passed`` only if every check passes):
 Usage::
 
     python deploy/linux/fault-efficacy.py [--out results/harness/linux-fault-efficacy.json]
+    python deploy/linux/fault-efficacy.py --check-endpoints   # config-only, no docker needed
     exit code 0 == passed (all checks), 1 == failed, 2 == wrong host/substrate
 
 No campaign cells are executed; the script creates one scratch topic and small probes only.
@@ -53,12 +58,110 @@ if REPO not in sys.path:
 from experiments import stack  # noqa: E402
 
 DEFAULT_OUT = os.path.join(REPO, "results", "harness", "linux-fault-efficacy.json")
-BOOTSTRAP = "127.0.0.1:19091"          # kafka-1 Toxiproxy proxy (host loopback)
-SURVIVING_BOOTSTRAP = "127.0.0.1:9092"  # direct EXTERNAL listener of broker-2 (admin/ops only)
-TOXIPROXY_API = "http://127.0.0.1:8474"
-DB_PROXY_PORT = 15433
+DEFAULT_ENDPOINTS = os.path.join(REPO, "deploy", "docker", "endpoints.json")
+
+# Endpoint constants are loaded from deploy/docker/endpoints.json (the shared contract the runner
+# and the S4 injectors also consume) and validated against the deployed proxy configuration before
+# any check runs. They stay None until _apply_endpoints()/main(), so --check-endpoints is docker-free.
+BOOTSTRAP = None                 # runner fault bootstrap; MUST be a group-member Toxiproxy proxy
+SURVIVING_BOOTSTRAP = None       # direct EXTERNAL listener of broker-2 (admin/ops probes only)
+TOXIPROXY_API = None
+DB_PROXY_PORT = None
+KAFKA_GROUP_MEMBERS: list[str] = []
+BOOTSTRAP_ALIAS = None           # deprecated compat alias; never a fault path
 FAIL_BOUND_S = 20.0     # an active fault must make the operation fail within this bound
 RECOVER_BOUND_S = 60.0  # service must recover within this bound after toxic removal
+
+
+def load_endpoints(path: str | None = None) -> dict:
+    """Load deploy/docker/endpoints.json (fail closed on a missing/malformed contract)."""
+    ep_path = path or os.environ.get("WXEO_ENDPOINTS_FILE") or DEFAULT_ENDPOINTS
+    if not os.path.exists(ep_path):
+        raise FileNotFoundError("endpoints contract not found: %s" % ep_path)
+    with open(ep_path, encoding="utf-8") as fh:
+        ep = json.load(fh)
+    if not isinstance(ep, dict) or ep.get("schema") != "wxeo.endpoints.v1":
+        raise ValueError("endpoints contract must have schema wxeo.endpoints.v1: %s" % ep_path)
+    for key in ("kafka", "postgres", "toxiproxy"):
+        if not isinstance(ep.get(key), dict):
+            raise ValueError("endpoints contract missing object %r" % (key,))
+    return ep
+
+
+def validate_endpoints(ep: dict) -> dict:
+    """Cross-check the endpoint contract against the deployed proxy groups/config (fail closed).
+
+    B7/A6: the Kafka fault bootstrap must be a *group-member* proxy and the deprecated bootstrap
+    alias (19094) must be gone from the contract; it was removed once the runner switched every Kafka
+    endpoint to a group member.
+    """
+    groups = stack.proxy_groups()
+    kafka_names = list(groups.get("kafka") or [])
+    if not kafka_names:
+        raise AssertionError("proxy-groups.json has no 'kafka' group")
+    member_ports = ["127.0.0.1:%d" % stack.proxy_host_port(name) for name in kafka_names]
+    kafka_ep = ep["kafka"]
+    fault_bootstrap = str(kafka_ep.get("fault_bootstrap") or "")
+    if list(kafka_ep.get("group_member_proxies") or []) != member_ports:
+        raise AssertionError("endpoints group_member_proxies %r != deployed proxy ports %r"
+                             % (kafka_ep.get("group_member_proxies"), member_ports))
+    if fault_bootstrap not in member_ports:
+        raise AssertionError("fault_bootstrap %r is NOT a member of the Kafka proxy group %r "
+                             "(B7: the fault path must be inside the injected group)"
+                             % (fault_bootstrap, member_ports))
+    if fault_bootstrap != member_ports[0]:
+        raise AssertionError("fault_bootstrap %r must be the first deterministic group member %r"
+                             % (fault_bootstrap, member_ports[0]))
+    for group in ("kafka", "kafka-produce", "kafka-consume"):
+        if set(groups.get(group) or []) != set(kafka_names):
+            raise AssertionError("proxy group %r must map to the same per-broker proxies %r"
+                                 % (group, kafka_names))
+    direct = list(kafka_ep.get("direct_bootstrap") or [])
+    if [p.rsplit(":", 1)[1] for p in direct] != ["9091", "9092", "9093"]:
+        raise AssertionError("direct_bootstrap must be the three 9091-9093 compat listeners: %r"
+                             % (direct,))
+    alias = kafka_ep.get("bootstrap_alias")
+    if alias is not None:
+        raise AssertionError("deprecated bootstrap_alias must be removed from endpoints.json "
+                             "(A6/B7 follow-up: every Kafka endpoint uses 127.0.0.1:19091)")
+    for group, names in groups.items():
+        if "kafka-bootstrap" in (names or []):
+            raise AssertionError("bootstrap-only alias must not be in toxic group %r" % group)
+    pg = ep["postgres"]
+    db_members = groups.get("db") or []
+    if db_members != ["db"]:
+        raise AssertionError("proxy-groups db group must be exactly ['db']: %r" % (db_members,))
+    if int(pg.get("proxy_host_port")) != stack.proxy_host_port("db"):
+        raise AssertionError("postgres proxy_host_port %r != deployed db proxy port %d"
+                             % (pg.get("proxy_host_port"), stack.proxy_host_port("db")))
+    if int(pg.get("direct_host_port")) != 5433:
+        raise AssertionError("postgres direct_host_port must be 5433")
+    api_port = int(str(ep["toxiproxy"].get("api") or "").rsplit(":", 1)[-1].rstrip("/"))
+    if api_port != 8474:
+        raise AssertionError("toxiproxy api must be 127.0.0.1:8474")
+    return {
+        "validated": True,
+        "fault_bootstrap": fault_bootstrap,
+        "fault_bootstrap_is_group_member": True,
+        "group_member_proxies": member_ports,
+        "kafka_groups": {g: list(groups[g]) for g in ("kafka", "kafka-produce", "kafka-consume")},
+        "bootstrap_alias_removed": True,
+        "db_proxy_host_port": int(pg.get("proxy_host_port")),
+        "db_direct_host_port": int(pg.get("direct_host_port")),
+    }
+
+
+def _apply_endpoints(ep: dict) -> None:
+    """Bind the validated endpoint contract to this module's runtime globals."""
+    global BOOTSTRAP, SURVIVING_BOOTSTRAP, TOXIPROXY_API, DB_PROXY_PORT
+    global KAFKA_GROUP_MEMBERS, BOOTSTRAP_ALIAS
+    kafka_ep = ep["kafka"]
+    BOOTSTRAP = str(kafka_ep["fault_bootstrap"])
+    SURVIVING_BOOTSTRAP = str(kafka_ep["direct_bootstrap"][1])
+    KAFKA_GROUP_MEMBERS = list(kafka_ep["group_member_proxies"])
+    BOOTSTRAP_ALIAS = kafka_ep.get("bootstrap_alias")
+    TOXIPROXY_API = str(ep["toxiproxy"]["api"])
+    DB_PROXY_PORT = int(ep["postgres"]["proxy_host_port"])
 
 
 # ----------------------------------------------------------------------------------------------
@@ -379,8 +482,8 @@ def _f1_check(ck, topic: str) -> dict:
 _F2_CHILD = r"""
 import sys, json, time
 from confluent_kafka import Consumer
-group, topic = sys.argv[1], sys.argv[2]
-c = Consumer({"bootstrap.servers": "127.0.0.1:29092",
+group, topic, bootstrap = sys.argv[1], sys.argv[2], sys.argv[3]
+c = Consumer({"bootstrap.servers": sys.argv[3],
               "group.id": group,
               "auto.offset.reset": "earliest",
               "enable.auto.commit": False,
@@ -394,7 +497,7 @@ while True:
 
 def _f2_check(ck, topic: str) -> dict:
     group = "wxeo-efficacy-f2-%d" % os.getpid()
-    child = subprocess.Popen([sys.executable, "-c", _F2_CHILD, group, topic],
+    child = subprocess.Popen([sys.executable, "-c", _F2_CHILD, group, topic, BOOTSTRAP],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         deadline = time.time() + 20
@@ -441,10 +544,30 @@ def _f2_check(ck, topic: str) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Linux/container fault-efficacy proof")
     parser.add_argument("--out", default=DEFAULT_OUT)
-    parser.add_argument("--bootstrap", default=BOOTSTRAP)
+    parser.add_argument("--endpoints", default=os.environ.get("WXEO_ENDPOINTS_FILE") or DEFAULT_ENDPOINTS,
+                        help="shared endpoint contract (default deploy/docker/endpoints.json)")
+    parser.add_argument("--bootstrap", default=None,
+                        help="override only if it equals the contract fault_bootstrap (B7)")
+    parser.add_argument("--check-endpoints", action="store_true",
+                        help="config-only validation of the endpoint contract (no docker needed)")
     parser.add_argument("--skip-f1f2", action="store_true",
                         help="skip the broker-kill / pid-kill checks (proxy checks only)")
     args = parser.parse_args(argv)
+
+    # B7: validate the shared endpoint contract against the deployed proxy configuration first.
+    ep = load_endpoints(args.endpoints)
+    endpoint_evidence = validate_endpoints(ep)
+    if args.bootstrap and args.bootstrap != endpoint_evidence["fault_bootstrap"]:
+        print("fault-efficacy: --bootstrap %r is not the contract fault bootstrap %r (B7)"
+              % (args.bootstrap, endpoint_evidence["fault_bootstrap"]), file=sys.stderr)
+        return 2
+    if args.check_endpoints:
+        payload = {"schema": "wxeo.endpoint-check.v1", "generated_utc": _utc_now(),
+                   "endpoints_file": args.endpoints, "passed": True,
+                   "evidence": endpoint_evidence, "endpoints": ep}
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    _apply_endpoints(ep)
 
     if os.name != "posix" or not stack.is_docker():
         print("fault-efficacy: Linux/container substrate required "
@@ -465,12 +588,17 @@ def main(argv: list[str] | None = None) -> int:
                  "python": platform.python_version()},
         "stack": {"mode": stack.stack_mode(), "compose_file": stack.compose_file(),
                   "container_names": stack.broker_container_names()},
-        "bootstrap": args.bootstrap,
+        "bootstrap": BOOTSTRAP,
+        "endpoints": endpoint_evidence,
+        "endpoints_file": args.endpoints,
         "topic": topic,
         "proxy_groups": groups,
         "checks": [],
     }
     checks = report["checks"]
+    checks.append({"name": "endpoints.contract", "group": None, "passed": True,
+                   "evidence": endpoint_evidence, "duration_ms": 0,
+                   "started_utc": _utc_now(), "finished_utc": _utc_now()})
 
     # 0) proxy inventory must match the logical groups (fail closed on typos)
     def _inventory():
@@ -482,12 +610,13 @@ def main(argv: list[str] | None = None) -> int:
 
     # 1) bootstrap path: create the scratch topic through a proxy and round-trip once
     def _bootstrap_path():
-        _new_topic(ck, args.bootstrap, topic)
-        _produce_once(ck, args.bootstrap, topic, "bootstrap")
-        seen = _consume_round_trip(ck, args.bootstrap, topic, run_id + "-bootstrap", 1, 20.0)
+        _new_topic(ck, BOOTSTRAP, topic)
+        _produce_once(ck, BOOTSTRAP, topic, "bootstrap")
+        seen = _consume_round_trip(ck, BOOTSTRAP, topic, run_id + "-bootstrap", 1, 20.0)
         if seen < 1:
             raise AssertionError("no record consumed through the proxy bootstrap path")
-        return {"bootstrap": args.bootstrap, "produced": 1, "consumed": seen}
+        return {"bootstrap": BOOTSTRAP, "produced": 1, "consumed": seen,
+                "group_members": KAFKA_GROUP_MEMBERS}
     checks.append(_check("bootstrap.proxied-round-trip", None, _bootstrap_path))
 
     # 2) one check pair per logical group (produce and consume faults on the same proxy set)

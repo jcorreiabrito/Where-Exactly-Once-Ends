@@ -91,10 +91,12 @@ def build_cells() -> list[dict]:
     def add(stage_label: str, stage_lower: str, mechanism: str, condition: str, load: str,
             events: int, partitions: int, reps: int, fault_level: str, ordering: str,
             injector_mode: str, load_mode: str = "fixed-rate", executed: bool = True,
-            na_reason: str | None = None, block: str = "", extra: dict | None = None):
+            na_reason: str | None = None, block: str = "", extra: dict | None = None,
+            cell_suffix: str = ""):
         cell = {
             "cell_id": f"{stage_label}.{mechanism}.{condition}.{load}.p{partitions}"
-                       + (".sat" if load_mode == "saturation" else ""),
+                       + (".sat" if load_mode == "saturation" else "")
+                       + (f".{cell_suffix}" if cell_suffix else ""),
             "stage": stage_lower,
             "stage_label": stage_label,
             "mechanism": mechanism,
@@ -190,7 +192,9 @@ def build_cells() -> list[dict]:
             add("M7", "m7", mech, "cal", load, events, 6, 3,
                 fault_level="none", ordering="strict", injector_mode="none",
                 load_mode="fixed-rate", block="M7-cal", extra={"calibration": True})
-    # ---- A5 M7spot spot-check block: 63 runs (6 (L,P) blocks + saturation), N=1 ------------
+    # ---- A5 M7spot spot-check block: 54 runs (5 (L,P) blocks + saturation), N=1 ------------
+    # Revision r2 of A5.3: the drafted 1k/P3 spot block is NOT calibratable (A5.1), so the
+    # spot block is 9 mechanisms x {five uncalibrated fixed blocks + one saturation spot} = 54.
     for mech in DES.MECHANISMS:
         for load, partitions in DES.M7_SPOT_BLOCKS:
             events = 1_000_000 if load == 1_000_000 else load
@@ -203,6 +207,16 @@ def build_cells() -> list[dict]:
             ordering="strict", injector_mode="none", load_mode="saturation",
             block="M7spot", extra={"calibration": True, "spot_check": True,
                                    "run_id_prefix": "m7sopt", "sat_token": False})
+    # ---- A6 M7sat saturation-validation block: 9 runs (one per mechanism, 100k/P6, N=1) -----
+    # T1b offers EXACTLY the candidate rates.json 2.5x-max saturation rate
+    # (saturation_rate["100000|p6|sat"].rate) and validates that the run sustained it (A6.2).
+    for mech in DES.MECHANISMS:
+        add("M7", "m7", mech, "cal", "100k", 100_000, 6, 1, fault_level="none",
+            ordering="strict", injector_mode="none", load_mode="saturation",
+            block="M7sat", extra={"calibration": True,
+                                  "saturation_validation": True,
+                                  "run_id_prefix": "m7sat", "sat_token": False},
+            cell_suffix="m7sat")
     return cells
 
 
@@ -299,6 +313,7 @@ def expand_runs(cells: list[dict], validation: list[dict]) -> list[dict]:
                 "cell_id": cell["cell_id"],
                 "stage": stage,
                 "stage_label": cell["stage_label"],
+                "block": cell.get("block", ""),
                 "mechanism": cell["mechanism"],
                 "wire_mechanism": cell["mechanism"],
                 "fault": cell["fault"],
@@ -324,6 +339,7 @@ def expand_runs(cells: list[dict], validation: list[dict]) -> list[dict]:
             "cell_id": f"V.{v['kind']}.{v['mechanism']}.{v['fault']}.1k.p3",
             "stage": stage,
             "stage_label": "V",
+            "block": "V-validation",
             "mechanism": v["mechanism"],
             "wire_mechanism": v["mechanism"],
             "fault": v["fault"],
@@ -547,8 +563,10 @@ def accounts(cells: list[dict], validation: list[dict]) -> dict:
                               and c["block"] == label)
                    for label in sorted({c["block"] for c in cells
                                         if c["stage_label"] == "M7"})},
-        "note": "author-approved P2 calibration block; separate from the 7,506/7,488 "
-                "confirmatory counts; used only to derive fixed/saturation rates (R12)",
+        "amendments": ["A5 (revision r2)", "A6"],
+        "note": "author-approved A5/A6 calibration blocks (M7-cal 54 + M7spot 54 + M7sat 9 = "
+                "117); separate from the 7,506/7,488 confirmatory counts; used only to derive "
+                "fixed/saturation rates (R12) and to exercise the derived saturation rate (A6)",
     }
     return {"stages": stages, "totals": totals, "calibration": calibration}
 
@@ -564,8 +582,10 @@ def _matrix_document(cells: list[dict], validation: list[dict], acc: dict) -> di
             "reachability": "docs/method.md §5.3",
             "rulings": "docs/P2-RULINGS.md R1–R4",
             "interface": "docs/CONTRACTS.md §2, §4",
+            "rate_calibration": "docs/prereg-amendment-A5.md (revision r2)",
+            "saturation_validation": "docs/prereg-amendment-A6.md",
         },
-        "prereg_version": "1.0-draft + P1 approval + P2 rulings R1–R4",
+        "prereg_version": "1.0-draft + P1 approval + P2 rulings R1–R4 + amendments A5(r2)/A6",
         "seeds": {
             "master_seed": MASTER_SEED,
             "order_seed": ORDER_SEED,
@@ -589,7 +609,24 @@ def _matrix_document(cells: list[dict], validation: list[dict], acc: dict) -> di
             "ordering_variants": ["strict", "early"],
             "load_modes": ["fixed-rate", "saturation"],
             "repetitions": {"pilot": 3, "stage_a": 30, "stage_b_core": 30,
-                            "sensitivity": 10, "stage_c_core": 30, "stage_c_blocks": 10},
+                            "sensitivity": 10, "stage_c_core": 30, "stage_c_blocks": 10,
+                            "m7_cal": 3, "m7_spot": 1, "m7_sat": 1},
+        },
+        "calibration_blocks": {
+            "M7-cal": {"runs": DES.M7_CAL_RUNS, "loads": ["10k", "100k"], "partitions": 6,
+                       "reps": 3, "purpose": "R12 capacity measurement (fixed/saturation rates)"},
+            "M7spot": {"runs": DES.M7_SPOT_RUNS,
+                       "blocks": [f"{load}|p{p}" for load, p in DES.M7_SPOT_BLOCKS]
+                                 + ["100000|p6|sat"],
+                       "reps": 1, "run_id_prefix": "m7sopt",
+                       "purpose": "A5.3 mapping-rule spot checks (+/-25 %) incl. saturation spot"},
+            "M7sat": {"runs": DES.M7_SAT_RUNS,
+                      "block": "100000|p6|sat", "load_mode": "saturation", "reps": 1,
+                      "run_id_prefix": "m7sat",
+                      "purpose": "A6.2 post-rates saturation validation at the derived "
+                                 "2.5x-max rate (offered rate recorded per run)"},
+            "total_runs": DES.M7_CALIBRATION_RUNS,
+            "excluded_from_confirmatory": True,
         },
         "reachability": {
             "stage_a_crash_classes": {m: DES.crash_classes(m) for m in DES.MECHANISMS},
@@ -619,6 +656,73 @@ def _run_order_rows(order: list[dict]) -> list[list]:
     return rows
 
 
+def _calibration_row_checks(order: list[dict]) -> list[str]:
+    """A5/A6 integrity of the calibration rows (block composition, ids, no 1k rows).
+
+    The M7 stage is one frozen calibration stage with three blocks; the block token is what the
+    runner selects on (``--stage M7cal`` = M7-cal + M7spot; ``--stage M7sat`` = A6 T1b), so the
+    composition must be checked here rather than inferred from the run-id convention.
+    """
+    problems: list[str] = []
+    cal = [r for r in order if str(r.get("stage")) == "m7"]
+    expected = {"M7-cal": DES.M7_CAL_RUNS, "M7spot": DES.M7_SPOT_RUNS,
+                "M7sat": DES.M7_SAT_RUNS}
+    by_block: dict[str, list[dict]] = {}
+    for run in cal:
+        by_block.setdefault(str(run.get("block") or ""), []).append(run)
+    for block, count in expected.items():
+        got = len(by_block.get(block, []))
+        if got != count:
+            problems.append(f"{block}: {got} run-order rows != {count}")
+    unexpected = sorted(set(by_block) - set(expected))
+    if unexpected:
+        problems.append(f"unexpected calibration blocks in run_order: {unexpected}")
+    spot_combos = {(int(load), int(p)) for load, p in DES.M7_SPOT_BLOCKS}
+    for run in cal:
+        run_id = str(run.get("run_id"))
+        block = str(run.get("block") or "")
+        if int(run.get("load_events")) <= 1_000:
+            problems.append(f"1k calibration row must not exist (A5.1): {run_id}")
+        if not run_id.startswith(("m7-", "m7sopt-", "m7sat-")):
+            problems.append(f"calibration run_id {run_id} lacks an M7 prefix")
+        if block == "M7-cal":
+            if not run_id.startswith("m7-"):
+                problems.append(f"M7-cal run_id {run_id} must use the m7- prefix")
+        elif block == "M7spot":
+            if not run_id.startswith("m7sopt-"):
+                problems.append(f"M7spot run_id {run_id} must use the m7sopt- prefix")
+        elif block == "M7sat":
+            if not run_id.startswith("m7sat-"):
+                problems.append(f"M7sat run_id {run_id} must use the m7sat- prefix")
+            if (int(run.get("load_events")), int(run.get("partitions")),
+                    run.get("load_mode")) != (100_000, 6, "saturation"):
+                problems.append(f"M7sat row {run_id} must be 100k/P6 saturation")
+        else:
+            problems.append(f"calibration row {run_id} has no known block: {block!r}")
+    # per-block composition: M7-cal 6 runs/mechanism, M7spot 6 rows/mechanism (5 fixed combos +
+    # one (100k,P6) saturation spot), M7sat exactly one run/mechanism.
+    for block, per_mechanism in (("M7-cal", 6), ("M7spot", 6), ("M7sat", 1)):
+        rows = by_block.get(block, [])
+        counts: dict[str, int] = {}
+        for run in rows:
+            counts[str(run.get("mechanism"))] = counts.get(str(run.get("mechanism")), 0) + 1
+        if set(counts) != set(DES.MECHANISMS):
+            problems.append(f"{block}: mechanisms {sorted(set(counts))} != the nine frozen ones")
+        bad = {m: n for m, n in counts.items() if n != per_mechanism}
+        if bad:
+            problems.append(f"{block}: per-mechanism run counts {bad} != {per_mechanism}")
+    for run in by_block.get("M7spot", []):
+        load = int(run.get("load_events"))
+        partitions = int(run.get("partitions"))
+        if run.get("load_mode") == "saturation":
+            if (load, partitions) != (100_000, 6):
+                problems.append(f"spot saturation row {run['run_id']} must be 100k/P6")
+        elif (load, partitions) not in spot_combos:
+            problems.append(f"spot row {run['run_id']} block {(load, partitions)} is not an "
+                            f"A5.3 spot block")
+    return problems
+
+
 def write_outputs(out_dir: str) -> dict:
     import yaml
 
@@ -641,9 +745,28 @@ def write_outputs(out_dir: str) -> dict:
             raise AssertionError(
                 f"stage {stage}: planned/executable {got['runs_planned']}/"
                 f"{got['runs_executable']} != prereg {planned}/{executable}")
+    totals = acc["totals"]
+    if (totals["runs_planned"], totals["runs_executable"],
+            totals["validation_runs"], totals["nominal_total_executable_plus_validation"]) != (
+            DES.CONFIRMATORY_PLANNED, DES.CONFIRMATORY_EXECUTABLE, DES.VALIDATION_RUNS,
+            DES.ORDER_SLOTS):
+        raise AssertionError(f"confirmatory accounting drifted: {totals}")
+    cal_blocks = acc["calibration"]["blocks"]
+    expected_cal_blocks = {"M7-cal": DES.M7_CAL_RUNS, "M7spot": DES.M7_SPOT_RUNS,
+                           "M7sat": DES.M7_SAT_RUNS}
+    if cal_blocks != expected_cal_blocks:
+        raise AssertionError(f"calibration blocks {cal_blocks} != {expected_cal_blocks}")
+    if acc["calibration"]["runs"] != DES.M7_CALIBRATION_RUNS:
+        raise AssertionError(f"calibration runs {acc['calibration']['runs']} != "
+                             f"{DES.M7_CALIBRATION_RUNS}")
+    if len(order) != DES.ORDER_ROWS:
+        raise AssertionError(f"run order rows {len(order)} != {DES.ORDER_ROWS}")
     if len(order) != (acc["totals"]["runs_executable"] + len(validation)
                       + acc["calibration"]["runs"]):
         raise AssertionError("run order length mismatch")
+    cal_problems = _calibration_row_checks(order)
+    if cal_problems:
+        raise AssertionError("calibration run-order integrity failed: " + "; ".join(cal_problems))
     # run ids must be unique, lower-case, Kafka-topic-legal
     import re
     seen = set()
@@ -654,6 +777,13 @@ def write_outputs(out_dir: str) -> dict:
         if rid in seen:
             raise AssertionError(f"duplicate run_id: {rid}")
         seen.add(rid)
+    # cell ids must be unique: A6 adds a second 100k/P6 saturation calibration cell (M7sat), which
+    # must not share its cell_id with the M7spot saturation spot check.
+    seen_cells = set()
+    for cell in cells:
+        if cell["cell_id"] in seen_cells:
+            raise AssertionError(f"duplicate cell_id: {cell['cell_id']}")
+        seen_cells.add(cell["cell_id"])
     os.makedirs(out_dir, exist_ok=True)
     matrix_path = os.path.join(out_dir, "matrix.yaml")
     order_path = os.path.join(out_dir, "run_order.csv")
@@ -740,9 +870,32 @@ def check_outputs() -> dict:
     if len(rows) != (acc["totals"]["runs_executable"] + acc["totals"]["validation_runs"]
                      + calibration_runs):
         problems.append(f"run_order rows {len(rows)} != executable+validation+calibration")
-    expected_cal = DES.M7_CAL_RUNS + DES.M7_SPOT_RUNS
-    if calibration_runs != expected_cal:
-        problems.append(f"M7 calibration runs {calibration_runs} != {expected_cal}")
+    if calibration_runs != DES.M7_CALIBRATION_RUNS:
+        problems.append(f"M7 calibration runs {calibration_runs} != {DES.M7_CALIBRATION_RUNS}")
+    expected_cal_blocks = {"M7-cal": DES.M7_CAL_RUNS, "M7spot": DES.M7_SPOT_RUNS,
+                           "M7sat": DES.M7_SAT_RUNS}
+    if (acc.get("calibration") or {}).get("blocks") != expected_cal_blocks:
+        problems.append(f"calibration blocks {(acc.get('calibration') or {}).get('blocks')} != "
+                        f"{expected_cal_blocks}")
+    totals = acc["totals"]
+    expected_totals = {
+        "runs_planned": DES.CONFIRMATORY_PLANNED,
+        "runs_executable": DES.CONFIRMATORY_EXECUTABLE,
+        "validation_runs": DES.VALIDATION_RUNS,
+        "nominal_total_executable_plus_validation": DES.ORDER_SLOTS,
+    }
+    for key, want in expected_totals.items():
+        if totals.get(key) != want:
+            problems.append(f"totals.{key} {totals.get(key)} != {want}")
+    if len(rows) != DES.ORDER_ROWS:
+        problems.append(f"run_order rows {len(rows)} != {DES.ORDER_ROWS}")
+    cell_blocks = {c.get("cell_id"): c.get("block", "") for c in doc.get("cells") or []}
+    typed_rows = [{**row,
+                   "block": cell_blocks.get(row.get("cell_id"), ""),
+                   "load_events": int(row["load_events"]) if row.get("load_events") else 0,
+                   "partitions": int(row["partitions"]) if row.get("partitions") else 0}
+                  for row in rows]
+    problems.extend(_calibration_row_checks(typed_rows))
     with open(os.path.join(REPO, "experiments", "matrix.sha256"), encoding="utf-8") as fh:
         recorded = {line.split()[1]: line.split()[0]
                     for line in fh if line.strip()}

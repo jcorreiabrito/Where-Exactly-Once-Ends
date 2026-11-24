@@ -9,8 +9,9 @@
 #                (bootstrap/admin only: every advertised broker address is a Toxiproxy port, so all
 #                client<->broker traffic after metadata goes through Toxiproxy).
 #   postgres    5433 (loopback only), db `wxeo`, roles wxeo_app/wxeo_read/wxeo_fault, trust loopback
-#   toxiproxy   8474 API + proxies kafka-1..3 (19091..19093) and db (15433); kafka-bootstrap (19094)
-#               is a contract-compatibility alias for the frozen runner's consumer-bootstrap endpoint.
+#   toxiproxy   8474 API + proxies kafka-1..3 (19091..19093) and db (15433). The old bootstrap alias
+#               19094 was removed after the runner switched every Kafka endpoint to a group member
+#               (A6/B7 follow-up: deploy/docker/endpoints.json kafka.fault_bootstrap=127.0.0.1:19091).
 #
 # Every published port is bound to 127.0.0.1 (A4/runbook isolation claim, red-team L6).
 # The runner resets the stack with `docker compose down -v && up -d --wait` (fresh broker log dirs,
@@ -135,7 +136,6 @@ services:
       - "127.0.0.1:19091:19091"
       - "127.0.0.1:19092:19092"
       - "127.0.0.1:19093:19093"
-      - "127.0.0.1:19094:19094"
       - "127.0.0.1:15433:15433"
     volumes:
       - ./toxiproxy.json:/config/toxiproxy.json:ro
