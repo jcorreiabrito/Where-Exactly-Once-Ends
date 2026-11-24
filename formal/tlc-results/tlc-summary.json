@@ -1,5 +1,5 @@
 ﻿{
-    "checked_utc":  "2026-11-24T12:47:30Z",
+    "checked_utc":  "2026-11-24T12:51:13Z",
     "tlc_version":  "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)",
     "tla2tools_sha256":  "936A262061C914694DFD669A543BE24573C45D5AA0FF20A8B96B23D01E050E88",
     "bounds":  {
@@ -26,7 +26,7 @@
                         "NoError":  true,
                         "DistinctStates":  18,
                         "Exit":  0,
-                        "Seconds":  1
+                        "Seconds":  0.9
                     },
                     {
                         "Config":  "03-atomic",
@@ -36,7 +36,7 @@
                         "NoError":  true,
                         "DistinctStates":  8,
                         "Exit":  0,
-                        "Seconds":  1
+                        "Seconds":  0.9
                     },
                     {
                         "Config":  "04-atomic-dedup",
@@ -46,7 +46,7 @@
                         "NoError":  true,
                         "DistinctStates":  8,
                         "Exit":  0,
-                        "Seconds":  0.9
+                        "Seconds":  1.1
                     },
                     {
                         "Config":  "05-kafka-txn",
@@ -56,7 +56,7 @@
                         "NoError":  true,
                         "DistinctStates":  8,
                         "Exit":  0,
-                        "Seconds":  0.9
+                        "Seconds":  0.8
                     },
                     {
                         "Config":  "06-txn-only",
@@ -64,7 +64,7 @@
                         "Observed":  "I3Unique",
                         "Match":  true,
                         "NoError":  false,
-                        "DistinctStates":  36,
+                        "DistinctStates":  39,
                         "Exit":  12,
                         "Seconds":  0.9
                     },
@@ -74,9 +74,9 @@
                         "Observed":  "I4CompleteWhenDone",
                         "Match":  true,
                         "NoError":  false,
-                        "DistinctStates":  21,
+                        "DistinctStates":  22,
                         "Exit":  12,
-                        "Seconds":  1
+                        "Seconds":  0.9
                     },
                     {
                         "Config":  "08-early-dedup",

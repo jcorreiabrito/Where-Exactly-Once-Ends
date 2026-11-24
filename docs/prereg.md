@@ -63,7 +63,7 @@ Out of scope: implementations (S3), execution (S4), red-team objections (S5), ma
 |---|---|
 | Purpose | calibrate per-run timings for the compute projection; validate the oracle, the injectors, the source-integrity gate, and the read path; measure mechanism capacities for the target-rate rules (§6.2); verify C=1 robustness |
 | Design | 9 mechanisms × 8 fault conditions × N=3 × 1k events × P=3 × C=2 |
-| Runs | **216** |
+| Runs | **201 executed** of **216 planned slots** (15 mechanism × condition slots are structurally `n/a` by reachability, see §2.2; they are recorded with `executed=false` and the reachability reason, never counted as passes). Planned/executable totals are reported throughout. |
 | Additional validation runs | 20 dedicated: sham-injection runs (injector armed, no action), C=1 robustness runs, injector self-tests, oracle mutation-test fixtures; recorded separately and not part of the matrix |
 | Output | `pilot_*.json` run records + the completed projection worksheet (§9.4) written into this document at P2 |
 
@@ -110,14 +110,18 @@ Out of scope: implementations (S3), execution (S4), red-team objections (S5), ma
 
 ### 2.8 Totals and the cut ladder
 
-| Package | Runs |
-|---|---|
-| Pilot | 216 (+20 validation) |
-| Stage A | 1,830 |
-| Stage B nominal | 4,020 |
-| Stage C | 1,800 |
-| Stage D | 0 |
-| **Nominal total** | **7,866 (+20 validation)** |
+| Package | Planned slots | Executable runs |
+|---|---|---|
+| Pilot | 216 | 201 (+20 validation) |
+| Stage A | 1,830 | 1,830 |
+| Stage B nominal | 4,020 | 4,020 |
+| Stage C | 1,800 | 1,800 |
+| Stage D | 0 | 0 |
+| **Nominal total** | **7,866** | **7,851 (+20 validation)** |
+
+The 15-slot difference is exactly the mechanism × condition reachability `n/a` set of §2.2; no
+confirmatory cell is removed by this accounting. Every table in the paper reports planned slots,
+executable runs, executed runs and excluded runs separately.
 
 **Cut ladder (A1 §7, mechanical).** Given the author's available wall-clock `H` and the P2 projection `T_total`:
 1. If `T_total > H`: remove the Stage C 1M block (−90 runs). Recompute.
@@ -210,6 +214,12 @@ Kafka broker and PostgreSQL **processes are long-lived** and restarted every 50 
 - Injection seed per repetition: `inj_seed(stage, condition, rep) = SHA-256(master_seed | "inj" | stage | condition | rep)[0:16]`.
 - **Pairing:** all mechanisms in the same `(stage, condition, rep)` use the same data seed, which makes correctness runs paired by experimental material and enables McNemar's test (§7.2). Injection seeds are also shared, but the *realised fault time* differs per mechanism because phase progress differs; this is recorded and is not a pairing claim.
 - A run is reproducible from `(matrix cell, rep)` alone.
+- **Seed text encoding (P2 clarification, 2026-11-24).** `master_seed`, `data_seed` and
+  `injection_seed` are recorded as 16-hex-char strings. The event-derivation seed argument is
+  `data_seed` interpreted as a big-endian unsigned 64-bit integer and rendered as canonical decimal
+  ASCII (no sign, no leading zeros); the Java generator and the Python oracle use exactly that text
+  in their domain-separated SHA-256 derivations (`wxeo1|event|`, `wxeo1|part|`). GT `line_no` is
+  0-based; posting `leg_no` is 1-based. This changes no N, cell, factor or statistic.
 
 ### 4.5 Warm-up and steady state
 
@@ -230,7 +240,7 @@ One JSON object per run, path `results/raw/<stage>/<run_id>.json`, committed (co
 | Field | Type | Unit/Source | Description |
 |---|---|---|---|
 | `schema` | string | const | `"wxeo.run.v1"` |
-| `run_id` | string | runner | `<stage>-<mech>-<condition>-r<rep>` |
+| `run_id` | string | runner | `<stage>-<mech>-<condition>-r<rep>`; exact encoding (Kafka-legal, lower-case) fixed in `docs/CONTRACTS.md` §2, e.g. `b-m2m3-f1-100k-p6-r12` |
 | `stage` | string | runner | `pilot`/`A`/`B`/`C`/`D` |
 | `cell_id` | string | matrix | unique cell identifier |
 | `mechanism` | string | matrix | one of the 9 |

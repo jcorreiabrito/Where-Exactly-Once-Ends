@@ -1,0 +1,397 @@
+% ============================================================================
+% sections/system.tex -- Section 3: System and Failure Model
+% Drafted from the P1-approved docs/method.md (§1.3--§1.5, §2, §3).
+% ============================================================================
+
+% Theorem-like environments. Defined once here (guarded, so a later preamble
+% addition cannot clash); base-LaTeX \newtheorem is used because amsthm is not
+% loaded by the class.
+\makeatletter
+\@ifundefined{c@proposition}{\newtheorem{proposition}{Proposition}}{}
+\@ifundefined{c@lemma}{\newtheorem{lemma}{Lemma}}{}
+\@ifundefined{c@corollary}{\newtheorem{corollary}{Corollary}}{}
+\@ifundefined{proofsketch}{%
+  \newenvironment{proofsketch}{\par\noindent\emph{Proof sketch.}\ }{\hfill$\square$\par}}{}
+\makeatother
+
+\section{System and Failure Model}
+\label{sec:model}
+
+This section fixes the vocabulary used throughout the paper: the pipeline and its
+durable stores, the event and ledger schemas, the ledger invariants, the boundary of
+Kafka's exactly-once guarantee, and the crash-point model against which the mechanisms
+are analysed.
+
+\subsection{Pipeline and durable stores}
+\label{sec:model:pipeline}
+
+The pipeline is the canonical form of a ledger ingestion service: a Kafka source topic
+carries business events; a consumer service applies a deterministic function to each
+record and performs two durable side effects; a load generator produces the events and
+an independent oracle verifies the end state. Kafka is used as a replicated,
+partitioned log \cite{kafka2015}; the source topic is partitioned, replicated with
+factor three and consumed by a consumer group whose offsets are committed to Kafka's
+offset store. The consumer group is the unit of progress; partitions are the unit of
+parallelism.
+
+Two durable stores receive side effects. The first is the \emph{ledger sink}: a
+PostgreSQL database whose posting table is the authoritative record of the ledger. The
+second is the \emph{publication stream}: a Kafka topic to which one derived entry record
+per business event is appended, used by downstream audit consumers
+\cite{sax2018,eventsourcing2022}. For the DB-sink mechanisms (M0, M1x, M2, M3, M4 and
+the combinations) the ledger is PostgreSQL and the publication stream is auxiliary; for
+the Kafka-sink mechanism (M1-kafka) the publication stream \emph{is} the ledger. This
+distinction is a construct-validity matter and is stated wherever mechanisms are
+compared (Section~\ref{sec:mechanisms}).
+
+The deployment analysed here is deliberately modest and reproducible: three Kafka
+KRaft broker processes, one PostgreSQL instance, one Toxiproxy process for TCP faults,
+and the consumer service at two instances in one consumer group. Table~\ref{tab:components}
+lists the components and their failure-relevant roles. The single-host deployment is a
+fidelity limitation discussed in the threats-to-validity section; it is not a modelling
+simplification: the mechanisms are the ones deployed in practice, and every fault is a
+real process kill or a real TCP manipulation, not a simulation.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Executed system: components, roles, and failure-relevant properties. All
+components are native processes; the substrate and version pinning are described in
+Section~\ref{sec:method}.}
+\label{tab:components}
+\begin{tabular}{@{}p{2.6cm}p{2.2cm}p{6.2cm}p{4.2cm}@{}}
+\toprule
+Component & Instances & Role & Durable state \\
+\midrule
+Kafka brokers (KRaft) & 3 & replicated source log, publication stream, consumer offsets, transaction state & log segments, offset store, transaction state \\
+PostgreSQL 16 & 1 & authoritative ledger for DB-sink mechanisms; progress, inbox and outbox tables where the mechanism uses them & ledger tables, progress tables, WAL \\
+Consumer service & 2 & one instance of the mechanism under test; reads source records and performs the mechanism's durable duties & none of its own (recovery uses the mechanism's durable state) \\
+Load generator & 1 & deterministic open-loop producer; writes ground truth before producing & ground-truth file and produced manifest \\
+Toxiproxy & 1 & cuts, delays and resets real TCP connections (app$\leftrightarrow$Kafka, app$\leftrightarrow$PostgreSQL) & none \\
+Runner and injectors & 1 & per-run orchestration, fault injection, fault attestation, run records & run records and fault log \\
+Oracle & 1 & independent verifier: re-derives the expected postings and compares them with the sink & analysis output only \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Events, entries, and postings}
+\label{sec:model:schema}
+
+One source record carries exactly one complete journal entry: a business event
+$e=(\mathit{eid},\mathit{cur},\mathit{legs})$ with $\mathit{legs}=((a_D,D,m),(a_C,C,m))$,
+$m\in\mathbb{Z}^{+}$ and $a_D\neq a_C$. The two legs are one debit (D) of $m$ minor
+units and one credit (C) of the same amount in the same currency. The restriction to
+two-leg, single-currency entries is a scoping decision: it keeps the unit of atomicity
+at the record level and isolates the external-store boundary, which is the object of
+study; multi-leg and multi-currency entries are not modelled
+(Section~\ref{sec:model:assumptions}, assumption A12).
+
+Events are a pure function of a per-repetition seed and a global sequence number: the
+$\mathit{eid}$, both account identifiers, the amount and the target partition are
+derived with SHA-256 over domain-separated inputs. The generator and the oracle
+implement the same derivation independently, so the expected posting set is
+recomputable rather than stored, and the two implementations can be compared
+byte-for-byte. This is the mechanism behind the independent oracle of
+Section~\ref{sec:method}.
+
+The ledger sink stores \emph{postings}, one row per leg. Table~\ref{tab:posting}
+summarises the schema. Postings are append-only: the application role holds only
+\texttt{INSERT} and \texttt{SELECT} on the table, and a trigger rejects every
+\texttt{UPDATE} or \texttt{DELETE}. The deduplication index on
+$(\mathit{event\_id},\mathit{leg\_no})$ exists only in mechanisms that use
+de-duplication; its absence in the naive mechanisms is part of the treatment, not an
+implementation accident. Amounts are integers in minor units; no floating point
+appears in the pipeline.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ledger sink schema (columns abbreviated). The unique index is present only in
+the de-duplicating mechanisms (M3, M2+M3, M4+M3, M1x+M3). Append-only enforcement is
+identical for all mechanisms.}
+\label{tab:posting}
+\begin{tabular}{@{}p{2.5cm}p{2.4cm}p{3.0cm}@{}}
+\toprule
+Column & Type & Constraint \\
+\midrule
+\texttt{posting\_id} & bigserial & primary key \\
+\texttt{event\_id} & text & not null \\
+\texttt{leg\_no} & smallint & check $\in\{1,2\}$ \\
+\texttt{account\_id} & text & not null \\
+\texttt{side} & char(1) & check $\in\{\mathrm{D},\mathrm{C}\}$ \\
+\texttt{amount\_minor} & bigint & check $>0$ \\
+\texttt{currency} & char(3) & not null \\
+\texttt{produced\_at} & timestamptz & from the event \\
+\midrule
+\multicolumn{3}{@{}p{7.9cm}@{}}{\texttt{UNIQUE(event\_id, leg\_no)} --- de-duplicating mechanisms only} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ledger invariants and observation}
+\label{sec:model:invariants}
+
+A ledger is correct when it records every consumed business event exactly once and no
+other posting. Double-entry bookkeeping requires each entry to be balanced
+\cite{triple2019,triple2021}; append-only recording is the classic durability
+discipline for journals \cite{lsfs1992}. We therefore identify four invariants. Let
+$D$ be the observed posting multiset (rows of the sink, or committed records of the
+publication stream when that stream is the ledger) and let $\Omega$ be the expected
+posting multiset derived from the events that are durably present in the source topic.
+Write $\mathrm{mult}(D,\pi)$ for the multiplicity of posting $\pi=(e,\ell)$ in $D$.
+
+\begin{align}
+\text{I1 (balanced entries):}\quad & \forall e\in D:\ \text{postings of } e \text{ are exactly one D and one C leg,}\notag\\
+& \text{equal amounts, one currency, signed sum } 0. \label{eq:i1}\\
+\text{I2 (append-only):}\quad & \text{no durable posting is modified or deleted, and every matched}\notag\\
+& \text{posting carries the expected value.} \label{eq:i2}\\
+\text{I3 (uniqueness):}\quad & \forall e\in D:\ \mathrm{mult}(D,e)\le 2 \ \wedge\ \forall\pi:\ \mathrm{mult}(D,\pi)\le 1. \label{eq:i3}\\
+\text{I4 (completeness):}\quad & \forall e\in E_{\text{source}}:\ \text{the two postings of } \Pi(e) \text{ occur exactly once in } D. \label{eq:i4}
+\end{align}
+
+I1 is split into structural well-formedness (\emph{I1a}: exactly two legs, one per
+side, equal amount, single currency) and the signed-sum condition (\emph{I1b}); the
+split matters because whole-entry duplication leaves the signed sum at zero. I4 is an
+end-state completeness property, measured after quiescence; the corresponding liveness
+argument is stated, but not relied upon for measurement.
+
+The four invariants are deliberately orthogonal. A duplicated balanced entry is still
+balanced: it violates I3, not I1. A missing entry is invisible to a uniqueness index: it
+violates I4, not I3. A mutated amount may violate I2 while the entry remains
+well-formed. This orthogonality is the analytical basis for the mechanisms' failure
+signatures in Section~\ref{sec:formal}.
+
+After the application is stopped and quiescence is established, the observation
+function returns $O(r)=(D,A,G,T)$: the sink multiset $D$, the publication multiset $A$,
+the durable progress state $G$, and the timing record $T$. The observation is taken in
+one repeatable-read snapshot \cite{pg-isolation,berenson1995}. A run is \emph{consistent}
+when
+\begin{equation}
+\label{eq:consistency}
+\mathrm{Consistent}(D,\Omega)\ \Longleftrightarrow\ \text{I1}\wedge\text{I2}\wedge\text{I3}\wedge\text{I4}.
+\end{equation}
+Table~\ref{tab:invariants} gives the executable form of each predicate. The predicates
+are evaluated by the independent oracle (Section~\ref{sec:method}); their SQL
+realisation is released with the artifact.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Invariants and their executable form (abbreviated). \texttt{expected} is the
+oracle's expected multiset $\Omega$; \texttt{signed} is $+\mathit{amount}$ for D and
+$-\mathit{amount}$ for C.}
+\label{tab:invariants}
+\begin{tabular}{@{}p{1.0cm}p{7.1cm}@{}}
+\toprule
+ & Executable predicate (summary) \\
+\midrule
+I1 & group postings by \texttt{event\_id}; flag groups with $\mathit{count}\neq2$, or
+$\sum \mathit{signed}\neq0$, or more than one currency, or not exactly one D and one C. \\
+I2 & for every expected key present in the sink, compare
+$(\mathit{account},\mathit{side},\mathit{amount},\mathit{currency})$ with the expected
+value; plus attest that the application role may not \texttt{UPDATE}/\texttt{DELETE}
+and that the append-only trigger exists. \\
+I3 & flag keys with $\mathrm{count}>1$ per $(\mathit{event_id},\mathit{leg\_no})$, and
+events with more than two postings. \\
+I4 & anti-join of the expected multiset against the sink: every expected key must be
+present exactly once. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The exactly-once boundary}
+\label{sec:model:eos}
+
+Kafka's exactly-once semantics for a consume--transform--produce pipeline are built on
+the transactional producer \cite{kip98,kip447,kafka-design}: a transaction may include
+records appended to Kafka topics and the consumer offsets of the records being
+processed, and the transaction coordinator makes both visible atomically, with
+`\texttt{read\_committed}` consumers observing all or none of the transaction and stale
+producer epochs being fenced. Formally, let $H_K$ be the sub-history of durable
+operations at the Kafka site and let a transaction $T$ contain
+$\mathrm{Append}(L)$, the records produced to Kafka, and $\mathrm{CommitOffsets}(G)$,
+the offsets of the processed input. Then the set of transitions that Kafka makes atomic is
+\begin{equation}
+\label{eq:eos}
+\mathrm{EOS}(T)\ =\ \mathrm{vis}\big(\mathrm{Append}(L)\ \cup\ \mathrm{CommitOffsets}(G)\big),
+\end{equation}
+a single-site atomic visibility relation inside Kafka.
+
+The ledger, however, lives at a different site. Its commit
+$\mathrm{Commit}_{S}$ is a PostgreSQL transaction that shares no coordinator, no
+prepared state and no recovery protocol with Kafka. Atomic commit across independent
+sites requires a distributed commit protocol with presumed-abort recovery
+\cite{txncommit2006}; PostgreSQL can participate in externally coordinated prepared
+transactions \cite{pg-prepare}, but the analysed pipeline does not, and the Kafka
+transaction is not a two-phase-commit participant with the database. Compensating
+transactions \cite{sagas1987} and application-level coordination
+\cite{laigner2021,micro2026} are the alternatives practitioners use; they do not make
+the two commits atomic either.
+
+Consequently, for an event $e$ processed in a batch $b$, two windows exist:
+\begin{align}
+W_1(b) &= \{\,\sigma : \mathrm{durable}(\mathrm{Commit}_{S}(b),\sigma)\ \wedge\ \neg\mathrm{durable}(\mathrm{Commit}_{K}(b),\sigma)\,\}, \label{eq:w1}\\
+W_2(b) &= \{\,\sigma : \mathrm{durable}(\mathrm{Commit}_{K}(b),\sigma)\ \wedge\ \neg\mathrm{durable}(\mathrm{Commit}_{S}(b),\sigma)\,\}. \label{eq:w2}
+\end{align}
+$W_1$ is the \emph{duplicate} window: the effect was applied but progress did not
+advance, so a redelivery re-applies the effect unless the effect is idempotent. $W_2$
+is the \emph{loss} window: progress advanced but the effect was not applied, so the
+event is never redelivered and the posting is lost. Lemma~\ref{lem:windows} records
+what a pair of independent single-site commits can and cannot rule out.
+
+\begin{lemma}[Single-site commit pair]
+\label{lem:windows}
+Let a mechanism execute $\mathrm{Commit}_{S}$ and $\mathrm{Commit}_{K}$ as two
+sequential durable operations with no cross-site recovery protocol. If the program
+order is $\mathrm{Commit}_{S}\prec\mathrm{Commit}_{K}$, then $W_1\neq\emptyset$; if it
+is $\mathrm{Commit}_{K}\prec\mathrm{Commit}_{S}$, then $W_2\neq\emptyset$. If the two
+commits are concurrent or their order is not enforced, both windows may be non-empty.
+\end{lemma}
+
+\begin{proofsketch}
+Under crash-recovery semantics with prefix-consistent storage
+(assumption A1), a crash scheduled between two sequential durable operations leaves the
+first durable and the second not. A process kill is such a crash. Concurrency admits an
+interleaving in which either commit is durable alone. \hfill$\square$
+\end{proofsketch}
+
+\begin{corollary}[The EOS gap]
+\label{cor:eosgap}
+A pipeline that wraps its Kafka-internal appends and offsets in one Kafka transaction
+but commits the external ledger with a plain database commit leaves $W_1$ open, and
+$W_2$ open under weak or unenforced ordering. Kafka's atomicity does not cross the
+site boundary of Eq.~\eqref{eq:eos}.
+\end{corollary}
+
+Figure~\ref{fig:eos} depicts the two windows on a timeline; the traces that realise
+them are given in Section~\ref{sec:formal}. Kafka's guarantee does remain exactly-once
+\emph{inside} the site: the records published to the publication stream are either all
+visible or none, which is what makes a Kafka-sink mechanism a valid positive control
+and an external-DB mechanism with a Kafka publication stream capable of \emph{diverging}
+from its ledger.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize,>=Stealth,
+  store/.style={draw,rounded corners,minimum height=0.8cm,align=center,inner sep=2pt},
+  ev/.style={circle,fill=black,inner sep=1.1pt},
+  lab/.style={align=center}]
+% axes
+\draw[->] (0,0) -- (8.4,0) node[right]{time};
+% store rows
+\node[store,anchor=west,minimum width=7.6cm] (k) at (0,1.45)
+  {Kafka log + consumer offsets (site $K$)};
+\node[store,anchor=west,minimum width=7.6cm] (p) at (0,-1.45)
+  {PostgreSQL ledger (site $S$)};
+% program order markers
+\draw[->,thick] (2.9,1.0) -- (2.9,0.15) node[lab,left=2pt,pos=0.25]{produce/commit};
+\draw[->,thick] (3.4,-1.0) -- (3.4,-0.15) node[lab,below=1pt,pos=0.35]{DB COMMIT};
+\draw[->,thick] (5.1,1.0) -- (5.1,0.15) node[lab,right=2pt,pos=0.25]{offset/txn commit};
+% windows
+\fill[red!18] (3.4,0.0) rectangle (5.1,0.15);
+\fill[blue!14] (2.9,-0.15) rectangle (3.4,0.0);
+\node[lab,red!70!black] at (4.25,0.55) {$W_1$: effect durable, progress not $\Rightarrow$ duplicate};
+\node[lab,blue!60!black,align=center] at (1.6,-0.65) {$W_2$: progress\\durable, effect not};
+\end{tikzpicture}
+\caption{The EOS boundary on a timeline. Kafka's atomic commit covers the log append
+and the offset commit (top); the ledger commit is a separate single-site commit
+(bottom). A crash inside either shaded interval yields exactly one durable commit:
+$W_1$ duplicates under redelivery, $W_2$ loses the posting permanently. The windows are
+defined by Eqs.~\eqref{eq:w1}--\eqref{eq:w2}.}
+\label{fig:eos}
+\end{figure}
+
+\subsection{Assumptions, crash points, and equivalence classes}
+\label{sec:model:assumptions}
+
+Every claim in this paper is conditioned on the assumptions of
+Table~\ref{tab:asm}; each is either enforced by the harness or explicitly excluded.
+The fault model is crash-recovery, not Byzantine: processes die and restart, storage is
+prefix-consistent, and the network may lose, delay, partition or reset connections, but
+protocol checksums and retries are intact. Databases and brokers are assumed durable
+once they acknowledge; clocks are used only for measurement.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Assumptions. Every proposition in Section~\ref{sec:formal} is stated under
+A1--A13; the enforcement column names the harness mechanism that checks or excludes the
+assumption.}
+\label{tab:asm}
+\begin{tabular}{@{}p{0.7cm}p{10.6cm}p{4.3cm}@{}}
+\toprule
+ID & Assumption & Enforced / excluded by \\
+\midrule
+A1 & Crash-recovery faults only; storage writes prefix-consistent; no Byzantine corruption. & process kills and restarts; no data mutation injected \\
+A2 & Network faults are loss, delay, partition, reset; protocol checksums and retries intact. & Toxiproxy toxics only \\
+A3 & PostgreSQL durable on acknowledgement (\texttt{synchronous\_commit=on}, \texttt{fsync=on}, \texttt{full\_page\_writes=on}); single instance, no replica. & pinned configuration; asserted per run \\
+A4 & Kafka durable: replication factor 3, \texttt{min.insync.replicas=2}, \texttt{acks=all}, unclean leader election disabled. & pinned broker configuration \\
+A5 & Transactional producer idempotence and fencing as specified; transaction timeout bounded. & pinned producer configuration \\
+A6 & At most one owner per partition at a time, except inside the deliberately injected zombie window $C_7$. & pinned consumer timeouts; $C_7$ tests the exception \\
+A7 & Fair recovery: killed processes restart and retry until quiescence. & runner restart policy; quiescence criteria \\
+A8 & Clocks used only for latency; single host, single boot, no clock steps during a run. & clock checks around every run \\
+A9 & Deterministic load; the processor is exactly-once into the source topic. & ground-truth digest and source-integrity gate \\
+A10 & Faults act at declared points and every firing is attested. & fault log with one receipt per action \\
+A11 & Identical configuration and tuning effort across mechanisms, except declared intrinsic components. & configuration hash audit \\
+A12 & Single currency, two-leg entries, positive integer amounts; no reversals or adjustments. & event schema \\
+A13 & The oracle shares no code with the pipeline and reads ground truth created before the effect. & independent process and language \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Table~\ref{tab:crashpoints} enumerates the crash points of the mechanism skeleton: the
+places where a process may die, a message may be lost or duplicated, or two durable
+transitions may become visible in an order different from the program order. The list
+is exhaustive for the skeleton of Section~\ref{sec:mechanisms} (read, effect, progress,
+publish). Points that are outcome-equivalent for the invariants are grouped into the
+classes $K_1$--$K_7$ of Table~\ref{tab:kclasses}; classes are used as the cells of the
+structural experiment, and the equivalence arguments are the proofs that a class may be
+represented by one member.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Crash-point model. ``Durable at the point'' is the state that survives the
+crash; the last column names the window of Eqs.~\eqref{eq:w1}--\eqref{eq:w2}.}
+\label{tab:crashpoints}
+\begin{tabular}{@{}p{0.6cm}p{6.3cm}p{4.2cm}p{4.6cm}@{}}
+\toprule
+ID & Crash point & Durable at the point & Window / consequence \\
+\midrule
+$C_1$ & after fetch, before any durable operation & nothing of the batch & none; replay \\
+$C_2$ & inside the effect transaction, before COMMIT is sent & nothing (transaction aborts) & none; replay \\
+$C_3$ & after effect COMMIT is sent, before its acknowledgement & effect unknown; progress behind & $W_1$, conditional on the outcome \\
+$C_4$ & after effect durable, before progress durable & effect durable; progress behind & $W_1$ (duplicate under redelivery) \\
+$C_5$ & after progress durable, before effect durable & progress durable; effect absent & $W_2$ (posting lost permanently) \\
+$C_6$ & duplicate delivery without a crash (rebalance reassignment, offset rewind) & unchanged & $W_1$ replay \\
+$C_7$ & zombie writer: paused owner resumes after reassignment and writes & the new owner's effect & duplicate write; fencing or dedup needed \\
+$C_8$ & publish window: publish sent/lost without a durable publication mark & ledger durable; publication not & publication integrity only \\
+$C_9$ & sink-link loss during effect commit (partition, reset) & effect unknown; progress behind & $W_1$, conditional \\
+$C_{10}$ & Kafka-side disruption during progress commit (broker kill, coordinator failover, abort) & effect durable; progress not & $W_1$; aborted transaction also discards stream records \\
+$C_{11}$ & acknowledgement before durability at either store & unknown & both windows; excluded by A3/A4 \\
+$C_{12}$ & partial-batch durability (per-record autocommit) & part of the batch & $W_1$ partial; unreachable with one transaction per batch \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Equivalence classes of crash points for the invariants I1--I4. Two points are
+equivalent when, for every admissible schedule at one, a schedule exists at the other
+with the same durable projection at recovery.}
+\label{tab:kclasses}
+\begin{tabular}{@{}p{0.8cm}p{2.0cm}p{5.2cm}@{}}
+\toprule
+Class & Members & Equivalence reason \\
+\midrule
+$K_1$ & $C_1,C_2$ & no durable trace; identical replay \\
+$K_2$ & $C_3,C_9$ & effect possibly durable, progress behind; same unknown-outcome recovery \\
+$K_3$ & $C_4,C_{10}$ & effect durable, progress behind; $C_{10}$ additionally aborts stream records \\
+$K_4$ & $C_5$ & progress durable, effect absent \\
+$K_5$ & $C_6$ & duplicate delivery with progress state ``not yet processed'' \\
+$K_6$ & $C_7$ & two concurrent writers of one partition \\
+$K_7$ & $C_8$ & ledger and progress durable; publication durability only \\
+\bottomrule
+\end{tabular}
+\end{table}

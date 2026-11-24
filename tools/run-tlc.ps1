@@ -57,7 +57,10 @@ foreach ($name in $expected.Keys) {
   $out = & $java -XX:+UseParallelGC -jar $TlaJar -config $cfg -workers 2 -deadlock -metadir $runMeta $spec 2>&1 | Out-String
   $sw.Stop()
   $exit = $LASTEXITCODE
-  $out | Set-Content -Path (Join-Path $outDir "$name.txt") -Encoding utf8
+  # Sanitize absolute local paths from the public log before writing it.
+  $sanitized = $out -replace [regex]::Escape($Root), '<repo>'
+  $sanitized = $sanitized -replace [regex]::Escape($env:TEMP), '<tmp>'
+  $sanitized | Set-Content -Path (Join-Path $outDir "$name.txt") -Encoding utf8
   if (-not $tlcVersion -and $out -match 'TLC2 Version [^\r\n]+') { $tlcVersion = $matches[0].Trim() }
   $violated = 'none'
   if ($out -match 'Invariant (\w+) is violated') { $violated = $matches[1] }

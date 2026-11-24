@@ -1,18 +1,18 @@
 ﻿TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
-Running breadth-first search Model-Checking with fp 103 and seed -5987155327764486973 with 2 workers on 12 cores with 3573MB heap and 64MB offheap memory [pid: 17548] (Windows 11 10.0 amd64, Eclipse Adoptium 21.0.13.1 x86_64, MSBDiskFPSet, DiskStateQueue).
-Parsing file C:\Users\jvtri\OneDrive\Documentos\Projetos\where-exctaly-ones-ends\formal\ledger.tla
-Parsing file C:\Users\jvtri\AppData\Local\Temp\Naturals.tla
-Parsing file C:\Users\jvtri\AppData\Local\Temp\Sequences.tla
-Parsing file C:\Users\jvtri\AppData\Local\Temp\FiniteSets.tla
-Parsing file C:\Users\jvtri\AppData\Local\Temp\TLC.tla
+Running breadth-first search Model-Checking with fp 124 and seed -8965890814312894781 with 2 workers on 12 cores with 3573MB heap and 64MB offheap memory [pid: 27092] (Windows 11 10.0 amd64, Eclipse Adoptium 21.0.13.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file <repo>\formal\ledger.tla
+Parsing file <tmp>\Naturals.tla
+Parsing file <tmp>\Sequences.tla
+Parsing file <tmp>\FiniteSets.tla
+Parsing file <tmp>\TLC.tla
 Semantic processing of module Naturals
 Semantic processing of module Sequences
 Semantic processing of module FiniteSets
 Semantic processing of module TLC
 Semantic processing of module ledger
-Starting... (2026-11-24 09:47:29)
+Starting... (2026-11-24 09:51:13)
 Computing initial states...
-Finished computing initial states: 1 distinct state generated at 2026-11-24 09:47:30.
+Finished computing initial states: 1 distinct state generated at 2026-11-24 09:51:13.
 Error: Invariant I4CompleteWhenDone is violated.
 Error: The behavior up to this point is:
 State 1: <Initial predicate>
@@ -74,5 +74,5 @@ State 4: <Finish line 181, col 3 to line 184, col 70 of module ledger>
 26 states generated, 21 distinct states found, 6 states left on queue.
 The depth of the complete state graph search is 6.
 The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 3 and the 95th percentile is 3).
-Finished in 00s at (2026-11-24 09:47:30)
+Finished in 00s at (2026-11-24 09:51:13)
 

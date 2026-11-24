@@ -1,0 +1,144 @@
+% Section 2 — Background and Related Work
+% Citations restricted to refs/refs.bib keys verified in refs/verified.csv (S1, 228/228 checks).
+
+\section{Background and Related Work}
+\label{sec:related}
+
+\subsection{Kafka exactly-once semantics and stream-processing fault tolerance}
+\label{sec:rel-eos}
+
+Kafka's storage layer is a replicated, partitioned commit log with per-partition
+ordering~\cite{kafka2015}. Its transactional API (KIP-98) extends this log with a transaction
+coordinator, a producer epoch and a transaction log so that a producer can atomically append
+records across partitions and commit consumer offsets as part of the same
+transaction~\cite{kip98,kafka-design}. The guarantee is explicitly producer-scoped: the
+transaction defines atomicity over Kafka's own durable state, not over arbitrary external
+effects~\cite{kip98}. Two further design changes shape the failure behaviour we study: fencing by
+\code{transactional.id} (KIP-447) lets the coordinator invalidate zombie producers after a
+restart~\cite{kip447}, and incremental cooperative rebalancing (KIP-429) changes when and how
+often offsets are committed during a rebalance~\cite{kip429}. Kafka Streams exposes these
+guarantees as an opt-in processing guarantee, with at-least-once as the default~\cite{kafka-streams}.
+
+Stream-processing systems reached the same architectural conclusion earlier: fault tolerance is
+built around consistent snapshots of \emph{internal} state. MillWheel places timers and state
+under its own fault-tolerance envelope~\cite{millwheel2013}; Flink's asynchronous snapshot
+mechanism gives lightweight exactly-once state recovery without stopping the
+pipeline~\cite{flink2017}; Spark Streaming recovers lineage-based state~\cite{dstreams2013}; and
+timely dataflow coordinates by logical timestamps~\cite{naiad2013}. The theoretical basis is the
+distributed snapshot algorithm of Chandy and Lamport~\cite{chandy1985}, and the stream/table
+duality of Sax et al.\ frames a materialised view as a stream of updates over an evolving
+table~\cite{sax2018}. Dataflow's model makes explicit the trade-off between correctness, latency
+and cost~\cite{dataflow2015}. None of these frameworks makes an unrelated external database commit
+part of its snapshot; the external sink is outside the envelope, which is precisely the boundary
+this paper measures.
+
+\subsection{Transactions, idempotency and consistency}
+\label{sec:rel-txn}
+
+Across two sites, atomic commitment requires a protocol. Two-phase commit blocks if its
+coordinator fails, which is why consensus-based commit and compensation-based
+approaches exist~\cite{txncommit2006,pg-prepare}. Sagas replace atomic commit with a sequence of
+local transactions and compensating actions for long-lived work~\cite{sagas1987}; they restore
+eventual consistency of a business process but do not give a duplicate-free ledger, because
+compensations are observable intermediate states~\cite{saga2022}. Isolation levels are defined by
+the anomalies they permit, and several ANSI levels allow exactly the lost-update and
+dirty-read phenomena that would make an independently committed ledger row
+unreliable~\cite{berenson1995,pg-isolation}. Coordination can be avoided only when application
+invariants are confluent, i.e.\ do not require ordering between conflicting
+operations~\cite{bailis2014}; the ledger's one-entry-per-event requirement is not confluent with
+an at-least-once source, which is why the mechanisms in Section~\ref{sec:mechanisms} must add
+either idempotency, atomic progress or both. Optimistic concurrency and large-scale reliability
+engineering supply the classical tools for the trade-off~\cite{kung1981,vogels2009}.
+
+Idempotency is the second classical answer. Exactly-once delivery has been studied in message
+middleware~\cite{eosmsg2001,eosmid2012}, and request identifiers that survive crashes are the
+standard CORBA-era mechanism for deduplicating retried
+invocations~\cite{eoscorba1999}. Modern APIs expose the same idea as idempotency
+keys~\cite{stripe-idempotency,aws-idempotency}, and relational engines provide the enforcement
+primitive as a unique constraint with \code{ON CONFLICT DO NOTHING}~\cite{pg-onconflict}. The
+subtlety our paper isolates is that deduplication and loss are different failures: an idempotency
+key makes a retry harmless but cannot restore an effect that was never written before progress
+advanced.
+
+\subsection{Microservice data patterns and the outbox}
+\label{sec:rel-micro}
+
+The transactional outbox publishes database changes safely by writing the outgoing message in the
+same local transaction as the state change and relaying it afterwards~\cite{debezium-outbox};
+event sourcing and CQRS build the application from an ordered event log instead of mutable
+state~\cite{eventsourcing2022}; saga frameworks supply compensation
+orchestration~\cite{saga2019,saga2022}. Surveys of microservice data management document the
+pattern landscape and its open problems, including the absence of a shared definition of
+consistency in event-driven systems, but they report no fault-injection
+measurements~\cite{laigner2021,micro2026}. Our M2 is the consumer-side dual of the outbox: an
+inbox claim plus an outbox publication log inside the ledger transaction, with the relay making
+publication recoverable. We measure its cost and its residual exposure rather than assuming it.
+
+\subsection{Double-entry ledgers, append-only state and logical order}
+\label{sec:rel-ledger}
+
+Double-entry bookkeeping is a six-century-old invariant-bearing model: every entry has equal
+debits and credits, and the ledger is append-only. Triple-entry accounting extends it with an
+externally auditable record of each entry~\cite{triple2019,triple2021}. The systems substrate for
+such an append-only record is the log-structured store, whose append-only discipline speeds
+recovery and bounds corruption~\cite{lsfs1992}, together with logical clocks that totally order
+events in a distributed system~\cite{lamport1978}. Our ledger model in
+Section~\ref{sec:model} is deliberately small --- one currency, balanced two-leg entries,
+append-only postings --- but it is faithful to the invariants that distinguish a ledger from a
+generic table, and the oracle tests them directly.
+
+\subsection{Formal specification and verification}
+\label{sec:rel-formal}
+
+We use TLA+ to state the crash-point semantics and machine-check a bounded version of the
+invariant-preservation claims~\cite{lamport1994}; Alloy's automatic analysis of structural
+constraints is a complementary approach for data-model reasoning~\cite{jackson2002}. Verified
+distributed systems make the fault model explicit and prove properties against it, most
+prominently in the Verdi framework~\cite{verdi2015}. We follow that discipline: the assumptions
+(crash-recovery faults, no Byzantine failures, a fixed database isolation level, a single host
+clock) are stated in Section~\ref{sec:model}, and the TLC check in Section~\ref{sec:formal} is
+reported with its bounds so that it cannot be mistaken for an unbounded proof.
+
+\subsection{Measurement, fault injection and statistics}
+\label{sec:rel-method}
+
+Benchmarking fault-tolerant data systems requires methodological care. Hoefler and Belli survey
+sound benchmarking and reporting practice~\cite{hoefler2015}; Raasveldt et al.\ catalogue recurring
+fairness pitfalls in database performance testing~\cite{raasveldt2018}; Mytkowicz et al.\ show that
+measurement bias alone can reverse performance conclusions~\cite{mytkowicz2009}; Dean and
+Barroso explain why tail latency, not the mean, dominates responsiveness~\cite{dean2013}; and
+Theodolite demonstrates use-case-based scalability benchmarking for stream
+processors~\cite{theodolite2021}. We therefore fix all non-mechanism configuration identically,
+randomise and interleave run order, use paired seeds, and report open-loop latency
+distributions with HdrHistogram~\cite{hdrhistogram}.
+
+Fault injection is our independent variable. Chaos engineering frames hypothesis-driven fault
+experiments against a steady state~\cite{basiri2016}; black-box history checking can expose
+isolation anomalies without instrumenting the database~\cite{elle2020}; deterministic simulation
+tests every feature under many faults~\cite{fdb2021}; and bounded crash testing found bugs even in
+verified systems~\cite{crashmonkey2019}. Artifact repeatability requires archived data and
+incentive alignment~\cite{collberg2016}. Our injectors are scripted against real processes and real
+TCP links (Toxiproxy~\cite{toxiproxy}) and write a timestamped receipt when they fire, so a run in
+which the fault did not fire is excluded rather than silently counted as evidence.
+
+Finally, our analysis plan follows the experimental-statistics literature: chance-affected
+computational experiments need appropriate tests~\cite{arcuri2011,arcuri2012}; multiple
+comparisons call for Friedman and Nemenyi procedures with exact post-hoc tests~\cite{demsar2006};
+paired proportions use McNemar's test~\cite{mcnemar1947} with Holm's sequentially rejective
+correction~\cite{holland1987}; effect sizes use Cliff's delta~\cite{cliff1993}; interval estimates
+use the bootstrap~\cite{efron1979}; binomial intervals for mostly-zero violation counts use
+Clopper--Pearson constructions~\cite{jsta2014,brown2001} and the rule of three for zero-event
+bounds~\cite{rule3}.
+
+\subsection{Research gap}
+\label{sec:rel-gap}
+
+The literature establishes three facts: Kafka EOS is bounded to Kafka's own state; external-state
+correctness requires an explicit mechanism; and ledger invariants are unforgiving of duplicates
+and losses. What is missing is an empirical, mechanism-level mapping from failure modes to ledger
+invariant violations, with an independent oracle and the cost of each remedy measured under
+identical conditions. The closest practitioner-facing statements are vendor
+documentation~\cite{kafka-design,debezium-outbox,stripe-idempotency} and microservice
+surveys~\cite{laigner2021,micro2026}, neither of which measures invariant violations under
+injected faults. This paper provides that mapping, its formal basis, and a decision procedure for
+practitioners.

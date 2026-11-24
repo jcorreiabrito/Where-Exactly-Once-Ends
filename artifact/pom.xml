@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Where Exactly-Once Ends - reference implementation (S3 artifact).
+  Java 21 / Spring Boot 3.x / spring-kafka / JDBC / HdrHistogram / JUnit 5.
+  Build: mvn -B -ntp package   -> artifact/target/wxeo-service.jar (flat shaded, runnable)
+  Unit tests only by default (no Docker / no external services):
+         mvn -B -ntp test
+  Integration tests (require the native stack from artifact/harness/native-stack.ps1):
+         mvn -B -ntp verify -Pintegration
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.5</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.wxeo</groupId>
+  <artifactId>wxeo-service</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>wxeo-service</name>
+  <description>Reference implementation for "Where Exactly-Once Ends" (M0..M4 + combinations)</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <spring-kafka.version>3.2.5</spring-kafka.version>
+    <hdrhistogram.version>2.2.2</hdrhistogram.version>
+    <postgresql.version>42.7.4</postgresql.version>
+    <!-- Overridable so CI can pin absolute paths; default is the flat jar name. -->
+    <final.jar.name>wxeo-service</final.jar.name>
+  </properties>
+
+  <dependencies>
+    <!-- Spring Boot application framework (headless; no web server). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-logging</artifactId>
+    </dependency>
+
+    <!-- spring-kafka: publication stream producer factory/template + Kafka config constants.
+         The consumer loop of the measured pipeline uses the native Kafka clients directly
+         because the experiment must control poll boundaries, offset commits, transactions and
+         rebalance hooks exactly (see artifact/README.md "Why native clients"). -->
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka</artifactId>
+    </dependency>
+
+    <!-- JDBC: HikariCP pool + PostgreSQL driver (plain JDBC; exact SQL and txn control). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- JSON: canonical serialization of events/entries/manifests/metrics. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <!-- Latency histograms (3 significant digits, 1 us .. 60 s). -->
+    <dependency>
+      <groupId>org.hdrhistogram</groupId>
+      <artifactId>HdrHistogram</artifactId>
+      <version>${hdrhistogram.version}</version>
+    </dependency>
+
+    <!-- Tests: JUnit 5 (unit, hermetic) + Spring Boot test bits unused by default. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${final.jar.name}</finalName>
+    <plugins>
+      <!-- Compile with release 21 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <release>21</release>
+          <compilerArgs>
+            <arg>-Xlint:all,-serial,-processing</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <!--
+        Flat shaded jar: all dependency classes are flattened at the root, so BOTH contract CLI
+        forms work from the single artifact path:
+          java -jar artifact/target/wxeo-service.jar ...            (service, Main-Class)
+          java -cp artifact/target/wxeo-service.jar com.wxeo.load.LoadGenerator ...   (loader)
+        A Spring Boot repackaged jar would put classes under BOOT-INF/classes and break the
+        second form (CONTRACTS.md §7), so shading is deliberate.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <useDependencyReducedPomInJar>false</useDependencyReducedPomInJar>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.wxeo.ServiceApplication</mainClass>
+                  <manifestEntries>
+                    <Implementation-Title>wxeo-service</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                    <Multi-Release>false</Multi-Release>
+                  </manifestEntries>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                  <resource>META-INF/spring.factories</resource>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                  <resource>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</resource>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/versions/*/module-info.class</exclude>
+                    <exclude>META-INF/LICENSE*</exclude>
+                    <exclude>META-INF/NOTICE*</exclude>
+                    <exclude>META-INF/DEPENDENCIES</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Unit tests only by default: integration tests are *IT.java and excluded here. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludedGroups>integration</excludedGroups>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
+          <trimStackTrace>false</trimStackTrace>
+          <environmentVariables>
+            <EOS_RUNTIME_ROOT>${env.EOS_RUNTIME_ROOT}</EOS_RUNTIME_ROOT>
+          </environmentVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <configuration>
+              <excludedGroups>integration</excludedGroups>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Integration tests: mvn verify -Pintegration (needs the native stack). -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <groups>integration</groups>
+          <skipITs>true</skipITs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>integration</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipITs>false</skipITs>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
