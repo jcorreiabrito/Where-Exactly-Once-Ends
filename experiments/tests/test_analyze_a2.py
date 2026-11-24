@@ -102,26 +102,3 @@ def test_matrix_pin_fails_closed():
 
 
 # ---- R12 rates ----------------------------------------------------------------------------
-def test_rates_frozen_rule_deterministic():
-    from experiments import rates as R
-
-    samples = [
-        {"load_events": 10_000, "partitions": 6, "mechanism": "M0",
-         "committed_events": 9000, "window_start_s": 0.0, "window_end_s": 10.0},
-        {"load_events": 10_000, "partitions": 6, "mechanism": "M2",
-         "committed_events": 8000, "window_start_s": 0.0, "window_end_s": 10.0},
-        {"load_events": 100_000, "partitions": 6, "mechanism": "M0",
-         "committed_events": 90000, "window_start_s": 0.0, "window_end_s": 100.0},
-        {"load_events": 100_000, "partitions": 6, "mechanism": "M2",
-         "committed_events": 70000, "window_start_s": 0.0, "window_end_s": 100.0},
-    ]
-    doc = R.derive_rates(samples, matrix_sha256="abc")
-    # warm-up-excluded capacity: M2 10k = 8000/(9s) = 888.9 -> floor(0.5*888.9)=444
-    assert doc["fixed_rate"]["10000|p6"]["rate"] == 444
-    # 100k: M2 = 70000/90 = 777.8 -> 388 (minimum mechanism)
-    assert doc["fixed_rate"]["100000|p6"]["rate"] == 388
-    assert doc["fixed_rate"]["100000|p6"]["bottleneck_capacity"] == 777.777778
-    again = R.derive_rates(list(reversed(samples)), matrix_sha256="abc")
-    assert again == doc
-    assert R.g7_checks(doc, ["10000|p6", "100000|p6"], need_saturation=True)["ok"] is True
-    assert R.g7_checks(doc, ["10000|p6"], need_saturation=True)["ok"] is True

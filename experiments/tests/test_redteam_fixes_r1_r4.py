@@ -98,8 +98,9 @@ def test_R3_counts_unchanged_after_mode_fix():
     assert t["validation_runs"] == 26
     assert t["nominal_total_executable_plus_validation"] == 7514
     cal = doc["accounting"]["calibration"]
-    assert cal["stage"] == "M7" and cal["runs"] == 54 and cal["cells"] == 18
-    assert cal["block"] == "M7-cal"
+    # A5: separate calibration accounting = M7-cal 54 + M7spot 63 = 117 runs
+    assert cal["stage"] == "M7" and cal["runs"] == 117 and cal["cells"] == 81
+    assert cal["blocks"] == {"M7-cal": 54, "M7spot": 63}
 
 
 # ---- R2: single-owner receipt protocol ----------------------------------------------------

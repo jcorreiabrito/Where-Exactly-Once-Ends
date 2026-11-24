@@ -65,5 +65,39 @@ mutation evidence stay exactly as frozen.
 - Invalid Windows pilot rows caused by the two defects above are archived as pilot data and re-run on
   the Linux host under the frozen seeds; they were never part of a confirmatory cell.
 - This amendment changes no analysis artifact. The single final re-freeze (`freeze.py --write
-  --force`) after R10/R12/M7 completion binds this amendment, the Linux stack code and the calibration
-  block; S5 re-confirms that freeze before Stage A executes.
+  --force --require-evidence`) after R10/R12/M7 completion binds this amendment, the Linux stack code
+  and the calibration block; S5 re-confirms that freeze before Stage A executes.
+
+## A4.5 Realised fault-routing topology (S5 §11 closure)
+
+The S5 re-review showed that the first container draft could not realise the Kafka-link faults
+(proxies forwarded to an INTERNAL listener and the advertised addresses were unresolvable by host
+clients, so F3/F4a/K2-for-M1-kafka were structurally off the produce/commit path). The realised
+topology is:
+
+* each broker has an EXTERNAL listener (`29091/29092/29093`) advertised as
+  `127.0.0.1:19091/19092/19093`, an INTERNAL listener on `29095` for broker-to-broker traffic and the
+  unchanged controller listeners (`9192/9193/9194`); direct host access to `9091-9093` is kept for
+  compatibility but all *measured* client traffic uses the proxied addresses, so every client→broker
+  connection traverses Toxiproxy;
+* Toxiproxy exposes `kafka-1/2/3` on `19091-19093` (→ each broker's EXTERNAL listener), a
+  `kafka-bootstrap` alias on `19094` (contract-compatible consumer bootstrap), and `db` on `15433`;
+* `deploy/docker/proxy-groups.json` maps the logical groups used by the injectors
+  (`kafka`, `kafka-produce`, `kafka-consume` → the three broker proxies; `db` → `db`). Kafka fault
+  injections apply the toxic to **every** member of the relevant group and fail closed if any member
+  application fails; the receipt records per-proxy results;
+* F1 (broker kill) and F2 (consumer kill) are realised on Linux via `experiments/stack.py`
+  (`broker_kill/broker_start` → pinned container names; `pid_kill_linux` → SIGKILL); the native
+  Windows path is unchanged;
+* all published ports are bound to `127.0.0.1` (isolation claim in A4.1 is now true);
+* `deploy/linux/fault-efficacy.py` proves the routing end-to-end before any campaign run: proxied
+  bootstrap round trip, per-group toxic applied to all members → produce/consume/commit must fail
+  within the bound → toxic removed → recovery, F1 broker 3→2→3 and F2 consumer-kill checks; it writes
+  `results/harness/linux-fault-efficacy.json` and fails closed. This evidence is required at the
+  single final freeze (`--require-evidence`), together with T0 live-smoke and T3 gate-control
+  evidence (`results/harness/linux-gate-controls.json`).
+
+The Windows-only S3 acceptance suite is substituted on Linux by: Maven unit tests, the
+`mvn verify -Pintegration` artifact integration profile, the frozen harness test suite, the
+`--check-env` preflight, the fault-efficacy test and the T0 live smoke — an item-by-item mapping is
+kept in `docs/LINUX-CAMPAIGN-RUNBOOK.md` §9.

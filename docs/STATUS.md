@@ -49,6 +49,20 @@ approval and the P2 hard stop. It is not part of the paper.
   anonymized review PDF pending results insertion.
 - The Windows stack is stopped; no experiment process is running.
 
+## 2b. S5 Stage-A blocker closure status (review at `docs/redteam-rereview.md` §11)
+
+| S5 blocker | Owner | Status |
+|---|---|---|
+| R10 analyzer implemented but not wired into the CLI; M7 records not excluded; no `--stage` | S4 | in progress (wiring + CLI tests) |
+| R12/M7 chain: record-stage token mismatch, missing `performance.committed_events`, only 2/8 fixed-rate blocks calibrated, g7 never called, saturation rule wrong | S4 (+ A5 author approval) | in progress; A5 approved: mapping rule + 63 spot-checks, saturation = 2.5×max, fail-closed `validated` |
+| F1/F2 injectors Windows-only | S3 (stack helpers) + S4 (injectors) | in progress (docker broker kill/start, POSIX pid kill) |
+| Toxiproxy Kafka fault paths structurally off-path (INTERNAL upstream, unresolvable advertised addresses) | S3 | in progress (per-broker proxied advertised listeners + proxy groups + live efficacy test) |
+| Provenance/freeze: Windows results resume-skip, rates/evidence not frozen, freeze placement | lead + S4 | Windows outputs archived under `results/windows-pilot/`; `results/raw/` emptied; `freeze.py --require-evidence` added; final freeze moved after T0/T1 |
+| Gate evidence T0/T3 incomplete (no K3/K5, dedup/index, M1-kafka ledger, F1/F3/F5 live validation) | S3 (phases) + host | T3 gate-control phase added to the runbook; executes on the Linux host after the final freeze |
+
+Stage A remains blocked until S5 re-reviews the fixed tree and re-confirms the Linux-issued final
+freeze. No B/C claim may exist before the corresponding runs.
+
 ## 3. Remaining path to submission (all specified in the runbook)
 
 1. On the Linux host: `deploy/linux/bootstrap.sh` → phase T0 smoke evidence → T1 M7 calibration +

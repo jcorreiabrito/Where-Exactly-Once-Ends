@@ -1022,3 +1022,216 @@ touched, no runner command was executed, no confirmatory data were produced or a
 
 *End of final focused re-review.
 Pilot gate: **PASS-WITH-CONDITIONS**. Stage A/B/C: **BLOCK** under §10.5.*
+
+---
+
+## 11. STAGE-CONDITIONS RE-REVIEW — Linux/container substrate, R10/R12/M7/M16 (2026-11-24, ~19:54–20:55Z)
+
+**Reviewer:** S5. **Scope:** commit `c23a03f` (HEAD `c23a03f5c766…`; previous `b444bf5`, `0bfcfda`), after the
+author P2 approval (`docs/P2-APPROVAL.md`) moving the campaign to a Linux/container host with the full
+frozen design. **Method:** code/docs inspection only; **no stack or runner command was executed**, no
+run started/stopped, no freeze written. Pure-code checks: direct imports/function calls and two test
+files (`22 passed`); read-only `git log/status`; matrix/order recomputation from `matrix.yaml`.
+Throwaway checks under `%TEMP%\wxeo-s5-final\`.
+
+### 11.0 Verdict
+
+> # **BLOCK** — Stage A may **not** run on the Linux host after the host freeze as the tree stands.
+> The P2 decisions and the accounting are approved and correct, but **four independent execution
+> blockers** remain: (1) the author-approved **A2 analyzer is not wired into the frozen analysis CLI**
+> (R10 code exists but is unreachable from `tools/analyze.py main()`); (2) the **M7 → rates chain cannot
+> run** (`stage` enum mismatch makes every M7 record fail validation; the runner never writes the
+> `committed_events` field `rates.py` requires; 6 of the 8 required fixed-rate blocks are uncalibrated
+> and the runner silently falls back to `max`; the saturation rule is wrong); (3) **F1/F2 injectors are
+> still Windows-only** (`taskkill`, `stack-state.json`, `pwsh`) — the T0 smoke itself invokes F2 and
+> will fail, and pilot/Stage-B F1/F2 cells cannot execute; (4) the **Toxiproxy Kafka proxies point at
+> the INTERNAL listener** (`kafka-1:29092`) so host clients receive unresolvable `kafka-N:29092`
+> advertised addresses, and the extension proxies are off the produce/commit path by construction —
+> F3/F4a/K2(M1-kafka) cannot work as wired.
+>
+> The substrate *direct* path is correct (KRaft listeners, healthchecks, PG roles, port map) and the
+> new M7 accounting/hashes are correct, but the above means a host freeze issued now would bind a
+> pipeline that cannot complete T0/T1/T3/T4 and would analyse Stage A/B/C with the **pre-A2** rules.
+> These are code/procedure fixes, not author-level changes: after they land and are live-validated, the
+> single host freeze procedure in §11.8 is acceptable and Stage A can be confirmed PASS.
+
+### 11.1 Verified green in this pass (independent checks)
+
+| Item | Result | Evidence |
+|---|---|---|
+| HEAD / commit | `c23a03f5c766…`; log: `c23a03f` (substrate+A2+R12+M7+M16+A4+P2 approval), `b444bf5`, `43ae8ac` | read-only git |
+| Author approval | all P2 items approved: matrix M1, A2 A2-1…A2-8 + AC choices, K6 limitation, **M7 block**, Linux/full design; final freeze + S5 re-confirmation left pending | `docs/P2-APPROVAL.md` |
+| A4 amendment | substrate, acceptance-suite substitution, M16 fixes, M7 stage, no design/hypothesis/N/stat changes | `docs/prereg-amendment-A4.md` |
+| M7 accounting | matrix **477 cells** (18 M7), totals **7,506/7,488 + 26 validation** unchanged; run order **7,568 rows** (P 198, V 26, A 1,530, B 3,960, C 1,800, M7 54); hashes **matrix `c26ec721…`, order `b3f5711c…`** as stated; M7 = 9 mech × {10k,100k} × P6 × N=3, block `M7-cal`; runner `--stage M7cal` selects exactly 54; tests assert the accounting | matrix/order recomputation; `test_redteam_fixes_r1_r4.py` |
+| Freeze file list | now binds `experiments/{rates,stack}.py`, deploy compose/toxiproxy/PG init, bootstrap/run-campaign, `test_analyze_a2.py`, `test_stack_docker.py`, plus provenance A4/P2-APPROVAL/runbook (directories/files exist; no `missing_at_freeze` in the list by construction) | `experiments/freeze.py` |
+| M16 rate floor | `MARKER_DRIVEN_FAULTS = {F1,F2,F3,F4a,F5,F6,K2,K5}`; app-owned classes excluded; rate floor `max(50, load/5)` when rates absent | runner; `test_stack_docker.py` |
+| M16 F4b geometry | `expected_effect_transactions(load,C) = load//(C×500)` → 1k/C2=1, 10k=10, 100k=100; deterministic `after=1` when ≤1 transaction; threshold recorded in `config.runner`; tests cover 500/1k/10k/100k | runner line ~96 + ~1390–1405; tests |
+| Docker direct path | Kafka: 3 combined KRaft brokers, `INTERNAL` broker listener + `EXTERNAL` advertised `127.0.0.1:909x` (host-reachable), controller quorum internal names, RF=3/minISR=2/delete-topic=false/index caps; PG `postgres:16` + initdb roles `wxeo_app/read/fault`; port map 9091–9093/5433/8474/19092–19094/15433; healthchecks for Kafka/PG; `down -v && up -d --wait` reset adapter | `deploy/docker/*`, `experiments/stack.py` |
+| Runner portability | `check_env` docker branch; docker reset via `stack.py` with liveness retry; Linux boot probe `/proc/stat btime`; `sched_getaffinity`/`nice`; A3.1 heap strings corrected to 512m/1g; `validate_record.STAGES` includes M7; `--stage M7cal` choice | runner; `validate_record.py` |
+| A2 analyzer code | AC-1 H5-A residual frontier + vacuity guard, AC-3b pooled stratified exact sign test, per-cell descriptive McNemar, AC-4 one-of-M3/M4, AC-5 v5 violation, AC-6 v1a/v1b + P11, canonical H2/H3/H4 with K6 n/a note, P3 three contrasts, record re-validation and matrix-pin fail-closed inside `a2_analyze()`; test file has 8 tests (part of the 22 passed here) | `tools/analyze.py` lines ~1926–2433; `test_analyze_a2.py` |
+| Syntax/unit status | targeted pure tests `22 passed` (`test_analyze_a2`, `test_stack_docker`, `test_redteam_fixes_r1_r4`); no stack touched | `python -m pytest … -q` |
+
+### 11.2 Answers to (a): the five Stage-A conditions
+
+| # | Condition (from §10.5) | Status at `c23a03f` | Why |
+|---|---|---|---|
+| 1 | Author approvals incl. matrix M1, A2, K6, **M7**, budget/host | **CLOSED** | `docs/P2-APPROVAL.md` signs all five; only the "final host freeze recorded" and "S5 re-confirmation" boxes remain, by design |
+| 2 | **R10** A2 analyzer implemented + frozen + fixture | **NOT CLOSED (critical)** | code implemented and unit-tested, but **not wired into the CLI**: `a2_analyze()` has no call site; `main()` still computes the old `decide_hypotheses`/`build_test_families` outputs. The frozen pipeline would emit pre-A2 verdicts. Also `run-campaign.sh analysis` passes `--stage all` to a CLI with no `--stage` argument → argparse failure. Matrix-pin and record-revalidation are therefore unreachable in the frozen path. M7 records are also not excluded from the confirmatory record set (`confirmatory()` filters only `V.*`), so calibration rows would leak into descriptive tables |
+| 3 | **R12 + M7** rates procedure + 54-run calibration + G7 | **NOT CLOSED (critical)** | the approved block/accounting is correct, but the chain is broken in four places: (i) M7 run records get `stage="m7"` (`record_stage("M7")="m7"`) while `validate_record.STAGES = {"pilot","M7",…}` → every M7 record fails validation (runner raises "internal bug" and aborts T1); (ii) the runner never writes `performance.committed_events`, which `rates.py._load_records` requires → even valid records yield no samples and `rates.py --write` exits 2; (iii) the approved M7 block measures only (10k,P6) and (100k,P6), but Stage A/B/C execute **8 fixed-rate blocks** — `(1k,3),(10k,3),(10k,12),(100k,3),(100k,12),(1M,6)` are uncalibrated — and `_effective_rate` silently returns `--rate` (default `max`) for a missing key when rates.json exists; `rates.g7_checks` is never called anywhere, so coverage is not enforced; (iv) the saturation entry is fabricated from fixed samples as `0.5×min capacity` instead of the pre-registered `2.5×max capacity` (no saturation samples exist in M7), so the Stage-C capacity block would not saturate. Additionally M7 cells are labelled `load_mode="fixed-rate"` and run at `max` only because rates.json is absent at first execution; after rates exist, a re-run/retry of a calibration row would silently use the derived 50 % rate and corrupt the calibration |
+| 4 | Evidence/provenance close-out (Windows evidence, quarantine, freeze/RUNLOG) | **PARTIALLY CLOSED** | commit `43ae8ac`/`b444bf5` moved the pre-approval Stage-A rows out of `results/raw/run-records/` (verified absent) and recorded M14/M15; but the **Linux procedure is incomplete**: `run-campaign.sh` has no freeze/re-freeze phase (bootstrap issues a freeze *before* T0/T1, and `rates.json`/Linux live evidence are not frozen at all — see §11.7), T3 gate-control phase is not implemented, and the Windows committed `results/raw/run-records/*` will be **resume-skipped** by the Linux runner unless archived (same run_ids) — the runbook must explicitly archive `results/raw/**` + `live-smoke-evidence.json` to a Windows-pilot directory and start `results/raw` clean on the campaign host |
+| 5 | Complete gate evidence (g1k3/g1k5, post-freeze app-owned K3, F1/F3/F5 live validation) on the campaign host | **NOT CLOSED** | K3/K5/selftest/sham validation rows are in the pilot order (T4) and will only exist after a Linux pilot; T3 has no command in the driver; and **F1/F2/F5/F3 live validation is blocked by the substrate defects in §11.4–11.5** (F2 is used by T0 smoke and fails on Linux; F1/F2 have no docker kill/restart realisation; F3/F4a/K2-M1kafka proxy path is broken) |
+
+### 11.3 R10 assessment (detail)
+
+The A2 logic itself is substantive and matches the approved AC choices; the blocker is integration:
+`main()` (lines 1792–1919) never calls `a2_analyze()`, `a2_validate_records()`, or the pin check — those
+exist only at lines ~2309–2433, after `main()`. The CLI (`build_parser`, lines 1772–1789) has no
+`--stage` option, so the runbook's `tools/analyze.py --stage all` fails. The 8 A2 tests exercise the
+functions directly, so "86 passed" does not detect the wiring gap. **Required before freeze:** call
+`a2_analyze(records, performance=…, matrix_pin_ok=<computed from frozen matrix hash>)` from `main()` and
+make its outputs the ones written to `results/analysis/*` (or a `--amendment A2` mode used by the
+runbook); compute the pin from `docs/prereg-freeze.json`/`matrix.yaml` and **fail closed** on
+mismatch; exclude `stage=="m7"` from the confirmatory set; remove or map the bogus `--stage` argument;
+add a regression test that runs the CLI on the A2 acceptance fixture and asserts the A2 outputs.
+
+### 11.4 R12 + M7 assessment (detail)
+
+Accounting is correct (verified §11.1) but the runtime chain needs six fixes before T1 can pass and
+before Stage B/C can trust `rates.json`:
+1. Make `MD.record_stage("M7") == "M7"` (and keep the validator enum) — or accept `m7` everywhere;
+   add a test that a synthetic M7 record passes `validate_record`.
+2. Write `performance.committed_events` (steady-state committed/acked count) in the runner (and expose
+   it in the record validator); test that `rates.py --write` finds samples from M7 records.
+3. Specify and ratify the **unmeasured-block rule** (author amendment or P2-GATE addendum): e.g. use
+   the same fixed rate for all partition counts of a load (conservative), define Stage-A 1k/P3 and
+   Stage-C 1M/P6 treatment explicitly, or add calibration cells. Then make the runner **fail closed**
+   on a missing `fixed_rate` key (no `--rate` fallback) and call `rates.g7_checks(rates, required_blocks,
+   need_saturation=…)` in the runner preflight and in analyzer G7.
+4. Fix saturation: derive it from measured capacity as `2.5 × max_over_mechanisms(capacity)`
+   (prereg §6.2), or add one saturation calibration block; assert the resulting offered rate is ≥3×
+   the measured max in G7. The current fallback (`0.5 × min`) is exactly inverted.
+5. Force calibration runs to `rate=max` by stage, independent of table presence; record
+   `load_mode="saturation"`/`"max"` for M7 rather than `fixed-rate`; forbid calibration retries from
+   consuming derived rates.
+6. Freeze `experiments/rates.json` (see §11.7) and bind the M7 source records' digests in the freeze
+   evidence block.
+
+### 11.5 M16 / injector assessment (detail)
+
+The two defects named in A4/M16 are genuinely fixed for the **native** substrate: the rate floor now
+covers F1/F2/F3/F4a/F5/F6/K2/K5, and the F4b effect-transaction geometry is correct and tested. But the
+**substrate port is incomplete**, which creates three new blockers:
+1. **F1** (`F1BrokerKill`) is Windows-only: `_arm` requires `run/stack-state.json` with `components.kafka.nodes`,
+   `_fire` runs `taskkill`, `_restore` runs `pwsh … native-stack.ps1 start-kafka`. On the Linux host there is no
+   stack-state, no taskkill, no pwsh→**F1 cannot arm or restore** (pilot/Stage-B F1 cells; any "F1 live validation").
+2. **F2** (`F2ConsumerKill`) is Windows-only: `_fire` runs `taskkill /F /PID`. On Linux the kill is a no-op/127,
+   `_verify` fails → `fault_not_fired`; **the T0 smoke itself runs a pilot F2 row** (`pilot-m1x-f2-…`), so the very
+   first campaign phase fails.
+   Required: container/native-kill abstraction in the injector context (`docker kill kafka-N` / `docker start`
+   for F1; `SIGKILL`/`os.kill` for F2), with verification (broker count drops via AdminClient; consumer pid dead)
+   and tests in `test_stack_docker.py`; A4 must add the M17 deviation/realisation note (M16 as written claims
+   realisability that the substrate code does not yet have).
+3. **Toxiproxy Kafka fault paths** (F3 produce timeout, F4a offset-commit failure, K2 for M1-kafka) are not on
+   path in the container stack: `deploy/docker/toxiproxy.json` forwards to `kafka-1:29092` (**INTERNAL**
+   listener), so a host client that bootstraps through the proxy receives `INTERNAL` advertised addresses
+   (`kafka-1:29092`, `kafka-2:29092`, `kafka-3:29092`) that are not resolvable from the host (the frozen
+   contract expects proxies to forward to the host-reachable `127.0.0.1:9092`). Even with a reachable upstream,
+   Kafka clients connect to partition leaders/coordinators at their advertised addresses after metadata, so a
+   proxy on one listener cannot intercept produce/commit traffic — the extension proxies are structurally
+   off-path. F5 and K2-for-DB-sinks are fine (single JDBC endpoint through `db:15433`). Required: redesign (e.g.
+   per-broker proxies whose endpoints are the advertised listener addresses for the fault cells, or an
+   app-side fault hook), update `artifact/README §8.2`/CONTRACTS for the container realisation, and add a **live
+   efficacy test** (toxic active → produce/commit actually fails/times out; not just "toxic present"). Until
+   then, Stage A's K2-for-M1-kafka cells and the F3/F4a/F4b/F1/F2/F5 gate/live-validation conditions cannot be met.
+
+### 11.6 Linux substrate review (new issues, ranked)
+
+| # | Severity | Issue | Evidence / required fix |
+|---|---|---|---|
+| L1 | **blocking** | F1/F2 not realised on Linux (see §11.5) | injector code; T0 smoke uses F2 → phase fails |
+| L2 | **blocking** | Toxiproxy Kafka proxies: INTERNAL upstream + off-path extension proxies (see §11.5) | compose/toxiproxy.json; A4 §A4.1 claim "same ports as frozen code" true only for direct path |
+| L3 | **blocking** | T0/T4 evidence slate: smoke covers only M2/F0, M0/F4b, M1x/F2; no K3/K5 gate controls, no dedup-index mechanism (M3), no M1-kafka ledger smoke; T3 has no driver command; F1/F3/F5 live validation impossible until L1/L2 fixed | `run-campaign.sh`; runbook §4 |
+| L4 | **blocking (procedure)** | freeze sequencing: bootstrap writes a freeze **before** smoke/calibrate; `run-campaign.sh` has **no freeze phase after calibrate**; `rates.json` and Linux live-smoke evidence are **not** in `freeze.py` FROZEN/EVIDENCE lists; container image digests are not bound. A4 §A4.4 and runbook §T2 disagree with the actual driver | freeze.py lists; run-campaign.sh; runbook |
+| L5 | **major (data integrity)** | committed Windows `results/raw/run-records/**` (10 rows) remain in the repo; the Linux runner resume logic will **skip** those run_ids during T4/pilot instead of re-running them on the approved substrate, mixing substrates in the same cell | current tree; add a bootstrap/runbook step: archive Windows rows to `results/windows-pilot/` + digests, start Linux `results/raw` empty; assert `results/raw/run-records` empty before T0 |
+| L6 | **major (security/hygiene)** | compose publishes Kafka/PG/Toxiproxy on **0.0.0.0** (no `127.0.0.1:` prefix) and PG uses trust auth for all hosts; Toxiproxy API has no auth; A4/runbook claim "only reached on 127.0.0.1" — contradicted. Also `POSTGRES_HOST_AUTH_METHOD=trust` is redundant/open. Fix: bind `127.0.0.1:<port>:<port>` for every published port, restrict `pg_hba` to loopback, state host firewall in runbook | compose lines 51–124; A4 §A4.1 |
+| L7 | minor | `down -v` reset wipes PG volume → roles recreated by init SQL ✓, but bootstrap exits early if docker group membership not yet effective (script warns, continues; later `docker compose up` fails); make it a hard check with instructions. Toxiproxy has no compose healthcheck (only `depends_on` health of kafka/pg); `--wait` may return before its API is up — bootstrap's own liveness loop covers this, but add a healthcheck or document. | bootstrap.sh; compose toxiproxy service |
+| L8 | minor | acceptance-suite substitution is weaker than stated: bootstrap runs `mvn package` (unit tests) and `pytest`; it does **not** run artifact integration tests (`mvn verify -Pintegration`, DB/Kafka ITs) nor the S3 smoke coverage (M0/M3 e2e, dedup index, append-only trigger, failpoint crash) — the T0 smoke covers only three runs and uses the substrate-broken F2. A4 §A4.2 should map each original acceptance item to its Linux substitute and the driver should execute them | bootstrap.sh; A4 §A4.2; artifact README §8 |
+| L9 | minor | `_perform_reset` docker bookkeeping labels the compose-up rc as `rc_start_pg` (`rc_pg = result["rc_up"]`); liveness check saves it functionally, but the record should use a `rc_up` field | runner ~1042–1080 |
+| L10 | minor | frozen Kafka version vs container tag: Windows vendor version must be read and compared with `apache/kafka:3.7.2`; if they differ, record as A4 version-specificity deviation (paper threats) | `tools/TOOLCHAIN-VERSIONS.txt` vs compose |
+
+### 11.7 (c) Final re-freeze on the Linux host — procedure judgement
+
+**Accepted in principle, conditionally.** A single Linux-issued freeze is the right approach (the jar is
+rebuilt there; a Windows-issued aggregate cannot bind the campaign host). But the procedure must be
+corrected and the freeze must happen **after** the calibration block/rates and all substrate fixes, not
+merely after bootstrap:
+1. Sequence: fix L1–L6 + R10 wiring + R12 chain → bootstrap (Maven+harness tests, stack up) → T0 smoke
+   (fault-free + app-owned + S4-owned + one proxy-routed Kafka fault with efficacy assertion) → T1 M7
+   calibration (54) → `rates.py --write` → **T2 final freeze** (current runbook T2 is correct; the
+   bootstrap freeze is at best provisional and must be labelled so) → gate-control runs → T4 pilot → T5 stages.
+2. `freeze.py` FROZEN/EVIDENCE must additionally bind: `experiments/rates.json`, the Linux
+   `results/harness/live-smoke-evidence.json`, the T0/T1/T3 proof artifacts, and the container image
+   digests (`docker image inspect` repo digests for kafka/postgres/toxiproxy) either in the artifact
+   block or the provenance block; otherwise G7/rates/evidence are post-hoc editable.
+3. The freeze document must carry `git_sha` of the commit containing every frozen file (tree clean
+   apart from ignored `results/raw/artifacts`), `frozen_at_utc`, `missing_at_freeze: []`, the jar
+   SHA-256 + source-tree digest, and the aggregate.
+4. **Evidence I need before confirming the freeze** (lead to paste/report; S5 will re-verify by
+   recomputing hashes on the reported tree/commit — I will not write or run the freeze):
+   - `docs/prereg-freeze.json` at the host HEAD: file SHA-256, `aggregate_pipeline_sha256`,
+     `git_sha`, `frozen_at_utc`, `missing_at_freeze`, jar+source-tree digest; plus the *recomputed*
+     aggregate from the reported file list equal to the claimed one, and `freeze.py --check` → `ok:true`.
+   - `git rev-parse HEAD` + `git status --porcelain` (no tracked modifications) for that commit, and
+     confirmation that the same commit is on the public repo/CI is green on it.
+   - **Bootstrap log** (`results/phase-logs/bootstrap-*.log`): OS/kernel, docker+compose versions,
+     `docker image inspect` digests for the three images, JDK/Maven/Python/psql versions, jar
+     `sha256sum`, `mvn test` summary, `pytest experiments/tests -q` count, `runner --check-env` output,
+     stack liveness (3 brokers, ≥2 proxies), compose health output.
+   - **T0/T1/T2 evidence**: live-smoke-evidence `passed=true` with post-freeze records (fault-free +
+     app-owned + S4-owned attested **and** a proxy-routed Kafka fault with efficacy evidence; plus the
+     F1/F2 container-kill realisations if the corresponding cells are to run); M7 54 valid records and
+     `experiments/rates.json` (frozen hash) with full required-block coverage and the author-ratified
+     block-mapping rule; `rates.g7_checks(...).ok=true`; G7 capability (\(R_{on}\ge3×\max\) observed).
+   - RUNLOG rows for the freeze and smoke/calibrate commands (aggregate + git SHA).
+   If any of these is missing or the recomputed aggregate differs, the freeze is **not confirmed** and
+   Stage A stays blocked.
+
+### 11.8 Required corrections to docs/reports (before the host freeze)
+
+1. `run-campaign.sh`: add the missing `freeze` (T2) and `gate-controls` (T3) phases; make `smoke`
+   include the K3/K5 validation rows or explicitly note that G1 evidence comes from the T4 pilot; fix
+   `analysis` to the analyzer's real CLI (no `--stage`).
+2. `rates.py`/runner/validator: the six R12 fixes in §11.4; do not let the test suite codify the wrong
+   saturation fallback (`g7_checks(..., need_saturation=True)` currently passes on a fabricated value).
+3. A4: add the F1/F2 container realisations (M17 deviation if treated as a new deviation) and the
+   Toxiproxy-Kafka redesign; correct §A4.1 "same ports/only 127.0.0.1" to match the compose bindings
+   (or fix the bindings); map the acceptance-suite substitution item-by-item (§A4.2) and add the
+   integration-test command.
+4. `LINUX-CAMPAIGN-RUNBOOK.md`: reconcile the T2 freeze with the bootstrap freeze; document the
+   Windows-results archive step (L5); document the Docker fault-endpoint realisation for F1/F2/F3/F4a/
+   K2; state the T3 command and the T0/T4 gate evidence produced on Linux.
+5. `docs/P2-APPROVAL.md`/P2-GATE: keep the two pending sign-off boxes until the host freeze is
+   confirmed (they are correctly pending now); record the Linux freeze aggregate + S5 confirmation
+   there when done.
+6. Add tests: CLI-level A2 output test (`tools/analyze.py` on the A2 fixture), M7 record validates,
+   rates derived from runner-shaped M7 records, full required-block coverage fails closed, F1/F2 docker
+   kill/restart, proxy-routed Kafka fault efficacy (mock or live smoke).
+
+### 11.9 Commands used (read-only; no stack/runner)
+
+```powershell
+git log --oneline -3; Get-Content .git/refs/heads/main
+python %TEMP%\wxeo-s5-final\m7_check.py        # matrix/order M7 counts, hashes, accounting
+python %TEMP%\wxeo-s5-final\rates_check.py     # stage-mapping check, required vs calibrated blocks, saturation rule
+python -m pytest experiments/tests/test_analyze_a2.py experiments/tests/test_stack_docker.py experiments/tests/test_redteam_fixes_r1_r4.py -q   # 22 passed
+# file reads: docs/P2-APPROVAL.md, docs/prereg-amendment-A4.md, docs/LINUX-CAMPAIGN-RUNBOOK.md,
+#   deploy/docker/{docker-compose.yml,toxiproxy.json,postgres-init.sql}, deploy/linux/{bootstrap,run-campaign}.sh,
+#   experiments/{rates,stack}.py, experiments/runner.py (docker branch/reset/endpoints/rate/M7/process limits),
+#   experiments/injectors.py (F1/F2/K2/K5/F4b), tools/analyze.py (main vs A2 section), freeze.py lists, tests
+```
+
+**No file in the repository was created or modified except this memo.** The Linux host was not
+contacted; nothing was executed beyond the pure tests above.
+
+*End of stage-conditions re-review. Verdict: **BLOCK** for Stage A on the Linux host as of
+`c23a03f`; PASS is reachable after the §11.3–§11.8 fixes and the §11.7 freeze-evidence confirmation.*

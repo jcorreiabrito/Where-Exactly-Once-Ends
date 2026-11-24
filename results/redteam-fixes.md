@@ -235,3 +235,28 @@ based L2 fire timing) and M7 (topic lifecycle/reset cadence, registered as M5) a
 `WXEO_DISABLE_PERIODIC_RESET=1`); no pilot was launched by the fix-pass agent, and Stage A/B/C
 remain gated on P2.
 
+
+
+## Lead closure note — S5 §11 blockers (2026-11-24, post-c23a03f)
+
+All four execution blockers from docs/redteam-rereview.md §11 are implemented and covered by tests:
+1. R10 is wired into 	ools/analyze.py::main with a --stage CLI, M7 exclusion, fail-closed matrix
+   pin and record re-validation (tests: 	est_r10_wiring.py).
+2. The R12/M7 rates chain is coherent: M7 record stage validates, the runner writes
+   performance.committed_events, _effective_rate is fail-closed, 
+ates.py implements rule
+   A5.partition-scale.v1 with ±25 % spot checks and saturation SAT-2.5x-max, g7_checks() is
+   invoked (tests: 	est_m7_rates_chain.py).
+3. F1/F2 are realised on Linux through experiments/stack.py (pinned container kill/start, POSIX
+   SIGKILL) and the Kafka toxics target all members of the logical proxy groups, failing closed on
+   any member failure (tests: 	est_injectors_linux.py).
+4. Fault routing is realised per-broker through Toxiproxy with proxied advertised listeners and a
+   live fault-efficacy gate (deploy/linux/fault-efficacy.py), plus loopback-only publishing and a
+   T3 gate-control phase in deploy/linux/run-campaign.sh.
+Provenance: Windows outputs archived to 
+esults/windows-pilot/ (M17), 
+esults/raw/ emptied; the
+final freeze is reeze.py --write --force --require-evidence after T0/T1 and before T3/Stage A.
+Full harness suite at the time of writing: **110/110 passed**. Residual condition: the Linux host must
+execute the smoke/calibration/fault-efficacy/gate-control phases and issue that freeze; S5 then
+re-confirms the hash before Stage A.

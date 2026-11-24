@@ -190,6 +190,19 @@ def build_cells() -> list[dict]:
             add("M7", "m7", mech, "cal", load, events, 6, 3,
                 fault_level="none", ordering="strict", injector_mode="none",
                 load_mode="fixed-rate", block="M7-cal", extra={"calibration": True})
+    # ---- A5 M7spot spot-check block: 63 runs (6 (L,P) blocks + saturation), N=1 ------------
+    for mech in DES.MECHANISMS:
+        for load, partitions in DES.M7_SPOT_BLOCKS:
+            events = 1_000_000 if load == 1_000_000 else load
+            add("M7", "m7", mech, "cal", str(load // 1000) + "k" if load >= 1000 else "1k",
+                events, partitions, 1, fault_level="none", ordering="strict",
+                injector_mode="none", load_mode="fixed-rate", block="M7spot",
+                extra={"calibration": True, "spot_check": True,
+                       "run_id_prefix": "m7sopt"})
+        add("M7", "m7", mech, "cal", "100k", 100_000, 6, 1, fault_level="none",
+            ordering="strict", injector_mode="none", load_mode="saturation",
+            block="M7spot", extra={"calibration": True, "spot_check": True,
+                                   "run_id_prefix": "m7sopt", "sat_token": False})
     return cells
 
 
@@ -271,11 +284,12 @@ def expand_runs(cells: list[dict], validation: list[dict]) -> list[dict]:
             continue
         for rep in range(cell["reps"]):
             stage = cell["stage"]
+            stage_token = cell.get("run_id_prefix") or stage
             mech_token = DES.MECH_TOKEN[cell["mechanism"]]
             cond_token = cell["condition"]
-            parts = [stage, mech_token, cond_token, cell["load_token"],
+            parts = [stage_token, mech_token, cond_token, cell["load_token"],
                      f"p{cell['partitions']}"]
-            if cell["load_mode"] == "saturation":
+            if cell["load_mode"] == "saturation" and cell.get("sat_token", True):
                 parts.append("sat")
             parts.append(f"r{rep:02d}")
             run_id = "-".join(parts)
@@ -528,6 +542,11 @@ def accounts(cells: list[dict], validation: list[dict]) -> dict:
         "cells": sum(1 for c in cells if c["stage_label"] == "M7"),
         "runs": sum(c["n_planned_slots"] for c in cells
                     if c["stage_label"] == "M7" and c["executed"]),
+        "blocks": {label: sum(c["n_planned_slots"] for c in cells
+                              if c["stage_label"] == "M7" and c["executed"]
+                              and c["block"] == label)
+                   for label in sorted({c["block"] for c in cells
+                                        if c["stage_label"] == "M7"})},
         "note": "author-approved P2 calibration block; separate from the 7,506/7,488 "
                 "confirmatory counts; used only to derive fixed/saturation rates (R12)",
     }
@@ -721,8 +740,9 @@ def check_outputs() -> dict:
     if len(rows) != (acc["totals"]["runs_executable"] + acc["totals"]["validation_runs"]
                      + calibration_runs):
         problems.append(f"run_order rows {len(rows)} != executable+validation+calibration")
-    if calibration_runs != DES.M7_CAL_RUNS:
-        problems.append(f"M7 calibration runs {calibration_runs} != {DES.M7_CAL_RUNS}")
+    expected_cal = DES.M7_CAL_RUNS + DES.M7_SPOT_RUNS
+    if calibration_runs != expected_cal:
+        problems.append(f"M7 calibration runs {calibration_runs} != {expected_cal}")
     with open(os.path.join(REPO, "experiments", "matrix.sha256"), encoding="utf-8") as fh:
         recorded = {line.split()[1]: line.split()[0]
                     for line in fh if line.strip()}

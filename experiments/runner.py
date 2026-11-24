@@ -1312,6 +1312,7 @@ class Runner:
             "reset_cadence": reset_info.get("cadence"),
             "reset_reason": (reset_info.get("reset") or {}).get("reason"),
             "topic_count_before": reset_info.get("topic_count_before"),
+            "rate_mode": getattr(seq, "rate_mode", None),
             "failpoint_instance": getattr(seq, "_failpoint_instance", 1),
             "l2_trigger": "progress-based (M6)",
             "topic_count_after": reset_info.get("topic_count_after"),
@@ -1813,11 +1814,28 @@ class LiveSequence:
                     "experiments/rates.json is missing: fixed-rate/saturation modes are "
                     "pre-registered (prereg §6.2) and may not fall back to 'max' (S5 F-I3)")
             return "max"
+        stage = str(self.run.get("stage_label") or "")
+        if stage == "M7":
+            self.rate_mode = "calibration-max"   # capacity measurement, never derived
+            return "max"
         table = read_json(self.r.opts.rate_table, {}) or {}
         if mode == "saturation":
-            return str(table.get("saturation_rate", "max"))
+            entry = table.get("saturation_rate")
+            if not entry:
+                raise RuntimeError(
+                    "rates.json has no saturation_rate entry: the saturation block cannot "
+                    "run (S5 \u00a711.4(iv)); refusing the max fallback")
+            self.rate_mode = "saturation"
+            return str(entry.get("rate") if isinstance(entry, dict) else entry)
         key = f"{self.run['load_events']}|p{self.run['partitions']}"
-        return str((table.get("fixed_rate") or {}).get(key, self.r.opts.rate))
+        entry = (table.get("fixed_rate") or {}).get(key)
+        if not entry:
+            raise RuntimeError(
+                f"rates.json exists but has no fixed_rate entry for block {key!r}; "
+                f"refusing the --rate/max fallback (S5 \u00a711.4(iii)); calibrated "
+                f"blocks: {sorted((table.get('fixed_rate') or {}).keys())}")
+        self.rate_mode = "fixed-derived"
+        return str(entry.get("rate") if isinstance(entry, dict) else entry)
 
     def opts_rate_table_missing(self) -> bool:
         return not os.path.exists(self.r.opts.rate_table)
@@ -2197,6 +2215,7 @@ class LiveSequence:
             result["n_instances_merged"] = percentiles.get("n_instances", 0)
             result["histogram_path"] = percentiles.get("histogram_path")
         # throughput from committed events in the steady-state window (loader ack times)
+        result["committed_events"] = None
         if manifest_rows and self.loader_result:
             acks = [(int(r["ack_ts_ms"]), int(r["scheduled_at_ms"]))
                     for r in manifest_rows if r.get("ack_ts_ms") is not None
@@ -2210,6 +2229,7 @@ class LiveSequence:
                     result["throughput_eps_median"] = round(len(steady) / ((t1 - t0) / 1000.0), 3)
                     result["perf_window"] = {"start": t0, "end": t1,
                                              "events": len(steady)}
+                    result["committed_events"] = int(len(steady))
             # generator lag covariate: actual send time vs scheduled time (fsync manifest field)
             lags = []
             for row in manifest_rows:

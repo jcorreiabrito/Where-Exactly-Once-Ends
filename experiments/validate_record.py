@@ -57,7 +57,8 @@ TIMING_KEYS = {"t_start", "t_load_start", "t_load_end", "t_fault_fire", "t_resto
                "t_quiesce", "t_observation", "t_end"}
 QUIESCENCE_KEYS = {"lag_per_partition", "quiet_period_ms", "censored", "t_consistent_ms"}
 PERF_KEYS = {"throughput_eps_median", "p50_ms", "p90_ms", "p99_ms", "p999_ms", "max_ms",
-             "histogram_path", "warmup_events_excluded", "perf_window"}
+             "histogram_path", "warmup_events_excluded", "perf_window",
+             "committed_events"}
 VALIDITY_KEYS = {"valid", "excluded", "exclude_reason", "residue_check", "clock_check",
                  "disk_free_start_gb", "notes"}
 EXIT_KEYS = {"consumer", "load_generator"}
@@ -157,13 +158,20 @@ def validate_record(rec: dict, *, path: str = "") -> list[str]:
         if q.get("t_consistent_ms") is not None and not _is_int(q.get("t_consistent_ms")):
             err("quiescence.t_consistent_ms must be an integer or null")
     perf = rec.get("performance")
-    if not isinstance(perf, dict) or not PERF_KEYS <= set(perf):
-        err(f"performance must contain {sorted(PERF_KEYS)}")
+    required_perf = PERF_KEYS if rec.get("stage") in ("M7", "B", "C") \
+        else PERF_KEYS - {"committed_events"}
+    if not isinstance(perf, dict) or not required_perf <= set(perf):
+        err(f"performance must contain {sorted(required_perf)}")
     else:
         for key in ("throughput_eps_median", "p50_ms", "p90_ms", "p99_ms", "p999_ms",
                     "max_ms"):
             if perf.get(key) is not None and not _is_number(perf.get(key)):
                 err(f"performance.{key} must be a number or null")
+        # R12: committed_events is required for calibrated/confirmed-rate stages; pre-R12
+        # records from pilot/Stage A may omit it (backward compatibility)
+        if rec.get("stage") in ("M7", "B", "C") \
+                and not _is_int(perf.get("committed_events")):
+            err("performance.committed_events must be an integer for stage M7/B/C (R12)")
     counts = rec.get("counts")
     if not isinstance(counts, dict) or set(counts) != COUNTS_KEYS:
         err(f"counts must contain exactly {sorted(COUNTS_KEYS)}")

@@ -15,5 +15,7 @@ CREATE ROLE wxeo_read LOGIN;
 CREATE ROLE wxeo_fault LOGIN;
 
 GRANT CONNECT ON DATABASE wxeo TO wxeo_app, wxeo_read, wxeo_fault;
+-- CREATE SCHEMA requires CREATE on the DATABASE (the artifact SchemaTool creates wxeo_run_* schemas)
+GRANT CREATE ON DATABASE wxeo TO wxeo_app, wxeo_fault;
 GRANT USAGE ON SCHEMA public TO wxeo_app, wxeo_read, wxeo_fault;
 GRANT CREATE ON SCHEMA public TO wxeo_app, wxeo_fault;

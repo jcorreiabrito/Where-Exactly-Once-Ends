@@ -433,6 +433,97 @@ def _canonical_fault(fault: str) -> str:
 
 
 # --------------------------------------------------------------------------------------------
+# Linux/docker substrate helpers (S3's experiments/stack.py API; no edits to stack.py here)
+# --------------------------------------------------------------------------------------------
+#: Logical proxy groups the Kafka toxics must target (S3 ships deploy/docker/proxy-groups.json;
+#: ``STACK.proxy_groups()`` returns it, e.g. {"kafka-produce": ["kafka-1","kafka-2","kafka-3"],
+#: "kafka-consume": [...], "db": ["db"]}).  When unavailable we fall back to the legacy single
+#: proxy name (native Windows path, unchanged).
+PROXY_GROUP_CANDIDATES = {
+    "kafka-produce": ("kafka-produce", "produce", "kafka_produce", "kafka-produce-group"),
+    "kafka-consume": ("kafka-consume", "consume", "kafka_consume", "kafka-consume-group"),
+    "kafka": ("kafka", "kafka-group"),
+    "db": ("db", "database", "postgres", "db-group"),
+}
+
+
+def _stack_module():
+    """S3's stack adapter, imported lazily (absent on the native Windows path)."""
+    try:
+        from experiments import stack as _stack
+        return _stack
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _docker_mode() -> bool:
+    if os.environ.get("WXEO_STACK_MODE") == "docker":
+        return True
+    stack = _stack_module()
+    try:
+        return bool(stack is not None and getattr(stack, "is_docker", lambda: False)())
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _proxy_members(kind: str, fallback: str, ctx) -> list[str]:
+    """All proxies of a logical group (docker) or the single legacy proxy (native)."""
+    explicit = ctx.extra.get(f"{kind}_group")
+    if explicit:
+        return list(explicit)
+    stack = _stack_module()
+    if stack is not None and hasattr(stack, "proxy_groups"):
+        try:
+            groups = stack.proxy_groups() or {}
+            for candidate in PROXY_GROUP_CANDIDATES.get(kind, (kind,)):
+                members = groups.get(candidate)
+                if members:
+                    return list(members)
+        except Exception:  # noqa: BLE001
+            pass
+    return [ctx.extra.get(f"{kind.replace('-', '_')}_proxy", fallback)]
+
+
+def _apply_group_toxic(toxiproxy, members: list[str], toxic: dict,
+                       ctx) -> dict:
+    """Apply a toxic to every group member; fail closed if ANY member fails (S5 §11.5)."""
+    results = {}
+    for proxy in members:
+        try:
+            toxiproxy.add_toxic(proxy, toxic)
+            results[proxy] = {"ok": True}
+        except Exception as exc:  # noqa: BLE001
+            results[proxy] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+    failed = [p for p, r in results.items() if not r["ok"]]
+    ctx.extra["toxic_group_results"] = results
+    if failed:
+        raise InjectionNotVerified(
+            f"toxic {toxic.get('name')} could not be applied to group members {failed}; "
+            f"per-proxy results: {results}")
+    return results
+
+
+def _set_group_enabled(toxiproxy, members: list[str], enabled: bool, ctx) -> dict:
+    results = {}
+    for proxy in members:
+        try:
+            toxiproxy.set_enabled(proxy, enabled)
+            results[proxy] = {"ok": True}
+        except Exception as exc:  # noqa: BLE001
+            results[proxy] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+    ctx.extra["proxy_group_results"] = results
+    failed = [p for p, r in results.items() if not r["ok"]]
+    if failed:
+        raise InjectionNotVerified(
+            f"could not set enabled={enabled} on group members {failed}: {results}")
+    return results
+
+
+def _group_all_healthy(toxiproxy, members: list[str]) -> bool:
+    return all(toxiproxy.wait_healthy(proxy, timeout_s=30) for proxy in members)
+
+
+# --------------------------------------------------------------------------------------------
 # F1 — broker killed mid-produce (verified dead; restore waits brokers=3 and ISR=3)
 # --------------------------------------------------------------------------------------------
 class F1BrokerKill(Injector):
@@ -446,21 +537,38 @@ class F1BrokerKill(Injector):
         return "taskkill /F (broker)"
 
     def _arm(self) -> None:
+        if _docker_mode():
+            # S3 stack.py API: broker ids 1..3 (container mode has no Windows stack-state pids)
+            broker_id = self.ctx.extra.get("broker_id") or self.rng.choice([1, 2, 3])
+            self.state.update(target={"id": broker_id, "pid": None},
+                              target_id=str(broker_id), mode="docker")
+            return
         state = _read_json(self.ctx.stack_state_path) or {}
         brokers = ((state.get("components") or {}).get("kafka") or {}).get("nodes") or []
         if not brokers:
             raise RuntimeError("stack-state.json has no running Kafka nodes; cannot arm F1")
         target = self.rng.choice(brokers)
-        self.state.update(target=target, target_id=str(target.get("id")))
+        self.state.update(target=target, target_id=str(target.get("id")), mode="native")
 
     def _fire(self):
         target = self.state["target"]
-        pid = int(target["pid"])
-        before = {"node_id": target.get("id"), "pid": pid,
-                  "broker_count": self._broker_count()}
-        self.ctx.call(["taskkill", "/F", "/PID", str(pid)], check=False)
+        before = {"node_id": target.get("id"), "pid": target.get("pid"),
+                  "broker_count": self._broker_count(),
+                  "mode": self.state.get("mode", "native")}
+        if self.state.get("mode") == "docker":
+            stack = _stack_module()
+            if stack is None or not hasattr(stack, "broker_kill"):
+                raise InjectionNotVerified(
+                    "F1 docker mode requires STACK.broker_kill(broker_id) from "
+                    "experiments/stack.py (S3 API); refusing to fall back to taskkill")
+            result = stack.broker_kill(int(self.state["target_id"]))
+            self.state["stack_result"] = str(result)[:300]
+        else:
+            pid = int(target["pid"])
+            self.ctx.call(["taskkill", "/F", "/PID", str(pid)], check=False)
         self.state["after_kill_count"] = self._broker_count()
-        return (f"killed broker node {target.get('id')} pid {pid}", before,
+        pid_repr = target.get("pid")
+        return (f"killed broker node {target.get('id')} pid {pid_repr}", before,
                 {"broker_count": self.state["after_kill_count"]})
 
     def _broker_count(self) -> int:
@@ -476,19 +584,30 @@ class F1BrokerKill(Injector):
             return 0
 
     def _verify(self, before, after):
+        base = int(before.get("broker_count") or 3)
+        if self.state.get("mode") == "docker":
+            reduced = _wait(lambda: self._broker_count() < base, timeout=180)
+            return reduced, {"brokers_before": base, "brokers_after": self._broker_count(),
+                             "stack_result": self.state.get("stack_result")}
         pid = int(self.state["target"]["pid"])
         dead = _wait(lambda: not _pid_alive(pid), timeout=60)
-        base = int(before.get("broker_count") or 3)
         reduced = _wait(lambda: self._broker_count() < base, timeout=120)
         return (dead and reduced), {"pid_dead": dead, "brokers_before": base,
                                     "brokers_after": self._broker_count()}
 
     def _restore(self):
-        self.ctx.run_log("restore F1: start-kafka (PowerShell host) + brokers=3 + ISR=3")
-        import shutil as _shutil
-        host = _shutil.which("pwsh") or _shutil.which("powershell") or "powershell"
-        self.ctx.call([host, "-NoProfile", "-ExecutionPolicy", "Bypass",
-                       "-File", self.ctx.native_stack_ps1, "start-kafka"], check=False)
+        if self.state.get("mode") == "docker":
+            self.ctx.run_log("restore F1: STACK.broker_start(broker_id) + brokers=3 + ISR=3")
+            stack = _stack_module()
+            if stack is None or not hasattr(stack, "broker_start"):
+                raise RuntimeError("F1 docker restore requires STACK.broker_start(broker_id)")
+            stack.broker_start(int(self.state["target_id"]))
+        else:
+            self.ctx.run_log("restore F1: start-kafka (PowerShell host) + brokers=3 + ISR=3")
+            import shutil as _shutil
+            host = _shutil.which("pwsh") or _shutil.which("powershell") or "powershell"
+            self.ctx.call([host, "-NoProfile", "-ExecutionPolicy", "Bypass",
+                           "-File", self.ctx.native_stack_ps1, "start-kafka"], check=False)
         ok_count = _wait(lambda: self._broker_count() >= 3, timeout=120)
         ok_isr = True
         source_topic = self.ctx.extra.get("source_topic")
@@ -511,7 +630,7 @@ class F2ConsumerKill(Injector):
         return "consumer"
 
     def action_name(self) -> str:
-        return "taskkill /F (consumer)"
+        return "SIGKILL (linux pid)" if os.name != "nt" else "taskkill /F (consumer)"
 
     def _arm(self) -> None:
         pids = dict(self.ctx.consumer_pids)
@@ -523,7 +642,14 @@ class F2ConsumerKill(Injector):
     def _fire(self):
         victim = self.state["victim"]
         pid = int(self.state["pid"])
-        self.ctx.call(["taskkill", "/F", "/PID", str(pid)], check=False)
+        if os.name != "nt":
+            stack = _stack_module()
+            if stack is not None and hasattr(stack, "pid_kill_linux"):
+                stack.pid_kill_linux(pid)      # S3 API (SIGKILL on the container/POSIX pid)
+            else:
+                os.kill(pid, 9)               # POSIX fallback, same semantics
+        else:
+            self.ctx.call(["taskkill", "/F", "/PID", str(pid)], check=False)
         return f"killed consumer instance {victim} pid {pid}", {"instance": victim, "pid": pid}, {
             "pid_alive": _pid_alive(pid)}
 
@@ -562,20 +688,26 @@ class F3ProduceTimeout(Injector):
         return "toxiproxy timeout toxic (produce)"
 
     def _arm(self) -> None:
-        self.state.update(proxy=self.ctx.extra.get("produce_proxy", "kafka-produce"),
+        members = _proxy_members("kafka-produce",
+                                 self.ctx.extra.get("produce_proxy", "kafka-produce"),
+                                 self.ctx)
+        self.state.update(proxies=members, proxy=members[0],
                           toxic_name=f"wxeo-f3-{self.ctx.run_id}", timeout_ms=5000,
-                          target_id=self.ctx.extra.get("produce_proxy", "kafka-produce"))
+                          target_id=",".join(members))
 
     def _fire(self):
         toxic = {"name": self.state["toxic_name"], "type": "timeout", "stream": "downstream",
                  "attributes": {"timeout": self.state["timeout_ms"]}}
-        self.toxiproxy.add_toxic(self.state["proxy"], toxic)
-        return (f"added timeout toxic {self.state['toxic_name']} on {self.state['proxy']}",
-                {"proxy": self.state["proxy"]}, {"toxic": toxic})
+        results = _apply_group_toxic(self.toxiproxy, self.state["proxies"], toxic, self.ctx)
+        return (f"added timeout toxic {self.state['toxic_name']} on group "
+                f"{self.state['proxies']} ({len(results)} proxies)",
+                {"proxies": self.state["proxies"]},
+                {"toxic": toxic, "per_proxy": results})
 
     def _verify(self, before, after):
-        present = self.toxiproxy.toxic_present(self.state["proxy"], self.state["toxic_name"])
-        return present, {"toxic_present": present}
+        checks = {p: self.toxiproxy.toxic_present(p, self.state["toxic_name"])
+                  for p in self.state["proxies"]}
+        return all(checks.values()), {"per_proxy_toxic_present": checks}
 
     def _after_fire(self) -> None:
         time.sleep(self.T_HOLD_S)
@@ -584,16 +716,19 @@ class F3ProduceTimeout(Injector):
         return "remove toxic + verify proxy health"
 
     def _restore(self):
-        try:
-            self.toxiproxy.remove_toxic(self.state["proxy"], self.state["toxic_name"])
-        except ToxiproxyError as exc:  # pragma: no cover
-            if "404" not in str(exc):
-                raise
-        healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
+        for proxy in self.state["proxies"]:
+            try:
+                self.toxiproxy.remove_toxic(proxy, self.state["toxic_name"])
+            except ToxiproxyError as exc:  # pragma: no cover
+                if "404" not in str(exc):
+                    raise
+        healthy = _group_all_healthy(self.toxiproxy, self.state["proxies"])
         if not healthy:
-            raise RuntimeError("F3 restore: proxy did not become healthy")
-        return (f"removed toxic; proxy healthy={healthy}",
-                {"proxy_healthy": healthy, "toxics": self.toxiproxy.toxics(self.state["proxy"])})
+            raise RuntimeError("F3 restore: at least one group proxy did not become healthy")
+        return (f"removed toxic; group healthy={healthy}",
+                {"proxy_healthy": healthy,
+                 "per_proxy_toxics": {p: self.toxiproxy.toxics(p)
+                                      for p in self.state["proxies"]}})
 
 
 # --------------------------------------------------------------------------------------------
@@ -615,16 +750,20 @@ class F4aOffsetCommitFailure(Injector):
         return "toxiproxy disable (consumer link)"
 
     def _arm(self) -> None:
-        self.state.update(proxy=self.ctx.extra.get("consume_proxy", "kafka-consume"),
-                          target_id=self.ctx.extra.get("consume_proxy", "kafka-consume"))
+        members = _proxy_members("kafka-consume",
+                                 self.ctx.extra.get("consume_proxy", "kafka-consume"),
+                                 self.ctx)
+        self.state.update(proxies=members, proxy=members[0],
+                          target_id=",".join(members))
 
     def _fire(self):
-        self.toxiproxy.set_enabled(self.state["proxy"], False)
-        return (f"disabled proxy {self.state['proxy']}", {"enabled": True}, {"enabled": False})
+        results = _set_group_enabled(self.toxiproxy, self.state["proxies"], False, self.ctx)
+        return (f"disabled proxies {self.state['proxies']}", {"enabled": True},
+                {"enabled": False, "per_proxy": results})
 
     def _verify(self, before, after):
-        disabled = not self.toxiproxy.is_enabled(self.state["proxy"])
-        return disabled, {"proxy_enabled": not disabled}
+        checks = {p: not self.toxiproxy.is_enabled(p) for p in self.state["proxies"]}
+        return all(checks.values()), {"per_proxy_disabled": checks}
 
     def _after_fire(self) -> None:
         time.sleep(self.T_HOLD_S)
@@ -633,8 +772,8 @@ class F4aOffsetCommitFailure(Injector):
         return "enable link + verify health + wait group stable"
 
     def _restore(self):
-        self.toxiproxy.set_enabled(self.state["proxy"], True)
-        healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
+        _set_group_enabled(self.toxiproxy, self.state["proxies"], True, self.ctx)
+        healthy = _group_all_healthy(self.toxiproxy, self.state["proxies"])
         stable = self.ctx.wait_group_stable(timeout=60) if self.ctx.wait_group_stable else True
         if not healthy:
             raise RuntimeError("F4a restore: proxy did not become healthy")
@@ -765,16 +904,19 @@ class K2UnknownOutcome(Injector):
 
     def _arm(self) -> None:
         if self.ctx.mechanism == "M1-kafka":
-            proxy = self.ctx.extra.get("produce_proxy", "kafka-produce")
+            members = _proxy_members("kafka-produce",
+                                     self.ctx.extra.get("produce_proxy", "kafka-produce"),
+                                     self.ctx)
         else:
-            proxy = self.ctx.extra.get("db_proxy", "db")
+            members = _proxy_members("db", self.ctx.extra.get("db_proxy", "db"), self.ctx)
         events = int(self.ctx.extra.get("load_events") or 1000)
         lo, hi = int(events * 0.25), int(events * 0.60)
         marker_rng = random.Random(int.from_bytes(
             hashlib.sha256(f"k2|{self.ctx.seed_hex}".encode()).digest()[:8], "big"))
         marker = marker_rng.randint(max(1, lo), max(lo + 1, hi))
-        self.state.update(proxy=proxy, toxic_name=f"wxeo-k2-{self.ctx.run_id}",
-                          marker=marker, timeout_ms=5000, target_id=proxy)
+        self.state.update(proxies=members, proxy=members[0],
+                          toxic_name=f"wxeo-k2-{self.ctx.run_id}",
+                          marker=marker, timeout_ms=5000, target_id=",".join(members))
         self.ctx.extra["progress_marker"] = marker
 
     def _wait_for_marker(self) -> None:
@@ -795,18 +937,20 @@ class K2UnknownOutcome(Injector):
         self._wait_for_marker()
         toxic = {"name": self.state["toxic_name"], "type": "timeout", "stream": "downstream",
                  "attributes": {"timeout": self.state["timeout_ms"]}}
-        self.toxiproxy.add_toxic(self.state["proxy"], toxic)
+        results = _apply_group_toxic(self.toxiproxy, self.state["proxies"], toxic, self.ctx)
         before = {"marker": self.state["marker"],
                   "progress_at_fire": self.ctx.extra.get("progress_at_fire")}
-        return (f"added timeout toxic {self.state['toxic_name']} on {self.state['proxy']} at "
-                f"progress {before['progress_at_fire']} (marker {self.state['marker']})",
-                before, {"toxic": toxic})
+        return (f"added timeout toxic {self.state['toxic_name']} on group "
+                f"{self.state['proxies']} at progress {before['progress_at_fire']} "
+                f"(marker {self.state['marker']})",
+                before, {"toxic": toxic, "per_proxy": results})
 
     def _verify(self, before, after):
-        present = self.toxiproxy.toxic_present(self.state["proxy"], self.state["toxic_name"])
-        return present, {"toxic_present": present,
-                         "marker": self.state["marker"],
-                         "progress_at_fire": before.get("progress_at_fire")}
+        checks = {p: self.toxiproxy.toxic_present(p, self.state["toxic_name"])
+                  for p in self.state["proxies"]}
+        return all(checks.values()), {"per_proxy_toxic_present": checks,
+                                      "marker": self.state["marker"],
+                                      "progress_at_fire": before.get("progress_at_fire")}
 
     def _after_fire(self) -> None:
         time.sleep(self.T_HOLD_S)
@@ -815,14 +959,15 @@ class K2UnknownOutcome(Injector):
         return "remove timeout toxic + verify proxy health"
 
     def _restore(self):
-        try:
-            self.toxiproxy.remove_toxic(self.state["proxy"], self.state["toxic_name"])
-        except ToxiproxyError as exc:  # pragma: no cover
-            if "404" not in str(exc):
-                raise
-        healthy = self.toxiproxy.wait_healthy(self.state["proxy"], timeout_s=30)
+        for proxy in self.state["proxies"]:
+            try:
+                self.toxiproxy.remove_toxic(proxy, self.state["toxic_name"])
+            except ToxiproxyError as exc:  # pragma: no cover
+                if "404" not in str(exc):
+                    raise
+        healthy = _group_all_healthy(self.toxiproxy, self.state["proxies"])
         if not healthy:
-            raise RuntimeError("K2 restore: proxy did not become healthy")
+            raise RuntimeError("K2 restore: at least one group proxy did not become healthy")
         return (f"removed K2 toxic; proxy healthy={healthy}",
                 {"proxy_healthy": healthy})
 

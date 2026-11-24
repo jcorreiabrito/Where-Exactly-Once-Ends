@@ -1786,6 +1786,8 @@ def build_parser() -> argparse.ArgumentParser:
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "formal"))
     p.add_argument("--bootstrap-seed", default=None)
     p.add_argument("--dataset", default=None, help="override dataset label (e.g. synthetic)")
+    p.add_argument("--stage", choices=["all", "pilot", "A", "B", "C", "M7cal"],
+                   default="all", help="campaign phase")
     return p
 
 
@@ -1797,6 +1799,9 @@ def main(argv=None) -> int:
     freeze = load_freeze(args.freeze)
     raw_records, malformed = load_records(records_dir)
     all_recs = [extract(r) for r in raw_records]
+    a2_records = [r for r in raw_records
+                  if str(r.get("stage")).upper() != "M7"]
+    all_recs = [r for r in all_recs if str(r.get("stage")).upper() != "M7"]
     recs = confirmatory(all_recs)
     validation_recs = [r for r in all_recs if r["is_validation"]]
     reserved = load_reserved(records_dir)
@@ -1886,6 +1891,9 @@ def main(argv=None) -> int:
     write_csv(os.path.join(out_dir, "gates.csv"), gates)
     write_csv(os.path.join(out_dir, "zero-events.csv"), zero_events)
 
+    _g7_rates_check(out_dir)
+    pin_ok = _matrix_pin_ok(args.freeze)
+    a2 = _run_a2(a2_records, out_dir, pin_ok, dataset)
     macros = write_macros(os.path.join(out_dir, "macros.tex"), hypotheses, recs, dataset)
     tables = write_tables(out_dir, gates=gates, cbmf=cbmf, counts=counts, perf=perf,
                           decision=decision, hypotheses=hypotheses, recs=recs,
@@ -1893,6 +1901,7 @@ def main(argv=None) -> int:
                           formal_dir=args.formal_dir)
     manifest = {
         "schema": "wxeo.analysis-manifest.v1",
+        "a2_analysis": a2,
         "dataset": dataset,
         "synthetic": dataset != DATASET_CAMPAIGN,
         "warning": ("SYNTHETIC FIXTURE — NOT RESULTS" if dataset != DATASET_CAMPAIGN else None),
@@ -1912,6 +1921,7 @@ def main(argv=None) -> int:
         "out": out_dir, "dataset": dataset, "synthetic": dataset != DATASET_CAMPAIGN,
         "n_valid": tests["n_valid"], "n_excluded": tests["n_excluded"],
         "hypotheses": manifest["hypotheses"],
+        "a2_verdicts": a2.get("verdicts"),
         "tables": sorted(manifest["outputs"]), "bootstrap_seed": bootstrap_seed,
     }, indent=2))
     return 0
@@ -2315,7 +2325,10 @@ def a2_validate_records(records: list[dict]) -> dict:
     invalid = []
     equations_bad = []
     for rec in records:
-        errors = VR.validate_record(rec) if VR else []
+        # ``_path`` is analysis bookkeeping added by the loader; it is not part of the run-record
+        # schema and must not leak into the frozen validator (S4 R10 wiring test).
+        clean = {k: v for k, v in rec.items() if not str(k).startswith("_")}
+        errors = VR.validate_record(clean) if VR else []
         if errors:
             invalid.append({"run_id": rec.get("run_id"), "errors": errors[:3]})
         violations = rec.get("violations") or {}
@@ -2417,6 +2430,8 @@ def a2_item14_fixture() -> tuple[list[dict], dict]:
 def a2_analyze(records: list[dict], performance: dict | None = None,
                matrix_pin_ok: bool = True) -> dict:
     """Full A2 analysis: re-validation, classes, H1-H5-A, P3, P11; fail-closed on matrix pin."""
+    # A5/M7: calibration rows (stage m7/M7) are never confirmatory evidence
+    records = [r for r in records if str(r.get("stage")).upper() != "M7"]
     if not matrix_pin_ok:
         raise SystemExit("A2 analyzer: matrix hash does not match the pinned/frozen matrix; "
                          "refusing to classify evidence")
@@ -2431,3 +2446,76 @@ def a2_analyze(records: list[dict], performance: dict | None = None,
         "H5": a2_h5a(records, performance), "P3": a2_p3(records),
         "P11": a2_p11(records),
     }
+
+
+def _matrix_pin_ok(freeze_path: str) -> bool:
+    import hashlib as _hashlib
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    matrix_path = os.path.join(repo, "experiments", "matrix.yaml")
+    sidecar = os.path.join(repo, "experiments", "matrix.sha256")
+    if not os.path.exists(matrix_path):
+        return False
+    actual = _hashlib.sha256(open(matrix_path, "rb").read()).hexdigest()
+    sidecar_sha = None
+    if os.path.exists(sidecar):
+        for line in open(sidecar, encoding="utf-8"):
+            if line.strip().endswith("matrix.yaml"):
+                sidecar_sha = line.split()[0]
+    if sidecar_sha is not None and sidecar_sha != actual:
+        return False
+    try:
+        freeze = json.load(open(freeze_path, encoding="utf-8")) if (
+            freeze_path and os.path.exists(freeze_path)) else {}
+    except Exception:  # noqa: BLE001
+        return False
+    frozen = (freeze.get("files") or {}).get("experiments/matrix.yaml")
+    if frozen is not None and frozen != actual:
+        return False
+    return sidecar_sha is not None
+
+
+def _run_a2(a2_records: list[dict], out_dir: str, pin_ok: bool, dataset: str) -> dict:
+    if not pin_ok:
+        raise SystemExit("A2 analyzer: matrix pin mismatch; refusing confirmatory verdicts")
+    report = a2_analyze(a2_records, matrix_pin_ok=pin_ok)
+    validation = report.get("record_validation") or {}
+    if not validation.get("ok", False):
+        print(json.dumps({"a2_error": "run-record re-validation failed",
+                          "invalid": validation.get("invalid", [])[:5]}, indent=2),
+              file=sys.stderr)
+        raise SystemExit("A2 analyzer: run-record re-validation failed")
+    verdicts = {k: v.get("verdict") for k, v in report.items()
+                if isinstance(v, dict) and "verdict" in v}
+    payload = {"schema": "wxeo.a2-analysis.v1", "dataset": dataset,
+               "amendment": report.get("amendment"), "matrix_pin_ok": pin_ok,
+               "record_validation": validation, "verdicts": verdicts, "report": report}
+    with open(os.path.join(out_dir, "a2-analysis.json"), "w", encoding="utf-8",
+              newline="") as fh:
+        json.dump(payload, fh, indent=2, default=str)
+        fh.write("\n")
+    with open(os.path.join(out_dir, "a2-hypotheses.json"), "w", encoding="utf-8",
+              newline="") as fh:
+        json.dump({"dataset": dataset, "verdicts": verdicts}, fh, indent=2)
+        fh.write("\n")
+    return {"outputs": ["a2-analysis.json", "a2-hypotheses.json"],
+            "verdicts": verdicts, "matrix_pin_ok": pin_ok}
+
+
+def _g7_rates_check(out_dir: str) -> dict | None:
+    """G7: validate experiments/rates.json in the calibration/analysis phase (fail closed)."""
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(repo, "experiments", "rates.json")
+    if not os.path.exists(path):
+        return None
+    from experiments import rates as _rates
+    doc = json.load(open(path, encoding="utf-8"))
+    required = ([_rates._block_key(load, p, m) for _, load, p, m in _rates.REQUIRED_BLOCKS])
+    result = _rates.g7_checks(doc, required)
+    with open(os.path.join(out_dir, "g7-rates.json"), "w", encoding="utf-8",
+              newline="") as fh:
+        json.dump({"rates_rule_id": doc.get("rule_id"),
+                   "validated": doc.get("validated"), "g7": result}, fh, indent=2)
+        fh.write("\n")
+    if not result["ok"]:
+        raise SystemExit(f"G7 rates check failed in the analysis phase: {result['problems']}")
+    return result
