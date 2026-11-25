@@ -64,10 +64,11 @@ modes with real scripted injectors (broker kills, consumer kills, unknown-outcom
 commit-order failures in both directions, database partitions, duplicate redelivery) alongside
 deterministic failpoints. Third, we score every run with an independent oracle: the generator
 writes the expected posting set before producing and a separate Python checker recomputes it and
-compares it with the database after quiescence. Fourth, we pre-register the statistical analysis
-plan (exact intervals for mostly-zero correctness outcomes; bootstrap and
-Friedman/Nemenyi/Cliff's delta for performance) and execute a staged campaign within a fixed
-wall-clock budget, recording every deviation.
+compares it with the database after quiescence. Fourth, we pre-register the full statistical
+analysis plan, then --- because the dedicated Linux/container host assumed by that plan was not
+available --- execute a reduced but fully instrumented confirmatory programme (Amendment~A7) on the
+native-process substrate, with every deviation recorded and the reduced power stated explicitly
+rather than hidden.
 
 Our contributions are:
 \begin{itemize}[leftmargin=1.1em,itemsep=1pt]
@@ -75,9 +76,12 @@ Our contributions are:
       invariant-preservation propositions for nine mechanism configurations, including a
       machine-checked bounded TLC model of the duplicate (W1) and loss (W2) windows;
 \item the first fault-injection comparison, to our knowledge, of EOS-boundary mechanisms scored
-      directly on double-entry invariants with an independent oracle and pre-registered statistics;
+      directly on double-entry invariants with an independent oracle, together with an executed
+      reduced confirmatory programme (152 valid runs) and the pre-registered design that makes the
+      full campaign reproducible;
 \item a practitioner decision table mapping failure exposure to the minimal sufficient mechanism
-      set, with the measured cost of each additional guarantee;
+      set, with the modelled cost of each additional guarantee and observed committed-event
+      throughput as descriptive evidence;
 \item a public, reproducible artifact containing the service, the fault injectors, the oracle,
       the raw run records and the scripts that regenerate every table and figure.
 \end{itemize}
@@ -87,6 +91,8 @@ experimental methodology. Section~\ref{sec:model} defines the system, ledger sta
 invariants and EOS boundary. Section~\ref{sec:mechanisms} presents the mechanisms.
 Section~\ref{sec:formal} states and argues the invariant-preservation results and reports the
 machine-checked model. Section~\ref{sec:method} describes the implementation, faults, oracle and
-pre-registered design. Section~\ref{sec:results} reports the results and hypothesis verdicts.
+pre-registered design. Section~\ref{sec:results} reports the executed reduced programme and its
+descriptive results (with $N=3$ the pre-registered hypothesis tests are not identified and are not
+claimed).
 Section~\ref{sec:decision} derives the decision table, Section~\ref{sec:threats} discusses
 threats to validity, and Section~\ref{sec:conclusion} concludes.

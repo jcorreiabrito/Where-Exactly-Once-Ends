@@ -1,0 +1,137 @@
+{
+  "schema": "wxeo.oracle.v1",
+  "run_id": "m7-m1-kafka-cal-10k-p6-r01",
+  "mechanism": "M1-kafka",
+  "sink_kind": "kafka",
+  "generated_at_utc": "2026-11-24T22:19:15.409Z",
+  "counts": {
+    "produced": 10000,
+    "consumed_estimate": 10000,
+    "expected_postings": 20000,
+    "observed_postings": 20000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "structurally_malformed_entries": 0,
+    "imbalanced_sum_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0,
+    "ledger_entries_total": 10000
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "v5": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": null,
+    "dup_records": null,
+    "lost_records": null,
+    "divergence": null,
+    "notes": "M1-kafka: the publication stream is the ledger; see counts",
+    "stream_records": 10000,
+    "stream_parse_errors": 0
+  },
+  "attestation": {
+    "present": false,
+    "can_update": null,
+    "can_delete": null,
+    "posting_triggers": null,
+    "failed": null,
+    "note": "no attestation supplied (not required)"
+  },
+  "attribution": [],
+  "source_integrity_detail": {
+    "gt_file": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m1-kafka-cal-10k-p6-r01\\attempt1\\gt_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+    "gt_sha256_file": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "gt_sha256_regenerated": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "gt_lines_regenerated": 20000,
+    "gt_digest_match": true,
+    "source_dump": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m1-kafka-cal-10k-p6-r01\\attempt1\\source_dump_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+    "produced_manifest": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m1-kafka-cal-10k-p6-r01\\attempt1\\produced_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+    "source_records": 10000,
+    "source_offsets_contiguous": true,
+    "source_partitions_observed": 6,
+    "source_partitions_expected": 6,
+    "source_partitions_exact": true,
+    "source_event_multiset_matches_manifest": true,
+    "source_event_multiset_matches_derivation": true,
+    "source_dump_digest": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "source_dump_digest_match": true,
+    "partition_derivation_mismatches": 0,
+    "value_sha256_checked": true,
+    "value_sha256_mismatches": 0,
+    "malformed_source_lines": 0,
+    "malformed_manifest_lines": 0,
+    "errors": [],
+    "source_integrity": true
+  },
+  "diagnostics": {
+    "dup_key_samples": [],
+    "lost_key_samples": [],
+    "mutated_key_samples": [],
+    "imbalanced_eid_samples": [],
+    "structural_eid_samples": [],
+    "spurious_key_samples": [],
+    "lost_entry_samples": [],
+    "pub_dup_eid_samples": [],
+    "pub_lost_eid_samples": [],
+    "pub_mutated_samples": [],
+    "pub_divergence_eid_samples": [],
+    "observed_malformed_rows": 0,
+    "dup_entry_events": 0,
+    "complete_entries": 10000,
+    "publication_shard_stats": {
+      "records": 10000,
+      "parse_errors": 0,
+      "bad_shape": 0,
+      "error_samples": []
+    }
+  },
+  "verdict_rule": "violating_run = v1|v2|v3|v4|v5; v1=imbalanced_entries>0 (I1a structural or I1b signed-sum); v2=(mutated_postings>0 or append-only attestation fails); v3=dup_postings>0; v4=lost_postings>0; v5=spurious_postings>0 (fabricated/fabricated-balanced postings). The I1a/I1b split and v5 are recorded for the author-approved P2 amendment A2; analysis reads violations.violating_run verbatim and never recomputes it. Recorded interpretation per docs/P2-RULINGS.md and results/DEVIATIONS.md.",
+  "warnings": [],
+  "inputs": {
+    "gt": {
+      "path": "<scratch>/gt_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+      "sha256": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+      "bytes": 3126710
+    },
+    "source_dump": {
+      "path": "<scratch>/source_dump_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+      "sha256": "bc2b119dd8e0f5674c8da93901f58c11bdbbbe38e26d10e04a277af8391e1b7e",
+      "bytes": 1573340
+    },
+    "produced_manifest": {
+      "path": "<scratch>/produced_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+      "sha256": "a19cb48604afb23766b29ee4ee3840091a962154d8daaa69dd5973c3a4f0493b",
+      "bytes": 1603340
+    },
+    "sink_dump": {
+      "path": null,
+      "sha256": null,
+      "bytes": null
+    },
+    "publication_dump": {
+      "path": "<scratch>/publication_m7-m1-kafka-cal-10k-p6-r01.ndjson",
+      "sha256": "d2c4115bbd64c967c35b3dd17f5450c19cd95fa9c7dffd91afa1b35631e7e213",
+      "bytes": 4190074
+    },
+    "attestation": {
+      "path": null,
+      "sha256": null,
+      "bytes": null
+    }
+  },
+  "oracle": {
+    "gt_sha256": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "expected_sha256": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "source_integrity": true,
+    "oracle_script_sha256": "189ff543c5f678ae6c59907372b6b028c73e0cbff6f99c49b6388d0128a59901",
+    "result_sha256": "08c04ca0ef9c65c9d1aa58eed15307bae914ce5d03e5794fc33de80fca6f7952"
+  }
+}

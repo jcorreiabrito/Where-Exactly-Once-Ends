@@ -30,6 +30,26 @@ disk fragmentation change over hours. Runs are randomised and interleaved across
 paired seeds are used within a cell, the full stack is restarted at a fixed cadence, and run
 order is recorded so drift can be tested as a covariate.
 
+\paragraph{Reduced programme and unrealised cells (Amendment A7).} The full pre-registered
+campaign assumed a Linux/container host that was not available; the executed programme is the
+reduced one described in Section~\ref{sec:results:programme}. Five limitations are explicit here
+rather than hidden. (i) Stage-A cells have $N\le3$ instead of 30, so the pre-registered hypothesis
+tests are not identified and only descriptive proportions with Clopper--Pearson intervals are
+reported; the intervals in the results tables are correspondingly wide. (ii) The fixed-rate and
+saturation Stage~B/C/D blocks were not executed, so this paper makes no fixed-rate, saturation or
+100k+ scaling claim; the throughput table is descriptive with $N=1$ at 100k. (iii) Three injector
+realisations could not be exercised on the native substrate: K5 protocol replay is not realisable,
+K1 for the M1x family does not converge after the failpoint crash (transactional-producer
+fencing), and K2 for M1-kafka never reaches the seeded progress marker; those cells are excluded
+and counted, not treated as passes. (iv) The M2/M2+M3 outbox relay did not fully drain within the
+frozen 300~s quiescence bound at 10k/100k, so their performance runs are censored and absent from
+Table~\ref{tab:res-perf}. (v) The pipeline was re-frozen once after two injector-realisation fixes
+were applied mid-campaign; records produced before that point use the same mechanism code but the
+earlier K1/marker configuration, and no record from an affected cell is included in the results.
+These limitations bound the strength of the empirical claims; they do not affect the formal
+results, the artifact, or the direction of the observed failures, which is consistent across every
+mechanism.
+
 \subsection{Construct validity}
 \label{sec:threats-construct}
 

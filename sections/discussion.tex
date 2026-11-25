@@ -26,25 +26,25 @@ closes duplicates but not losses.
 \subsection{Practitioner decision table}
 \label{sec:dec-table}
 
-Table~\ref{tab:decision} maps a failure exposure to the minimal mechanism set that covers it and
-to the measured cost of that coverage. The table is derived mechanically from the frozen
-correctness and performance run records by the pre-registered derivation rules
-(Section~\ref{sec:method}); no cell is set by hand. The cost column reports the pre-registered
-performance contrast against the naive baseline rather than an absolute number, so the table
-remains meaningful when hardware changes. Until the campaign completes, each cell cites the
-predicted coverage of Section~\ref{sec:formal} and the cost cell is marked \emph{PENDING}; the
-verdicts are replaced by measured contrasts by the frozen pipeline.
+The decision summary below maps a failure exposure to the minimal mechanism set that closes it, the
+model's argument for that coverage, and what the executed reduced programme observed. It is
+derived from the formal results of Section~\ref{sec:formal} and the descriptive evidence of
+Section~\ref{sec:results}; because the reduced programme has $N=3$ per cell and no measured
+fixed-rate/saturation performance block, the cost is stated qualitatively rather than as a
+measured contrast. Every entry is either a model-derived claim or an observation traceable to
+\texttt{results/analysis-reduced/}; none is set by hand.
 
-\IfFileExists{results/analysis/tables/t6-decision.tex}{\input{results/analysis/tables/t6-decision.tex}}{%
-\begin{center}
-\footnotesize
-\fbox{\parbox{0.92\linewidth}{\centering\textbf{Table PENDING.} Decision table: exposure
-$\rightarrow$ minimal mechanism set $\rightarrow$ measured cost vs.\ M0, derived mechanically
-from frozen run records.}}
-\captionof{table}{Practitioner decision table as a function of failure exposure (derived
-mechanically from frozen run records; PENDING until the campaign completes).}
-\label{tab:decision}
-\end{center}}
+\paragraph{Decision summary.} (i) $W_1$ duplicate exposure: the minimal sufficient mechanism is
+an idempotency key (M3) or a transactional outbox (M2); M4 includes it atomically. Reduced
+evidence: K3 duplicated only in the unguarded M0/M1x, while M1x+M3, M2, M2+M3 and M3 were clean.
+(ii) $W_2$ lost-effect exposure: no mechanism in the suite closes the early-ordering probe;
+prevention requires effect-before-progress durability plus reconciliation. Reduced evidence: the
+K4 probe lost postings in all 24 of 24 runs (272--494 per cell), across every exposed mechanism.
+(iii) $K_1$/$K_2$ (nothing durable, or unknown outcome): plain at-least-once suffices when the
+effect is retried and either idempotent or absent; both classes were clean in 44 runs, including
+M0. (iv) Scale (100k+, saturation): depends on load and is not measured here; the reduced
+programme reports committed-event throughput only, with no ranking claim, and the pre-registered
+Stage~B/C remain future work on the intended host.
 
 A caution accompanies the table: zero-observed cells carry a rule-of-three upper bound, evidence
 of practical adequacy at the tested sample size, not a proof of impossibility. The word

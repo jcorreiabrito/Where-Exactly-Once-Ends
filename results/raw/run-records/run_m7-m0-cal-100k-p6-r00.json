@@ -1,0 +1,375 @@
+{
+  "schema": "wxeo.run.v1",
+  "run_id": "m7-m0-cal-100k-p6-r00",
+  "stage": "M7",
+  "cell_id": "M7.M0.cal.100k.p6",
+  "mechanism": "M0",
+  "ordering_variant": "strict",
+  "fault": "none",
+  "fault_level": "none",
+  "load_events": 100000,
+  "partitions": 6,
+  "consumer_instances": 2,
+  "rep": 0,
+  "data_seed": "e70470cc65d13d0c",
+  "injection_seed": "3feec91fa451405d",
+  "master_seed": "90650742b511adfb662272117444cf43",
+  "git_sha": "95f3ce5dadda907f205940f81b778f176351615c",
+  "host": {
+    "os_build": "Windows 11 (10.0.26300)",
+    "cpu_model": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+    "logical_cpus": 12,
+    "ram_gb": 15.7,
+    "disk_free_start_gb": 10.892
+  },
+  "versions": {
+    "java": null,
+    "kafka": "3.7.2 (Scala 2.13, KRaft)",
+    "postgresql": "16.11",
+    "toxiproxy": "2.9.0",
+    "powershell": null,
+    "python": "3.12.4",
+    "python_executable": "<scratch>/python.exe",
+    "pinned_toolchain": "tools/TOOLCHAIN-VERSIONS.txt",
+    "sha256": {
+      "jdk21.zip": "bbebea1469996b276683c9299c227b294f85c847039c82633218186a4ad4fbf2",
+      "apache-maven-3.9.9-bin.zip": "4ec3f26fb1a692473aea0235c300bd20f0f9fe741947c82c1234cefd76ac3a3c",
+      "kafka_2.13-3.7.2.tgz": "79980b70ed83f11e2ca37a94d64ebe412d4899e23e60a02c25d4082f3a282d6f",
+      "postgresql-16.11-1-windows-x64-binaries.zip": "3761aee1252a2083679020b5dc79c75df2d567eea708a2cbb9f6ff5402e27101",
+      "toxiproxy-server-windows-amd64.exe": "603c4ed4dd1dff1ce4ff4986a3b54073d520cc0995e2328c7658a4a6dd92b3af",
+      "toxiproxy-cli-windows-amd64.exe": "ca421f2e94e044cd544f8fa59314909976a652907187263a462b8e247a1d9ab1"
+    },
+    "host_os": "Windows 11 build 26300 (12 logical CPUs, 16 GB RAM)",
+    "jdk": "21.0.13.1 (Eclipse Temurin)",
+    "maven": "3.9.9",
+    "miktex": "25.12",
+    "tla2tools": "tla2tools.jar v1.7.4 (TLC 2.19) sha256=936A262061C914694DFD669A543BE24573C45D5AA0FF20A8B96B23D01E050E88 bytes=2274532",
+    "roles": "TLC formal model checking (formal/ledger.tla)",
+    "java_runtime": "openjdk version \"21.0.13.1\" 2026-11-17 LTS"
+  },
+  "config": {
+    "source": "app:config_<run>_1.json",
+    "mechanism": "M0",
+    "ordering_variant": "strict",
+    "shared_sha256": "f87be4111433dccc5b6e6d3947f4682732686c94ac3935f454fde75235717c26",
+    "intrinsic_sha256": "a54432da95c5798258ee8e0ba966c3c835be15388b999acdcb8dc8f90a3f1212",
+    "config_sha256": "2cd9a0b3bb5f240d9d9390e908041b11025e46b10be245c12ef91091a515d2d9",
+    "effective_config": {
+      "app": {
+        "artifact": "wxeo-service",
+        "artifact_version": "1.0.0",
+        "java_vendor": "Eclipse Adoptium",
+        "java_version": "21.0.13.1",
+        "jvm_args": [
+          "-Xms512m",
+          "-Xmx1g",
+          "-XX:+UseG1GC",
+          "-XX:+ExitOnOutOfMemoryError"
+        ],
+        "jvm_start_ms": 1795561870181,
+        "os": "Windows 11 10.0"
+      },
+      "config_sha256": "2cd9a0b3bb5f240d9d9390e908041b11025e46b10be245c12ef91091a515d2d9",
+      "failpoint": {
+        "action": "crash",
+        "after": 1,
+        "enabled": false,
+        "faults_log": ".\\results\\faults.log",
+        "name": "",
+        "pause_ms": 0
+      },
+      "identity": {
+        "bootstrap": "127.0.0.1:9091",
+        "consumer_bootstrap": "127.0.0.1:9091",
+        "db_schema": "wxeo_run_m7_m0_cal_100k_p6_r00_s2a86390b_a1",
+        "db_url": "jdbc:postgresql://127.0.0.1:5433/wxeo",
+        "db_user": "wxeo_app",
+        "faults_log": ".\\results\\faults.log",
+        "group": "wxeo.cg.m7-m0-cal-100k-p6-r00.s2a86390b.a1",
+        "instance_id": 1,
+        "mechanism": "M0",
+        "ordering": "strict",
+        "output_dir": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m0-cal-100k-p6-r00\\attempt1\\outputs",
+        "producer_bootstrap": "127.0.0.1:9091",
+        "require_append_only_attestation": true,
+        "run_id": "m7-m0-cal-100k-p6-r00",
+        "schema_init": "none",
+        "sink_topic": "wxeo.sink.m7-m0-cal-100k-p6-r00.s2a86390b.a1",
+        "source_topic": "wxeo.src.m7-m0-cal-100k-p6-r00.s2a86390b.a1",
+        "warmup_events": 5000
+      },
+      "intrinsic": {
+        "consumer_progress_table": false,
+        "db_sink": true,
+        "dedup_index": false,
+        "inbox_table": false,
+        "mechanism": "M0",
+        "outbox_table": false,
+        "publication_path": "inline",
+        "relay_batch_limit": null,
+        "relay_poll_interval_ms": null,
+        "relay_thread": false,
+        "retry_unknown_outcome_mode": "NO_WRITE_RETRY",
+        "transaction_timeout_ms": null,
+        "transactional_id_prefix": null,
+        "transactional_producer": false
+      },
+      "intrinsic_sha256": "a54432da95c5798258ee8e0ba966c3c835be15388b999acdcb8dc8f90a3f1212",
+      "schema": "wxeo.config.v1",
+      "shared": {
+        "batch": {
+          "jdbc_batch_size": 500,
+          "poll_timeout_ms": 200
+        },
+        "consumer": {
+          "auto.offset.reset": "earliest",
+          "default.api.timeout.ms": 60000,
+          "enable.auto.commit": false,
+          "fetch.max.wait.ms": 500,
+          "fetch.min.bytes": 1,
+          "heartbeat.interval.ms": 3000,
+          "isolation.level": "read_committed",
+          "max.poll.interval.ms": 300000,
+          "max.poll.records": 500,
+          "partition.assignment.strategy": "org.apache.kafka.clients.consumer.RangeAssignor",
+          "request.timeout.ms": 30000,
+          "session.timeout.ms": 10000
+        },
+        "histogram": {
+          "highest_us": 60000000,
+          "latency_unit": "us",
+          "lowest_us": 1,
+          "significant_digits": 3
+        },
+        "jdbc": {
+          "autocommit": false,
+          "batch_size": 500,
+          "connection_timeout_ms": 30000,
+          "pool_size": 8,
+          "prepare_threshold": 5,
+          "rewrite_batched_inserts": true,
+          "synchronous_commit_asserted": true
+        },
+        "producer": {
+          "acks": "all",
+          "batch.size": 16384,
+          "compression.type": "none",
+          "delivery.timeout.ms": 120000,
+          "enable.idempotence": true,
+          "linger.ms": 0,
+          "max.in.flight.requests.per.connection": 5,
+          "request.timeout.ms": 30000
+        },
+        "publication": {
+          "ack_timeout_ms": 60000,
+          "partition_mode": "same-as-source"
+        },
+        "retry": {
+          "backoff_ms": [
+            100,
+            300,
+            900
+          ],
+          "connection_max_attempts": 3,
+          "kafka_progress_commit_max_attempts": 3,
+          "serialization_max_attempts": 5
+        }
+      },
+      "shared_sha256": "f87be4111433dccc5b6e6d3947f4682732686c94ac3935f454fde75235717c26"
+    },
+    "runner": {
+      "attempt": 1,
+      "topic_suffix": ".s2a86390b.a1",
+      "source_topic": "wxeo.src.m7-m0-cal-100k-p6-r00.s2a86390b.a1",
+      "sink_topic": "wxeo.sink.m7-m0-cal-100k-p6-r00.s2a86390b.a1",
+      "db_schema": "wxeo_run_m7_m0_cal_100k_p6_r00_s2a86390b_a1",
+      "restart_before_run": false,
+      "block_id": 0,
+      "reset_epoch": 0,
+      "runs_since_reset_before": 0,
+      "reset_cadence": 20,
+      "reset_reason": null,
+      "topic_count_before": 18,
+      "rate_mode": "calibration-max",
+      "offered_rate": null,
+      "endpoint_contract": {
+        "path": "deploy/docker/endpoints.json",
+        "sha256": "8a1d3fcdd4bcd5ffb751286499055431403cb29ac953b5e71b4afa87f2ffd80a",
+        "fault_bootstrap": "127.0.0.1:19091"
+      },
+      "failpoint_instance": 1,
+      "l2_trigger": "progress-based (M6)",
+      "warmup_events_total": 10000,
+      "warmup_events_per_instance": 5000,
+      "consumer_instances": 2,
+      "topic_count_after": null,
+      "topic_lifecycle": "no per-run deletion (M5); periodic reset-kafka wipe",
+      "max_live_topics": 400,
+      "disk_free_start_gb": 10.892,
+      "disk_free_end_gb": 10.348,
+      "scratch_bytes": 244783545
+    }
+  },
+  "process_limits": {
+    "jvm_xms": "512m",
+    "jvm_xmx": "1g",
+    "jvm_gc": "G1",
+    "affinity_mask": null,
+    "priority_class": null,
+    "hikari_pool": null,
+    "broker_heap": "512m",
+    "pg_shared_buffers": "2GB"
+  },
+  "timings": {
+    "t_quiesce": 1795561900522,
+    "t_load_end": 1795561884190,
+    "t_restore": null,
+    "t_end": 1795561922190,
+    "t_start": 1795561868508,
+    "t_fault_fire": null,
+    "t_observation": 1795561901132,
+    "t_load_start": 1795561879085
+  },
+  "quiescence": {
+    "lag_per_partition": {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0
+    },
+    "quiet_period_ms": 10000,
+    "censored": false,
+    "t_consistent_ms": 5373,
+    "checks": {
+      "lag_zero": true,
+      "sink_stable": true,
+      "app_idle": true,
+      "relay_drained": true
+    }
+  },
+  "performance": {
+    "throughput_eps_median": 13442.868,
+    "p999_ms": null,
+    "p50_ms": null,
+    "max_ms": null,
+    "committed_events": 90000,
+    "histogram_path": null,
+    "p99_ms": null,
+    "p90_ms": null,
+    "warmup_events_excluded": 10000,
+    "perf_window": {
+      "start": 1795561881723,
+      "end": 1795561888418,
+      "events": 90000
+    },
+    "n_instances_merged": 2,
+    "generator_lag_p99_ms": 0,
+    "generator_lag_flag": false,
+    "committed_basis": "app-committed",
+    "partial": false,
+    "instances_expected": 2,
+    "committed_events_total": 100000,
+    "app_blocks": [
+      {
+        "instance": 1,
+        "committed_events_total": 50095,
+        "steady_state_events": 45095,
+        "steady_state_start_ms": 1795561882102,
+        "steady_state_end_ms": 1795561888418,
+        "steady_state_duration_ms": 6316,
+        "throughput_eps": 7139.804,
+        "warmup_events_excluded": 5000
+      },
+      {
+        "instance": 2,
+        "committed_events_total": 49905,
+        "steady_state_events": 44905,
+        "steady_state_start_ms": 1795561881723,
+        "steady_state_end_ms": 1795561888373,
+        "steady_state_duration_ms": 6650,
+        "throughput_eps": 6752.632,
+        "warmup_events_excluded": 5000
+      }
+    ],
+    "producer_ack_throughput_eps": 21042.787,
+    "t_consistent_ms": 5373,
+    "censored": false
+  },
+  "counts": {
+    "produced": 100000,
+    "consumed_estimate": 100000,
+    "expected_postings": 200000,
+    "observed_postings": 200000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "structurally_malformed_entries": 0,
+    "imbalanced_sum_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0,
+    "ledger_entries_total": 100000
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "v5": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 100000,
+    "dup_records": 0,
+    "lost_records": 0,
+    "divergence": 0,
+    "pub_mutated_records": 0,
+    "pub_unknown_records": 0,
+    "notes": null
+  },
+  "oracle": {
+    "gt_sha256": "5dfe5def099ad0ecc8a5f4438b040ca0cc8daa6aeabcdbdbe07c63a4089fd953",
+    "expected_sha256": "5dfe5def099ad0ecc8a5f4438b040ca0cc8daa6aeabcdbdbe07c63a4089fd953",
+    "source_integrity": true,
+    "oracle_script_sha256": "189ff543c5f678ae6c59907372b6b028c73e0cbff6f99c49b6388d0128a59901",
+    "result_sha256": "5ff6ffb16e0f725f656aa3d22304f2b41cd8bf562af9ee4d5bc2d2a0e6a5efbd"
+  },
+  "fault_receipts": [],
+  "validity": {
+    "valid": true,
+    "excluded": false,
+    "exclude_reason": null,
+    "residue_check": true,
+    "clock_check": true,
+    "disk_free_start_gb": 10.252,
+    "notes": [
+      "db schema identifier: wxeo_run_m7_m0_cal_100k_p6_r00_s2a86390b_a1 (run_id hyphens mapped to underscores per SchemaTool pattern)"
+    ]
+  },
+  "artifacts": {
+    "gt_manifest": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/gt_manifest",
+    "gt": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/gt",
+    "source_dump": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/source_dump",
+    "sink_dump": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/sink_dump",
+    "publication_dump": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/publication_dump",
+    "attestation": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/attestation",
+    "oracle": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/oracle",
+    "hist_percentiles": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/hist_percentiles",
+    "config": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/config",
+    "app": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/app",
+    "loader_result": null,
+    "digest_manifest": "results/raw/artifacts/m7-m0-cal-100k-p6-r00/digest-manifest.json"
+  },
+  "stdout_path": "<scratch>/loadgenerator.stdout.log",
+  "stderr_path": "<scratch>/loadgenerator.stderr.log",
+  "exit_status": {
+    "consumer": {
+      "1": 0,
+      "2": 0
+    },
+    "load_generator": 0
+  }
+}

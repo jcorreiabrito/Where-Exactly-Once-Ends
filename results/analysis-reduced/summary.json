@@ -1,0 +1,18 @@
+{
+  "schema": "wxeo.reduced-analysis.v1",
+  "amendment": "A7 (reduced programme, descriptive only, no hypothesis tests)",
+  "n_records": 154,
+  "n_valid": 152,
+  "n_violating": 30,
+  "correctness_cells": 40,
+  "performance_cells": 14,
+  "validation_runs": 2,
+  "tables": {
+    "t1": "results\\analysis-reduced\\tables\\t1-correctness.tex",
+    "t2": "results\\analysis-reduced\\tables\\t2-performance.tex",
+    "t1m": "results\\analysis-reduced\\tables\\t1-mechanism.tex",
+    "t1f": "results\\analysis-reduced\\tables\\t1-fault.tex",
+    "t1v": "results\\analysis-reduced\\tables\\t1-violating-cells.tex"
+  },
+  "warning": "Descriptive/exploratory only: Stage-A N=3 and M7 performance N per cell are below the pre-registered design, so no confirmatory hypothesis verdict is reported (Amendment A7)."
+}

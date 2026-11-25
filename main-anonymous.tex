@@ -1,0 +1,220 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Where Exactly-Once Ends — RITA research article
+% Based on the official RITA 2018 template (SelfArx.cls, archived official source;
+% provenance and checksums in submission/VENUE-RULES.md).
+% Compile: powershell -ExecutionPolicy Bypass -File build.ps1 -Main main.tex -Clean
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[fleqn,12pt]{SelfArx} % 12 pt per written RITA guidelines (checklist); template class retained
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES
+%----------------------------------------------------------------------------------------
+\usepackage[english]{babel}
+\usepackage{url}
+\usepackage{balance}
+\usepackage{hyperref}
+\usepackage{mathptmx}
+\usepackage{graphicx}
+\usepackage{times}
+\usepackage{textcomp}
+\usepackage{gensymb}
+\usepackage{amsmath,amssymb}
+\usepackage{comment}
+\usepackage{multirow}
+\usepackage[labelfont=bf]{subcaption}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage[num]{abntex2cite}
+\citebrackets[]
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsthm}
+
+% Theorem environments for the formal part (author-owned content, drafted by the team)
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+
+% Manuscript/analysis integration: analysis outputs (owned by S4) define these if present.
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\inputifexists}[1]{\IfFileExists{#1}{\input{#1}}{}}
+\inputifexists{results/analysis/macros.tex}
+\inputifexists{results/analysis-reduced/macros.tex}
+\providecommand{\ResHypothesisOneVerdict}{pending}
+\providecommand{\ResHypothesisTwoVerdict}{pending}
+\providecommand{\ResHypothesisThreeVerdict}{pending}
+\providecommand{\ResHypothesisFourVerdict}{pending}
+\providecommand{\ResHypothesisFiveVerdict}{pending}
+\providecommand{\ResTotalValidRuns}{--}
+\providecommand{\ResTotalExcludedRuns}{--}
+\providecommand{\ResMzeroViolatingRuns}{--}
+\providecommand{\ResMzeroViolationRate}{--}
+\providecommand{\ResMonexViolatingRuns}{--}
+\providecommand{\ResMonexViolationRate}{--}
+\providecommand{\ResMtwoViolatingRuns}{--}
+\providecommand{\ResMthreeViolatingRuns}{--}
+\providecommand{\ResMfourViolatingRuns}{--}
+\providecommand{\ResMtwoPlusMthreeViolatingRuns}{--}
+\providecommand{\ResMfourPlusMthreeViolatingRuns}{--}
+\providecommand{\ResMonexPlusMthreeViolatingRuns}{--}
+\providecommand{\ResMkafkaViolatingRuns}{--}
+\providecommand{\ResEarlyProbeLossRuns}{--}
+\providecommand{\ResSubstrateDeviationText}{native Windows processes instead of containers}
+
+% RITA template rule colour / boxes
+\definecolor{mycolor}{rgb}{0,0,0}
+\makeatletter
+\newcommand{\mybox}[1]{%
+	\setbox0=\hbox{#1}%
+	\setlength{\@tempdima}{\dimexpr\wd0+13pt}%
+	\begin{tcolorbox}[colframe=mycolor,boxrule=0.5pt,arc=4pt,
+		left=6pt,right=6pt,top=6pt,bottom=6pt,boxsep=0pt,width=\@tempdima]
+		#1
+	\end{tcolorbox}
+}
+\makeatother
+
+%----------------------------------------------------------------------------------------
+%	COLUMNS AND COLOURS (as in the official template)
+%----------------------------------------------------------------------------------------
+% --- Layout compression (compliance plan): tighter float/display spacing; template class retained ---
+\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
+\setlength{\floatsep}{4pt plus 1pt minus 1pt}
+\setlength{\intextsep}{5pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{0pt}
+\setlength{\abovedisplayskip}{4pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{4pt plus 2pt minus 2pt}
+\setlength{\abovedisplayshortskip}{2pt}
+\setlength{\belowdisplayshortskip}{2pt}
+\setlength{\columnsep}{0.50cm}
+\setlength{\fboxrule}{0.75pt}
+\definecolor{color1}{RGB}{0,0,90}
+\definecolor{color2}{RGB}{0,20,20}
+
+\hypersetup{hidelinks,colorlinks,breaklinks=true,urlcolor=color2,citecolor=color1,linkcolor=color1,
+bookmarksopen=false,
+pdftitle={Where Exactly-Once Ends: Preserving Double-Entry Ledger Invariants When Apache Kafka Pipelines Write to External Stores},
+pdfauthor={Anonymous Submission},
+pdfkeywords={exactly-once semantics, Apache Kafka, double-entry ledger, transactional outbox, idempotency, fault injection}}
+
+%----------------------------------------------------------------------------------------
+%	ARTICLE INFORMATION
+%----------------------------------------------------------------------------------------
+\JournalInfo{\color{gray}\normalsize\sffamily\bfseries Revista de Informática Teórica e Aplicada - RITA - ISSN 2175-2745\\ Vol.~XX, Num.~XX~(2026)~1-XX}
+\Archive{\mybox{RESEARCH ARTICLE}}
+
+\PaperTitle{Where Exactly-Once Ends: Preserving Double-Entry Ledger Invariants When Apache Kafka Pipelines Write to External Stores}
+\ShortTitle{Where Exactly-Once Ends}
+
+\Titulo{Onde o Exactly-Once Termina: Preservando Invariantes de Partidas Dobradas Quando Pipelines Apache Kafka Escrevem em Armazenamentos Externos}
+
+\PaperVol{XX}
+\PaperNum{X}
+\PaperAno{2026}
+
+\Authors{Anonymous Submission\textsuperscript{1,*}}
+\affiliation{\textsuperscript{1}\textit{Anonymous institution}}
+\affiliation{*\textbf{Corresponding author}: anonymous@example.org}
+
+\Keywords{Exactly-once semantics --- Apache Kafka --- double-entry ledger --- transactional outbox --- idempotency --- fault injection}
+\newcommand{\keywordname}{Keywords}
+\PalavrasChave{Semântica exactly-once --- Apache Kafka --- partidas dobradas --- outbox transacional --- idempotência --- injeção de falhas}
+
+\Doi{http://dx.doi.org/10.22456/2175-2745.XXXX}
+\DateR{dd/mm/yyyy}
+\DateA{dd/mm/yyyy}
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT (<= 200 words) — PENDING final results; placeholder kept explicit for build tests
+%----------------------------------------------------------------------------------------
+\Abstract{Apache Kafka's exactly-once semantics covers Kafka's own durable state, not an external ledger. This paper formalises the boundary: a ledger state machine, crash-point classes $K_1$--$K_7$, and the two windows $W_1$ (duplicate) and $W_2$ (permanent loss) that separate effect and progress durability. We analyse nine mechanism configurations --- naive at-least-once, Kafka transactions with internal and external sinks, transactional outbox, idempotency key, in-transaction offsets and three combinations --- with invariant-preservation propositions and a bounded TLC model, and score them with an independent, mutation-tested oracle. Because the pre-registered full campaign's Linux host was unavailable, we executed a reduced confirmatory programme (Amendment~A7): 152 valid runs at 1k events over 40 (mechanism, crash-class) cells with $N\le3$, plus descriptive committed-event throughput at 10k and 100k events. Fault-free, crash-after-fetch and unknown-outcome classes were clean; under effect-durable/progress-behind, only unguarded mechanisms duplicated (302 and 462 duplicate postings) while guarded ones stayed clean; under progress-durable/effect-absent, all 24 of 24 runs lost postings (272--494 each), including the in-transaction-offset design. No mechanism closes $W_2$ by de-duplication alone. The artifact is public; no confirmatory hypothesis test is claimed.}
+
+\Resumo{A semântica exactly-once do Apache Kafka cobre o estado durável do próprio Kafka, não um livro-razão externo. Este artigo formaliza essa fronteira: uma máquina de estados do livro-razão, classes de pontos de falha $K_1$--$K_7$ e as duas janelas $W_1$ (duplicação) e $W_2$ (perda permanente) que separam a durabilidade do efeito da durabilidade do progresso. Analisamos nove configurações de mecanismo --- at-least-once ingênua, transações Kafka com sumidouros interno e externo, outbox transacional, chave de idempotência, offsets na transação e três combinações --- com proposições de preservação de invariantes e um modelo TLC limitado, avaliadas por um oráculo independente testado por mutação. Como o host Linux da campanha completa pré-registrada não estava disponível, executamos um programa confirmatório reduzido (Emenda~A7): 152 execuções válidas com 1k eventos em 40 células (mecanismo, classe de falha) com $N\le3$, além de vazão descritiva de eventos confirmados em 10k e 100k. As classes sem falha, falha antes de qualquer operação durável e resultado desconhecido não violaram invariantes; na janela efeito-durável/progresso-atrás, apenas mecanismos sem proteção duplicaram (302 e 462 lançamentos duplicados), enquanto os protegidos ficaram limpos; na janela progresso-durável/efeito-ausente, todas as 24 de 24 execuções perderam lançamentos (272--494), inclusive o projeto com offsets na transação. Nenhum mecanismo fecha $W_2$ apenas com de-duplicação. O artefato é público; nenhum teste de hipótese confirmatório é reivindicado.}
+
+%----------------------------------------------------------------------------------------
+
+% --- tighter heading spacing (compliance plan; template formatting retained) ---
+\usepackage{titlesec}
+\titlespacing*{\section}{0pc}{2.2ex plus 3pt minus 2pt}{4pt}
+\titlespacing*{\subsection}{0pc}{1.8ex plus 2pt minus 1pt}{0pt}
+\titlespacing*{\paragraph}{0pc}{1.1ex plus 1.5pt minus 1pt}{7pt}
+% Line-breaking tolerance (overfull-box reduction)
+\setlength{\emergencystretch}{2em}
+\tolerance=2000
+\begin{document}
+\setcounter{page}{1}
+\flushbottom
+\maketitle
+\thispagestyle{empty}
+
+\input{sections/introduction}
+
+\input{sections/related}
+
+\input{sections/system}
+
+\input{sections/mechanisms}
+
+\input{sections/formal}
+
+\input{sections/method}
+
+\input{sections/results}
+
+\input{sections/discussion}
+
+\input{sections/threats}
+
+\input{sections/conclusion}
+
+\section*{Acknowledgments}
+This work received no specific funding. The author thanks the maintainers of the open-source
+tools on which the artifact depends (Apache Kafka, PostgreSQL, Toxiproxy, HdrHistogram, TLA+) and
+the RITA reviewers for their time.
+
+\section*{Conflict of Interest}
+The author is employed in the financial sector but conducted this work independently: the study
+used only public technology and synthetic data generated by the published artifact, and no
+employer systems, data, infrastructure or internal information were involved. The author declares
+no competing financial or non-financial interests, no funding for this work, and no other conflict
+of interest.
+
+\section*{Ethics Statement}
+This study did not involve human participants, personal data, or animal subjects, and no ethical
+approval was required. All ledger events are synthetic, generated deterministically by the
+artifact from a recorded seed; the artifact contains no confidential or personal information.
+
+\section*{Declaration of AI-Assisted Use in Writing}
+Generative AI tools were used to assist with the preparation of this manuscript and its artifact:
+editing, rephrasing and formatting prose; translating the title and abstract into Portuguese;
+generating boilerplate build, harness and plotting code; and assisting with literature-search
+logistics. AI tools did not design the study, derive the ledger/EOS model or the proofs, choose or
+execute the statistical analyses, interpret the results, or generate, alter or fabricate any
+research data or results; all analytical content and decisions are the author's. The author
+directed and reviewed all AI-assisted output before submission and verified every number against
+the artifacts released with this paper. No research data or results were generated, altered or
+fabricated by AI. Data tables and data figures are produced by deterministic scripts from committed
+run records; conceptual diagrams are authored in LaTeX/TikZ. The author verified the bibliographic
+record and the supporting statement of every cited reference against the retrieved source or its
+published abstract, and assumes full responsibility for the content, including any error, omission
+or bias. AI tools are not authors of this work.
+
+\phantomsection
+\makeatletter
+\renewcommand\@biblabel[1]{{\parbox{0.95cm}{[#1]}}}
+\makeatother
+\renewcommand{\refname}{References}
+{\footnotesize\bibliography{refs}}
+
+\balance
+\end{document}

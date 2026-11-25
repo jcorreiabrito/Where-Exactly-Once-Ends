@@ -1,0 +1,3 @@
+run_id,valid,exclude_reason,notes
+pilot-valid-quiesce-r15,True,,['db schema identifier: wxeo_run_pilot_valid_quiesce_r15_sd4b422e0_a2 (run_id hyphens mapped to underscores per SchemaTool pattern)']
+pilot-valid-selftest-r11,False,application_did_not_start,['invalid: RuntimeError: consumer instance 1 did not stop gracefully']

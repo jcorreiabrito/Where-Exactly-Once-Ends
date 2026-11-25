@@ -164,3 +164,32 @@
 - [ ] Package (PDF + source + cover letter) and `main-anonymized.pdf` in `submission/`; SHA-256 recorded; `v1.0-submission` tag.
 - [ ] Rules re-verified on submission day (record date here: ______).
 - S6 compliance editor: ____________ (date) · Lead acceptance: ____________ (date)
+
+---
+
+## Final audited build — results inserted (2026-11-25)
+
+**Audited artifact:** `submission/final-paper.pdf` (25 pp) and `submission/anonymized-review.pdf`
+(25 pp), built from the working tree at the submission tag with
+`powershell -ExecutionPolicy Bypass -File build.ps1 -Main main.tex`.
+**Measured:** `BUILD OK (25 pages, 429698 bytes)`; **0 undefined references, 0 undefined citations,
+0 overfull hbox** (see `main.log`); abstract ~190 words (EN) / ~190 (PT); results tables generated
+from `results/analysis-reduced/` by `tools/analyze_reduced.py`, never transcribed.
+
+**Status changes from the table above:** C7 PASS (abstract now reports objectives, method, results,
+conclusions); H1/A9 PASS (**25 pp** measured); K2 PASS (page ceiling met by converting the
+fault/gates/decision tables to prose and compressing results prose — reserve cuts executed);
+K4 PASS (results section reports the executed reduced programme and descriptive results, no
+`pending` macros remain); K5 PASS (every number traces to `results/raw/run-records/` +
+`results/RUNLOG.md` + `results/analysis-reduced/`); J5 PASS (A7/M23 deviation recorded);
+J6 PASS (Maven tests green on CI); A11 PASS (COI names only "the financial sector").
+
+**Known non-blocking limitation to disclose in the portal (no data action remains):**
+the empirical evidence is the reduced A7 programme ($N=3$ correctness cells, no Stage B/C/D); this
+is stated in the abstract, §7, §9 and the decision summary. The paper's remaining PENDING markers
+are author/venue actions only: similarity check before upload, portal metadata/DOI, and confirming
+the venue template at submission time.
+
+**Final counts:** 152 valid run records (2 excluded), 30 invariant-violating runs, 40 correctness
+cells, 14 committed-throughput cells, 158/158 harness tests, matrix hashes unchanged
+(`5d348efe…`, `f4e731a2…`, `aa9ad0b9…`, 7,631 rows).

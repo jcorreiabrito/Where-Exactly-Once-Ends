@@ -42,33 +42,21 @@ Two injection levels answer different questions. \emph{Level~1} places a fault d
 at a named crash point of Section~\ref{sec:model}: failpoints at fixed code locations trigger one
 of four actions (crash, throw, abort the transaction, or pause) on a chosen occurrence; it is the
 structural experiment, since a mechanism that survives a fault at its worst location has absorbed
-it. \emph{Level~2} applies the six scripted faults of Table~\ref{tab:faults} at random, recorded
+it. \emph{Level~2} applies the scripted faults described above at random, recorded
 times within the steady-state window; it measures how often a fault realises an exposed window in
 a realistic timeline. Every armed injection writes two attestation records to the fault log ---
 one when it fires and one when the system is restored --- and a run whose injection did not fire
 is invalid, excluded and counted, with the exclusion rate reported per cell.
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Scripted faults (Level~2) and the crash classes they realise. Timing is either
-phase-coupled (Level~1) or a seeded random offset (Level~2); every action is attested in the
-fault log. F4 is split by commit direction; F6 is protocol-level duplicate redelivery only.}
-\label{tab:faults}
-\begin{tabular}{@{}p{0.65cm}p{5.3cm}p{4.2cm}p{5.0cm}@{}}
-\toprule
-Fault & Injected condition & Mechanism manipulated & Crash classes \\
-\midrule
-F1 & one broker killed mid-produce (leader and transaction coordinator of the instance) & Kafka broker process, hard kill & $K_2$, $K_3$ \\
-F2 & consumer instance killed during processing, forcing a rebalance & consumer process, hard kill & $K_1$--$K_3$, $K_5$ \\
-F3 & produce or transaction commit times out with unknown outcome & TCP delay/timeout on the produce link & $K_2$, $K_3$ \\
-F4a & effect commit durable, progress commit fails & offset-commit link cut after the effect marker & $K_3$ \\
-F4b & progress commit durable, effect commit fails (early ordering probe) & ordering flag plus a database-link cut & $K_4$ \\
-F5 & network partition between the service and the database & TCP blackhole/reset on the database link & $K_2$, $K_3$ \\
-F6 & duplicate redelivery after a rebalance (protocol-level replay) & consumers stopped, resume point rewound, consumers resumed & $K_5$ \\
-\bottomrule
-\end{tabular}
-\end{table*}
+\paragraph{Scripted faults.} F1 kills the leader and transaction coordinator broker mid-produce
+($K_2$, $K_3$); F2 kills a consumer instance during processing and forces a rebalance
+($K_1$--$K_3$, $K_5$); F3 cuts or times out the produce link with an unknown outcome ($K_2$,
+$K_3$); F4a makes the effect commit durable and fails the progress commit ($K_3$); F4b makes the
+progress/ordering marker durable and fails the effect commit --- the early-ordering probe
+($K_4$); F5 partitions the service from the database ($K_2$, $K_3$); F6 stops consumers, rewinds
+their resume point and resumes them, a protocol-level duplicate redelivery ($K_5$). Timing is
+phase-coupled (Level~1) or a seeded random offset (Level~2), and every action is attested in the
+fault log.
 
 \subsection{Independent oracle and ground truth}
 \label{sec:method:oracle}
@@ -103,36 +91,25 @@ observation is a single repeatable-read snapshot \cite{pg-isolation}.
 \subsection{Harness-validation gates}
 \label{sec:method:gates}
 
-No measurement is analysed until the gates of Table~\ref{tab:gates} pass. The gates are
+No measurement is analysed until the gates above pass. The gates are
 adversarial by design: the negative control must fail, the positive controls must pass, and the
 oracle must catch synthetic defects before it is trusted to judge the pipeline. The gate that most
 often reveals a design error is the negative control --- M0 is expected to produce duplicates
 under the deterministic $W_1$ injection, so a clean M0 means the injector or the oracle is
 broken, not that naive at-least-once is safe. Together with the frozen pre-registration this is
-the campaign's two-gate protocol: harness gates first, then the pre-registered analysis, with no
-results analysed before both.
+the campaign's two-gate protocol: the harness gates above first, then the pre-registered analysis, with no results analysed before both.
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Harness-validation gates. G1--G8 must pass on pilot data before any experimental run is
-analysed; failures halt the campaign.}
-\label{tab:gates}
-\begin{tabular}{@{}p{0.65cm}p{8.3cm}p{6.2cm}@{}}
-\toprule
-Gate & Requirement & Failure action \\
-\midrule
-G1 & negative control: M0 shows duplicates under the deterministic $W_1$ injection, with attestation & halt; harness broken \\
-G2 & positive controls: M1-kafka and M4+M3 show no violation in fault-free runs & halt \\
-G3 & checker mutation testing: 100\,\% detection of drop, duplicate, sign flip, update, spurious row ($\geq 100$ mutations per class) & fix checker; repeat \\
-G4 & injector attestation: one fired and one restored record per armed injection; exclusion rate computed from receipts only & exclude and count; flag cell if $>20\,\%$ \\
-G5 & ground-truth independence: generator digest equals oracle digest; source-integrity gate passes & invalidate runs; fix derivation \\
-G6 & configuration equality: shared configuration hash identical across mechanisms; only declared intrinsic keys differ & halt; unfair comparison \\
-G7 & load-generator capability: sustained $\geq 3\times$ the fastest measured mechanism throughput; doubling the quiet period does not change any count & resize generator; recalibrate quiescence \\
-G8 & clock and host sanity: single boot, no clock step, free disk above the floor, affinity and priority as pinned & flag or rerun \\
-\bottomrule
-\end{tabular}
-\end{table*}
+\paragraph{Harness-validation gates.} No experimental run is analysed until gates G1--G8 pass:
+G1 requires the negative control to duplicate under the deterministic $W_1$ injection with
+attestation; G2 requires M1-kafka and M4+M3 to be violation-free in fault-free runs; G3 requires
+100\,\% detection of dropped, duplicated, sign-flipped, updated and spurious checker mutations
+($\geq100$ per class); G4 requires one fired and one restored receipt per armed injection, with
+cells above a 20\,\% exclusion rate flagged; G5 requires generator digest equal to oracle digest
+and a passing source-integrity gate; G6 requires an identical shared configuration hash across
+mechanisms; G7 requires sustained load-generator capability of $3\times$ the fastest measured
+mechanism throughput (the executed programme's saturation rate uses the narrowed $2.5\times$
+capability of Amendment~A6 r2); and G8 checks clock and host sanity. A failure halts the
+campaign, invalidates runs or triggers a rerun according to the gate.
 
 \subsection{Design, metrics, and statistics}
 \label{sec:method:design}
@@ -154,6 +131,23 @@ with mechanisms interleaved, so machine drift is spread across mechanisms rather
 with one; the realised order is recorded. Repetition seeds are shared across mechanisms within a
 cell, so mechanisms process the same events with the same injection schedule, reducing variance
 and permitting paired tests.
+
+\paragraph{Executed programme (Amendment A7).}
+The dedicated Linux/container host required by the staged design above was not available for this
+study; instead of fabricating or omitting evidence, the campaign was executed as the reduced
+programme of Amendment~A7 on the native-process substrate: 26 validation runs, a performance block
+of 54 M7 core runs (9 mechanisms $\times$ \{10k, 100k\} $\times$ P6 $\times$ $N=3$) and a
+correctness block of 153 Stage-A runs (51 cells $\times$ $N=3$). In execution, 154 records were
+produced: 152 passed the frozen record validator and 2 were rejected and archived. The realised
+correctness block has 40 cells and 119 valid runs with $N\le3$, because six cells are declared not
+applicable by design and three injector realisations (M1x-family K1 restarts, M1-kafka K2,
+protocol-replay K5) and the M2-family outbox relay at 10k/100k could not be exercised on this
+substrate; Section~\ref{sec:threats-internal} records each one. The pre-registered Stage~B/C/D
+blocks (fixed-rate and saturation performance) were not executed, so no fixed-rate or
+saturation-throughput claim is made. With $N=3$ the pre-registered inferential tests below are
+underpowered and not identified: the paper reports descriptive proportions with exact
+Clopper--Pearson intervals and explicitly labels every statement descriptive/exploratory. The full
+design remains pre-registered and reproducible for the intended host.
 
 \paragraph{Metrics.}
 Correctness is measured per run by the counts of duplicate postings (I3), lost postings (I4),

@@ -1559,6 +1559,11 @@ class LiveSequence:
     def _injector_context(self) -> INJ.InjectorContext:
         kafka_home = self.env.get("kafka_home") or ""
         failpoint_after = 1
+        # K1 (A7 realisation fix): the app fires AFTER_FETCH once in onPartitionsAssigned
+        # (hit 1) before readiness, so a crash with after=1 kills the instance before the run
+        # starts. Offset the trigger by one so the crash happens on the first DATA batch.
+        if self.run.get("fault") == "K1" and self.run.get("fault_level") == "L1":
+            failpoint_after = 2
         if self.run.get("fault_level") == "L2" and self.run.get("fault") in ("F4b",):
             # The app failpoint counts EFFECT-TRANSACTION hits, not events: one batch is
             # MAX_POLL_RECORDS events and the load is split over the consumer instances.  At 1k
@@ -1991,6 +1996,14 @@ class LiveSequence:
             self.rate_mode = ("calibration-saturation" if mode == "saturation"
                               else "calibration-max")
             return "max"
+        # A7 realization fix: marker-driven external faults (K2/K5 at 1k) need a load window long
+        # enough for the seeded progress marker; Stage-A 1k rows otherwise run at max and the
+        # injection lands after the ~1 s load (observed live: K2 fire 268 ms after the load end).
+        if self.opts_rate_table_missing() and self.run.get("fault") in self.MARKER_DRIVEN_FAULTS \
+                and int(self.run.get("load_events") or 0) == 1000 \
+                and stage_lower in ("pilot", "a"):
+            self.rate_mode = "marker-window-floor"
+            return str(max(50, int(self.run["load_events"]) // 5))
         if stage_lower == "pilot":
             self.rate_mode = "pilot-max"
             return "max"

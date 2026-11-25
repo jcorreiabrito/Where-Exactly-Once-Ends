@@ -1,0 +1,176 @@
+{
+  "schema": "wxeo.oracle.v1",
+  "run_id": "m7-m2m3-cal-10k-p6-r01",
+  "mechanism": "M2+M3",
+  "sink_kind": "db",
+  "generated_at_utc": "2026-11-24T22:46:40.990Z",
+  "counts": {
+    "produced": 10000,
+    "consumed_estimate": 10000,
+    "expected_postings": 20000,
+    "observed_postings": 20000,
+    "dup_postings": 0,
+    "dup_entries": 0,
+    "lost_postings": 0,
+    "lost_entries": 0,
+    "imbalanced_entries": 0,
+    "structurally_malformed_entries": 0,
+    "imbalanced_sum_entries": 0,
+    "mutated_postings": 0,
+    "spurious_postings": 0,
+    "ledger_entries_total": 10000
+  },
+  "violations": {
+    "v1": false,
+    "v2": false,
+    "v3": false,
+    "v4": false,
+    "v5": false,
+    "violating_run": false
+  },
+  "publication": {
+    "pub_records": 18305,
+    "dup_records": 9149,
+    "lost_records": 844,
+    "divergence": 8305,
+    "pub_mutated_records": 0,
+    "pub_unknown_records": 0,
+    "notes": null
+  },
+  "attestation": {
+    "present": true,
+    "can_update": false,
+    "can_delete": false,
+    "posting_triggers": 1,
+    "failed": false,
+    "note": "queried as the application role (artifact/README \u00a78.9)",
+    "source": "artifact:SchemaTool --mode=verify",
+    "app_role": "wxeo_app",
+    "posting_rows": 20000
+  },
+  "attribution": [],
+  "source_integrity_detail": {
+    "gt_file": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m2m3-cal-10k-p6-r01\\attempt1\\gt_m7-m2m3-cal-10k-p6-r01.ndjson",
+    "gt_sha256_file": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "gt_sha256_regenerated": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "gt_lines_regenerated": 20000,
+    "gt_digest_match": true,
+    "source_dump": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m2m3-cal-10k-p6-r01\\attempt1\\source_dump_m7-m2m3-cal-10k-p6-r01.ndjson",
+    "produced_manifest": "<home>\\AppData\\Local\\eos-runtime\\runs\\m7-m2m3-cal-10k-p6-r01\\attempt1\\produced_m7-m2m3-cal-10k-p6-r01.ndjson",
+    "source_records": 10000,
+    "source_offsets_contiguous": true,
+    "source_partitions_observed": 6,
+    "source_partitions_expected": 6,
+    "source_partitions_exact": true,
+    "source_event_multiset_matches_manifest": true,
+    "source_event_multiset_matches_derivation": true,
+    "source_dump_digest": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "source_dump_digest_match": true,
+    "partition_derivation_mismatches": 0,
+    "value_sha256_checked": true,
+    "value_sha256_mismatches": 0,
+    "malformed_source_lines": 0,
+    "malformed_manifest_lines": 0,
+    "errors": [],
+    "source_integrity": true
+  },
+  "diagnostics": {
+    "dup_key_samples": [],
+    "lost_key_samples": [],
+    "mutated_key_samples": [],
+    "imbalanced_eid_samples": [],
+    "structural_eid_samples": [],
+    "spurious_key_samples": [],
+    "lost_entry_samples": [],
+    "pub_dup_eid_samples": [
+      {
+        "event_id": "033f36507f88208a1d10041603aa50ec",
+        "multiplicity": 2
+      },
+      {
+        "event_id": "0042cb4d338bef8d4a557452da0e5ba1",
+        "multiplicity": 2
+      },
+      {
+        "event_id": "018423b858fc2eab576abf6e1873d29b",
+        "multiplicity": 2
+      },
+      {
+        "event_id": "033779af06e4b32499dadc266e8a68e7",
+        "multiplicity": 2
+      },
+      {
+        "event_id": "014e5566f72e4ef0af18b848e6d60ce7",
+        "multiplicity": 2
+      }
+    ],
+    "pub_lost_eid_samples": [
+      {
+        "event_id": "037a073ee6df0c570bce4ab0a848ac04"
+      },
+      {
+        "event_id": "0349b8abbc2c46b7d4280d5eb214781a"
+      },
+      {
+        "event_id": "009a5691b0e3e3cc0b5263646d21182c"
+      },
+      {
+        "event_id": "03d8bb0ba253840f56a47e49f35946ed"
+      },
+      {
+        "event_id": "017375daff128b968dbaa2bcc0307b4a"
+      }
+    ],
+    "pub_mutated_samples": [],
+    "pub_divergence_eid_samples": [],
+    "observed_malformed_rows": 0,
+    "dup_entry_events": 0,
+    "complete_entries": 10000,
+    "publication_shard_stats": {
+      "records": 18305,
+      "parse_errors": 0,
+      "error_samples": []
+    }
+  },
+  "verdict_rule": "violating_run = v1|v2|v3|v4|v5; v1=imbalanced_entries>0 (I1a structural or I1b signed-sum); v2=(mutated_postings>0 or append-only attestation fails); v3=dup_postings>0; v4=lost_postings>0; v5=spurious_postings>0 (fabricated/fabricated-balanced postings). The I1a/I1b split and v5 are recorded for the author-approved P2 amendment A2; analysis reads violations.violating_run verbatim and never recomputes it. Recorded interpretation per docs/P2-RULINGS.md and results/DEVIATIONS.md.",
+  "warnings": [],
+  "inputs": {
+    "gt": {
+      "path": "<scratch>/gt_m7-m2m3-cal-10k-p6-r01.ndjson",
+      "sha256": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+      "bytes": 3126710
+    },
+    "source_dump": {
+      "path": "<scratch>/source_dump_m7-m2m3-cal-10k-p6-r01.ndjson",
+      "sha256": "7255ad3ea48e6cc9087cc427264e4f52860e904fdf87c436a4acd415133fb632",
+      "bytes": 1573340
+    },
+    "produced_manifest": {
+      "path": "<scratch>/produced_m7-m2m3-cal-10k-p6-r01.ndjson",
+      "sha256": "1aaf0b877eb22f993fa6cf84fa3dab4168ff922050735f32d1991408fc0a51d1",
+      "bytes": 1603340
+    },
+    "sink_dump": {
+      "path": "<scratch>/sink_dump_m7-m2m3-cal-10k-p6-r01.csv",
+      "sha256": "7ff364c328a69e1e59c94e8bffd2255c47317122728be1912c22e1393a24b33e",
+      "bytes": 1297820
+    },
+    "publication_dump": {
+      "path": "<scratch>/publication_m7-m2m3-cal-10k-p6-r01.ndjson",
+      "sha256": "027be621930373337c4f01ffa8e22cd70b9523e9b5681eb2a6f5cbb9689ef73e",
+      "bytes": 8004741
+    },
+    "attestation": {
+      "path": "<scratch>/attestation_m7-m2m3-cal-10k-p6-r01.json",
+      "sha256": "08b80462a7a5de9f0f5378d5d6eb9a8a30fa590aa109366105f445a613cc2a6e",
+      "bytes": 558
+    }
+  },
+  "oracle": {
+    "gt_sha256": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "expected_sha256": "abfcc05e8b89e529a08600f3a44bdf496ee71e9f27032b74fa7b2afd8b8d7111",
+    "source_integrity": true,
+    "oracle_script_sha256": "189ff543c5f678ae6c59907372b6b028c73e0cbff6f99c49b6388d0128a59901",
+    "result_sha256": "717fb99d3d72c340f2af455aa4466de9fbf8cc9698484113f6f31f01919d3cda"
+  }
+}

@@ -10,15 +10,20 @@ explicit, enumerated the crash points at which it manifests, and turned the ques
 pipeline exactly once?'' into a set of falsifiable invariant-preservation claims per mechanism
 and per failure class, backed by a machine-checked bounded model.
 
-The evaluation in Section~\ref{sec:results} is populated from frozen run records by the
-pre-registered analysis; its hypothesis verdicts and decision table map each failure exposure to
-the minimal mechanism set that covers it and the measured cost of each guarantee. Two conclusions
-follow for practice. First, ``we use Kafka transactions'' is not a statement about the ledger:
-the mechanism must be described by which durable transitions share a site and which idempotency
-or progress-atomicity argument closes the remaining window. Second, no mechanism is free --- the
-guarantees that survive a crash between effect and progress cost throughput or latency, and the
-decision table makes that cost explicit rather than hiding it behind a single ``exactly once''
-label.
+The evaluation in Section~\ref{sec:results} is the executed reduced programme of Amendment~A7:
+152 valid runs over nine mechanism configurations, a fault-free control and the reachable crash
+classes at 1k events, plus descriptive committed-event throughput. Its two empirical conclusions
+match the model. First, the duplicate window is closable and the market already knows how: under
+the effect-durable/progress-behind crash class, the unguarded mechanisms duplicated (302 and 462
+duplicate postings) while every mechanism with an idempotency key or a transactional outbox was
+clean. Second, the lost-effect window is the real boundary: under the progress-durable/effect-absent
+probe, \emph{all} 24 runs across all eight exposed mechanisms lost postings (272--494 each),
+including the offset-in-transaction design. ``We use Kafka transactions'' is therefore not a
+statement about the ledger: the mechanism must be described by which durable transitions share a
+site, and a pipeline that commits progress before the external effect has a window that no
+de-duplication can repair. The full pre-registered campaign remains the next step on the intended
+Linux/container host; the reduced programme reported here is descriptive and does not claim its
+statistical power.
 
 Two directions remain open: extending the ledger model to multi-leg and multi-currency entries,
 reversals and corrections (which multiply the crash points), and moving from a single host to a
